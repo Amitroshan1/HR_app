@@ -110,3 +110,8 @@ def Company_verify_oauth2_and_send_email(user_email, subject, body, recipient_em
     except Exception as e:
         flash(f"Error: {str(e)}", 'error')
         return False
+
+
+
+
+
