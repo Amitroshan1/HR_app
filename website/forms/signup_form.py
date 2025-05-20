@@ -50,17 +50,14 @@ class SignUpForm(FlaskForm):
 
     circle = SelectField(
         'Circle', 
-        choices=[('', 'Select Circle'), 
-                 ('NHQ', 'NHQ'), 
-                 ('Noida', 'Noida'), 
-                 ('Punjab', 'Punjab'),
-                 ('Haryana', 'Haryana'), 
-                 ('Gurugram', 'Gurugram'), 
-                 ('Pune', 'Pune'), 
-                 ('Bangalore', 'Bangalore'), 
-                 ('Hyderabad', 'Hyderabad'),
-                 ('Chennai', 'Chennai'), 
-                 ('Kolkata', 'Kolkata')],
+        choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
+                                        ('Noida', 'Noida'), ('Haryana', 'Haryana'),
+                                       ('Gurugram', 'Gurugram'), ('Pune', 'Pune'), 
+                                       ('Jaipur', 'Jaipur'), ('Greater Noida', 'Greater Noida'), 
+                                        ('Mumbai', 'Mumbai'), ('Ahmedabad', 'Ahmedabad'),
+                                       ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
+                                       ('Hyderabad', 'Hyderabad'), ('Chennai', 'Chennai'), 
+                                       ('Kolkata', 'Kolkata')],
         validators=[DataRequired()]
     )
 

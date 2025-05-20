@@ -5,12 +5,14 @@ from flask_wtf.file import FileAllowed
 
 class ManagerContactForm(FlaskForm):
     circle_name = SelectField('Circle', 
-                              choices=[('', 'Choose Your Circle'), ('nhq', 'NHQ'),
-                                        ('noida', 'Noida'), ('haryana', 'Haryana'),
-                                       ('gurugram', 'Gurugram'), ('pune', 'Pune'), 
-                                       ('bangalore', 'Bangalore'), ('punjab', 'Punjab'),
-                                       ('hyderabad', 'Hyderabad'), ('chennai', 'Chennai'), 
-                                       ('kolkata', 'Kolkata')],
+                              choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
+                                        ('Noida', 'Noida'), ('Haryana', 'Haryana'),
+                                       ('Gurugram', 'Gurugram'), ('Pune', 'Pune'), 
+                                       ('Jaipur', 'Jaipur'), ('Greater Noida', 'Greater Noida'), 
+                                        ('Mumbai', 'Mumbai'), ('Ahmedabad', 'Ahmedabad'),
+                                       ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
+                                       ('Hyderabad', 'Hyderabad'), ('Chennai', 'Chennai'), 
+                                       ('Kolkata', 'Kolkata')],
                               validators=[DataRequired()])
     
     user_type = SelectField('Department', 

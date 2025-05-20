@@ -5,12 +5,14 @@ from wtforms.validators import DataRequired,Optional
 
 class SearchForm(FlaskForm):
     circle = SelectField('Circle', 
-                            choices=[('','Select Circle'),('NHQ', 'NHQ'),
-                                    ('Noida', 'Noida'),('Punjab', 'Punjab'),
-                                    ('Haryana', 'Haryana'),('Gurugram','Gurugram'),
-                                    ('Pune','Pune'),('Banglore','Banglore'),
-                                    ('Hydrabad','Hydrabad'),
-                                    ('Chennai','Chennai'),('Kolkata','Kolkata')],
+                            choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
+                                        ('Noida', 'Noida'), ('Haryana', 'Haryana'),
+                                       ('Gurugram', 'Gurugram'), ('Pune', 'Pune'), 
+                                       ('Jaipur', 'Jaipur'), ('Greater Noida', 'Greater Noida'), 
+                                        ('Mumbai', 'Mumbai'), ('Ahmedabad', 'Ahmedabad'),
+                                       ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
+                                       ('Hyderabad', 'Hyderabad'), ('Chennai', 'Chennai'), 
+                                       ('Kolkata', 'Kolkata')],
                               validators=[DataRequired()])
     
     emp_type = SelectField('Employee Type', 
@@ -19,7 +21,7 @@ class SearchForm(FlaskForm):
                                      ('Accounts','Accounts'), 
                                      ('Testing', 'Testing'),
                                      ('Software Development', 'Software Development'),
-                                     ('It Department', 'IT Department')],
+                                     ('IT Department', 'IT Department')],
                               validators=[DataRequired()])
     
     submit = SubmitField('Search')
@@ -47,12 +49,14 @@ class DetailForm(FlaskForm):
 
 class NewsFeedForm(FlaskForm):
     circle = SelectField('Circle', 
-                            choices=[("",'Select Circle'),('All','All'),('NHQ', 'NHQ'),
-                                     ('Punjab', 'Punjab'),('Haryana', 'Haryana'),
-                                     ('Noida', 'Noida'),('Gurugram','Gurugram'),
-                                     ('Pune','Pune'),('Banglore','Banglore'),
-                                     ('Hydrabad','Hydrabad'),
-                                     ('Chennai','Chennai'),('Kolkata','Kolkata')],
+                            choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
+                                        ('Noida', 'Noida'), ('Haryana', 'Haryana'),
+                                       ('Gurugram', 'Gurugram'), ('Pune', 'Pune'), 
+                                       ('Jaipur', 'Jaipur'), ('Greater Noida', 'Greater Noida'), 
+                                        ('Mumbai', 'Mumbai'), ('Ahmedabad', 'Ahmedabad'),
+                                       ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
+                                       ('Hyderabad', 'Hyderabad'), ('Chennai', 'Chennai'), 
+                                       ('Kolkata', 'Kolkata')],
                               validators=[DataRequired()])
     emp_type = SelectField('Employee Type', 
                             choices=[("",'Select Employee Type'),('All','All'),

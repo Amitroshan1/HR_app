@@ -8,7 +8,7 @@ class QueryForm(FlaskForm):
                             choices=[
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'),
-                                       ('It_department', 'IT Department')],
+                                       ('IT Department', 'IT Department')],
 
                               validators=[DataRequired()])
     title = StringField('Title', validators=[DataRequired()])
