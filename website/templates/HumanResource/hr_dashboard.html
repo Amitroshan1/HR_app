@@ -2,7 +2,7 @@
 {% block title %}HR Dashboard{% endblock %} 
 {% block content %}
 
-<div class="container">
+<div class="hrrcontainer">
     {% with errors = get_flashed_messages(category_filter=["error","success"]) %}
     {% if errors %}
         <div class="alert alert-danger">
@@ -15,8 +15,8 @@
     {% endif %}
     {% endwith %}
     
-    <div class="container">
-        <h2 class="centered-heading">Joining Anniversaries</h2>
+    <div class="hrcontainer">
+        <h2 class="hrcentered-heading">Joining Anniversaries</h2>
         {% if employees_with_anniversaries %}
             <table class="table table-bordered">
                 <thead>
@@ -24,8 +24,8 @@
                         <th>Employee ID</th>
                         <th>First Name</th>
                         <th>Date of Joining</th>
-                        <th>Circle</th>
-                        <th>Employee Type</th>
+                        
+                        <th>Email</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,8 +34,8 @@
                         <td>{{ employee.emp_id }}</td>
                         <td>{{ employee.first_name | capitalize }}</td>
                         <td>{{ employee.doj.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ employee.circle | capitalize }}</td>
-                        <td>{{ employee.Emp_type | capitalize }}</td>
+                
+                        <td>{{ employee.email }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -52,18 +52,16 @@
                         <th>Employee ID</th>
                         <th>First Name</th>
                         <th>Date of Birth</th>
-                        <th>Circle</th>
-                        <th>Employee Type</th>
+                        <th>Email</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for employee in employees_with_birthdays %}
                     <tr>
-                        <td>{{ employee.admin.emp_id }}</td>
+                        <td>{{ employee.emp_id }}</td>
                         <td>{{ employee. name | capitalize }}</td>
                         <td>{{ employee.dob.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ employee.admin.circle | capitalize }}</td>
-                        <td>{{ employee.admin.Emp_type | capitalize }}</td>
+                        <td>{{ employee.email }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

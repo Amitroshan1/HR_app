@@ -229,11 +229,14 @@ form {
     text-align: center;
     margin-bottom: 20px;
 }
-
-.table {
+.hrrcontainer{
+    padding: 100px;
+}
+.hrrcontainer .hrcontainer .table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    padding-left: 150px;
     text-indent: initial;
     unicode-bidi: isolate;
     border-spacing: 2px;
@@ -325,13 +328,17 @@ form {
     width: 80%;
 }
 
-.table-striped {
+.secontainer{
+    padding: 80px;
+}
+.secontainer .table-striped {
     width: 100%;
     margin-top: 20px;
+    
     border-collapse: collapse;
 }
 
-.table-striped tbody tr:nth-of-type(odd) {
+.secontainer .table-striped tbody tr:nth-of-type(odd) {
     background-color: #f2f2f2;
 }
 
@@ -499,7 +506,9 @@ h2 {
     border-radius: 4px;
     font-size: 0.9rem;
 }
-
+.secontainer a{
+    margin-left: 440px;
+}
 .btn {
     margin-top: 15px;
     display: inline-block;
