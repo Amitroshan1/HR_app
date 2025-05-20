@@ -91,7 +91,7 @@ def search_results():
     emails = session['admin_emails']
     circle = session['circle']
     emp_type = session['emp_type']
-
+ 
     # Retrieve Admin details based on email
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
