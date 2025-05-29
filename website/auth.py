@@ -213,6 +213,7 @@ def select_role():
     if form.validate_on_submit():
         selected_role = form.emp_type.data  # Get the selected Emp_type
         entered_password = form.password.data  # Get the entered password
+        print(selected_role, entered_password)  # Debugging print statement
         user = current_user  # Get the current user
 
         # Debugging logs
@@ -223,6 +224,7 @@ def select_role():
 
         # Query the admin/signup record based on the user's email
         admin = Signup.query.filter_by(email=user_email).first()
+        print(admin.emp_type)  # Debugging print statement to check if admin is fetched correctly
 
         if admin:
             # Check if the Emp_type matches the selected role

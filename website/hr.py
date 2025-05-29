@@ -159,15 +159,26 @@ def display_details():
         details = Education.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Attendance':
         num_days = calendar.monthrange(year, month)[1]
-        details = [{'punch_date': f'{year}-{month:02d}-{day:02d}', 'punch_in': 'Leave', 'punch_out':'Leave'} for day in range(1, num_days + 1)]
+        details = [
+            {
+                'punch_date': f'{year}-{month:02d}-{day:02d}',
+                'punch_in': '',
+                'punch_out': '',
+                'is_wfh': ''  # Default value
+            } for day in range(1, num_days + 1)
+        ]
+
         punches = Punch.query.filter(
             Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}')
         ).filter_by(admin_id=user_id).all()
+
         for punch in punches:
             for detail in details:
                 if detail['punch_date'] == punch.punch_date.strftime('%Y-%m-%d'):
                     detail['punch_in'] = punch.punch_in
                     detail['punch_out'] = punch.punch_out
+                    detail['is_wfh'] = 'Yes' if punch.is_wfh else ''
+
     elif detail_type == 'Document':
         details = UploadDoc.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Leave Details':

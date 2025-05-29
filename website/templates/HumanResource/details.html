@@ -264,6 +264,8 @@
                         <th>Date</th>
                         <th>Punch In</th>
                         <th>Punch Out</th>
+                        <th>Work from Home</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -272,6 +274,7 @@
                         <td>{{ detail.punch_date }}</td>
                         <td class="{% if not detail.punch_in %}missing{% endif %}">{{ detail.punch_in }}</td>
                         <td class="{% if not detail.punch_out %}missing{% endif %}">{{ detail.punch_out }}</td>
+                        <td>{{ detail.is_wfh }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
