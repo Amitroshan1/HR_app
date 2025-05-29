@@ -13,9 +13,13 @@ from .forms.attendance import MonthYearForm,BalanceUpdateForm
 from .models.signup import Signup
 from datetime import datetime
 import calendar
+from werkzeug.security import generate_password_hash
+from wtforms.validators import DataRequired, Email, Length, Optional, ValidationError
+
 from werkzeug.utils import secure_filename
 import os
-
+from .common import asset_email,update_asset_email
+from .forms.signup_form import SignUpForm
 
 
 hr=Blueprint('hr',__name__)
@@ -353,6 +357,7 @@ def add_asset(admin_id):
         db.session.add(new_asset)
         db.session.commit()
         flash('Asset added successfully!', 'success')
+        asset_email(employee.email, employee.first_name)
 
         return redirect(url_for('hr.add_asset', admin_id=admin_id))
 
@@ -402,6 +407,7 @@ def update_asset(asset_id):
 
         db.session.commit()
         flash('Asset updated successfully!', 'success')
+        update_asset_email(asset.admin.email, asset.admin.first_name)
 
         return redirect(url_for('hr.add_asset', admin_id=asset.admin_id))
 
@@ -411,3 +417,61 @@ def update_asset(asset_id):
         asset=asset
     )
 
+
+
+
+@hr.route('/update_Signup', methods=['GET', 'POST'])
+@login_required
+def update_signup():
+    form = SearchForm()
+    employees = []
+
+    if form.validate_on_submit():
+        emp_type = form.emp_type.data
+        circle = form.circle.data
+
+       
+        session['emp_type'] = emp_type
+        session['circle'] = circle
+
+        
+        employees = Signup.query.filter_by(emp_type=emp_type, circle=circle).all()
+
+    else:
+        
+        emp_type = session.get('emp_type')
+        circle = session.get('circle')
+
+        if emp_type and circle:
+            employees = Signup.query.filter_by(emp_type=emp_type, circle=circle).all()
+
+    return render_template('HumanResource/update_sighnup.html', form=form, employees=employees)
+
+
+@hr.route('/edit_signup/<string:email>', methods=['GET', 'POST'])
+@login_required
+def edit_signup(email):
+    employee = Signup.query.filter_by(email=email).first_or_404()
+    form = SignUpForm(obj=employee)
+
+    # Disable unique field validators temporarily
+    form.email.validators = [DataRequired(), Email()]
+    form.emp_id.validators = [DataRequired(), Length(max=10)]
+    form.mobile.validators = [DataRequired(), Length(min=10, max=10)]
+
+    if form.validate_on_submit():
+        if form.password.data:
+            employee.password = generate_password_hash(form.password.data)
+        
+        employee.emp_id = form.emp_id.data
+        employee.first_name = form.first_name.data
+        employee.doj = form.doj.data
+        employee.mobile = form.mobile.data
+        employee.circle = form.circle.data
+        employee.emp_type = form.emp_type.data
+
+        db.session.commit()
+        flash('Employee record updated successfully.', 'success')
+        return redirect(url_for('hr.update_signup'))
+
+    return render_template('HumanResource/edit_signup.html', form=form, email=email)

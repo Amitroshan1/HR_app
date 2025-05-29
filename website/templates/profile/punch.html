@@ -14,12 +14,22 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('profile.punch') }}">
+   <form method="POST" action="{{ url_for('profile.punch') }}">
         {{ form.hidden_tag() }}
+
+        <!-- Hidden fields for location -->
+        <input type="hidden" name="lat" id="lat">
+        <input type="hidden" name="lon" id="lon">
+
+        <!-- Work from Home checkbox -->
+        <div class="form-group text-center">
+            <label><input type="checkbox" name="wfh" id="wfh"> Work From Home</label>
+        </div>
+
         <div class="form-group text-center">
             {{ form.punch_in(class_='btn btn-primary') }} 
             <span>{{ punch.punch_in if punch else 'Not Punched In' }}</span>
-       
+
             {{ form.punch_out(class_='btn btn-secondary') }} 
             <span>{{ punch.punch_out if punch else 'Not Punched Out' }}</span>
         </div>
@@ -84,5 +94,19 @@
         </table>
     </div>
 </div>
+
+
+
+<script>
+navigator.geolocation.getCurrentPosition(
+    function(position) {
+        document.getElementById('lat').value = position.coords.latitude;
+        document.getElementById('lon').value = position.coords.longitude;
+    },
+    function(error) {
+        alert("Please enable location access to punch in/out.");
+    }
+);
+</script>
 
 {% endblock %}

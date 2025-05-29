@@ -1,0 +1,69 @@
+{% extends "HumanResource/hr_base.html" %}
+{% block title %}Manage Locations{% endblock %}
+{% block content %}
+
+<div class="container">
+    <h2>Manage Office Locations</h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Add location form -->
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.name.label }} {{ form.name(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.latitude.label }} {{ form.latitude(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.longitude.label }} {{ form.longitude(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.radius.label }} {{ form.radius(class="form-control") }}
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+
+    <hr>
+
+    <!-- Display all locations -->
+    <h3 class="centered-heading">Existing Locations</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Radius (m)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loc in locations %}
+            <tr>
+                <td>{{ loc.name }}</td>
+                <td>{{ loc.latitude }}</td>
+                <td>{{ loc.longitude }}</td>
+                <td>{{ loc.radius }}</td>
+                <td>
+                    <form id="actinbtn" method="POST" action="{{ url_for('profile.delete_location', location_id=loc.id) }}">
+                        {{ form.hidden_tag() }}
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

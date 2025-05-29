@@ -18,7 +18,7 @@ def admin_sign_up():
             first_name = form.first_name.data
             mobile = form.mobile.data
             emp_id = form.emp_id.data
-            user_type = form.user_type.data
+            user_type = form.emp_type.data
             circle = form.circle.data
             password = form.password.data
             confirm_password = form.confirm_password.data

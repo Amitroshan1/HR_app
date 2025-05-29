@@ -3,15 +3,33 @@ from flask_login import UserMixin
 from datetime import datetime
 
 
-class Punch(db.Model,UserMixin):
+
+
+class Punch(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
+    
     admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
     punch_date = db.Column(db.Date, nullable=False)
+    
     punch_in = db.Column(db.Time, nullable=True)
     punch_out = db.Column(db.Time, nullable=True)
-    is_holiday = db.Column(db.Boolean, default=False)  
     
+    is_holiday = db.Column(db.Boolean, default=False)
+    is_wfh = db.Column(db.Boolean, default=False)  # ✅ New field to track WFH status
+    
+    lat = db.Column(db.Float, nullable=True)  # ✅ Optional: Latitude of punch location
+    lon = db.Column(db.Float, nullable=True)  # ✅ Optional: Longitude of punch location
+
     admin = db.relationship('Admin', back_populates='punch_records')
+
+
+class Location(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    radius = db.Column(db.Float, default=100)  # in meters
+
 
 
 

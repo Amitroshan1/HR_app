@@ -8,18 +8,19 @@ from .models.emp_detail_models import Employee
 from . import db
 from datetime import datetime,date
 import calendar
+from math import radians, cos, sin, asin, sqrt
 from .forms.education import EducationForm,UploadDocForm
 from .models.education import Education,UploadDoc
 from .forms.family_details import Family_details
 from .forms.previous_company import Previous_company
 from .models.prev_com import PreviousCompany
-from .models.attendance import Punch,LeaveApplication,LeaveBalance
-from .forms.attendance import PunchForm,LeaveForm
+from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location
+from .forms.attendance import PunchForm,LeaveForm,LocationForm
 from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-
+from .common import is_within_allowed_location
 
 profile=Blueprint('profile',__name__)
 
@@ -293,19 +294,36 @@ def delete_document(doc_id):
 
 
 
+def is_near_saved_location(user_lat, user_lon, locations):
+    def haversine(lat1, lon1, lat2, lon2):
+        # Earth radius in meters
+        R = 6371000  
+        dlat = radians(lat2 - lat1)
+        dlon = radians(lon2 - lon1)
+        a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
+        c = 2 * asin(sqrt(a))
+        return R * c
+
+    for loc in locations:
+        distance = haversine(user_lat, user_lon, loc.latitude, loc.longitude)
+        if distance <= loc.radius:
+            return True
+    return False
+
+
+
+
 @profile.route('/punch', methods=['GET', 'POST'])
 @login_required
 def punch():
     form = PunchForm()
-
     today = date.today()
+
     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
     selected_month = request.args.get('month', today.month, type=int)
     selected_year = request.args.get('year', today.year, type=int)
 
-   
     calendar.setfirstweekday(calendar.MONDAY)
-
     first_day = date(selected_year, selected_month, 1)
     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
 
@@ -317,13 +335,39 @@ def punch():
     punch_data = {p.punch_date: p for p in punches}
 
     if form.validate_on_submit():
+        lat = request.form.get('lat', type=float)
+        lon = request.form.get('lon', type=float)
+        is_wfh = request.form.get('wfh') == 'on'
+        print(lat, lon, is_wfh)
+        # Load all saved locations from the DB
+        locations = Location.query.all()
+        print(locations)
+        # Check if the user is near any saved location
+        is_near_location = False
+        if lat is not None and lon is not None:
+            is_near_location = is_near_saved_location(lat, lon, locations)
+
+        if not is_near_location and not is_wfh:
+            flash("You are not near any authorized location and 'Work From Home' is not selected.", "danger")
+            return redirect(url_for('profile.punch'))
+
         if form.punch_in.data:
             if punch and punch.punch_in:
                 flash('Already punched in today!', 'danger')
             else:
                 if not punch:
-                    punch = Punch(admin_id=current_user.id, punch_date=today)
+                    punch = Punch(
+                        admin_id=current_user.id,
+                        punch_date=today,
+                        is_wfh=is_wfh,
+                        lat=lat,
+                        lon=lon
+                    )
                 punch.punch_in = datetime.now().time()
+                punch.is_wfh = is_wfh
+                punch.lat = lat
+                punch.lon = lon
+
                 db.session.add(punch)
                 db.session.commit()
                 flash('Punched in successfully!', 'warning')
@@ -336,7 +380,95 @@ def punch():
                 db.session.commit()
                 flash('Punch out time updated successfully!', 'success')
 
-    return render_template('profile/punch.html', form=form, punch=punch, punch_data=punch_data, today=today, selected_month=selected_month, selected_year=selected_year, calendar=calendar)
+    return render_template(
+        'profile/punch.html',
+        form=form,
+        punch=punch,
+        punch_data=punch_data,
+        today=today,
+        selected_month=selected_month,
+        selected_year=selected_year,
+        calendar=calendar
+    )
+
+
+
+
+# @profile.route('/punch', methods=['GET', 'POST'])
+# @login_required
+# def punch():
+#     form = PunchForm()
+
+#     today = date.today()
+#     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
+#     selected_month = request.args.get('month', today.month, type=int)
+#     selected_year = request.args.get('year', today.year, type=int)
+
+   
+#     calendar.setfirstweekday(calendar.MONDAY)
+
+#     first_day = date(selected_year, selected_month, 1)
+#     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
+
+#     punches = Punch.query.filter(
+#         Punch.admin_id == current_user.id,
+#         Punch.punch_date.between(first_day, last_day)
+#     ).all()
+
+#     punch_data = {p.punch_date: p for p in punches}
+
+#     if form.validate_on_submit():
+#         if form.punch_in.data:
+#             if punch and punch.punch_in:
+#                 flash('Already punched in today!', 'danger')
+#             else:
+#                 if not punch:
+#                     punch = Punch(admin_id=current_user.id, punch_date=today)
+#                 punch.punch_in = datetime.now().time()
+#                 db.session.add(punch)
+#                 db.session.commit()
+#                 flash('Punched in successfully!', 'warning')
+
+#         elif form.punch_out.data:
+#             if not punch or not punch.punch_in:
+#                 flash('You need to punch in first!', 'danger')
+#             else:
+#                 punch.punch_out = datetime.now().time()
+#                 db.session.commit()
+#                 flash('Punch out time updated successfully!', 'success')
+
+#     return render_template('profile/punch.html', form=form, punch=punch, punch_data=punch_data, today=today, selected_month=selected_month, selected_year=selected_year, calendar=calendar)
+
+
+@profile.route('/manage-locations', methods=['GET', 'POST'])
+@login_required
+def manage_locations():
+    form = LocationForm()
+    locations = Location.query.all()
+
+    if form.validate_on_submit():
+        new_loc = Location(
+            name=form.name.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
+            radius=form.radius.data
+        )
+        db.session.add(new_loc)
+        db.session.commit()
+        flash('Location added successfully!', 'success')
+        return redirect(url_for('profile.manage_locations'))
+
+    return render_template('HumanResource/manage_locations.html', form=form, locations=locations)
+
+
+@profile.route('/delete-location/<int:location_id>', methods=['POST'])
+@login_required
+def delete_location(location_id):
+    loc = Location.query.get_or_404(location_id)
+    db.session.delete(loc)
+    db.session.commit()
+    flash('Location deleted successfully!', 'warning')
+    return redirect(url_for('profile.manage_locations'))
 
 
 

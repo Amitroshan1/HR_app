@@ -1,9 +1,10 @@
 from flask import flash, current_app
 from flask_mail import Message,Mail
 import requests
+from flask_login import current_user
 from .auth import refresh_access_token
 from .models.Admin_models import Admin
-
+from geopy.distance import geodesic
 
 
 
@@ -112,6 +113,45 @@ def Company_verify_oauth2_and_send_email(user_email, subject, body, recipient_em
         return False
 
 
+
+
+
+def asset_email(recipient_email,first_name):
+    
+    subject = f'New Asset Assigned to You'
+    body = (
+                f"Dear {first_name},\n\n"
+                f"This mail is to inform you that your new asset has been added.\n\n"
+                f"Thanks,\nAccounts"
+            )
+  
+    Company_verify_oauth2_and_send_email(current_user.email, subject, body,recipient_email, )
+    return True
+
+
+def update_asset_email(recipient_email,first_name):
+    
+    subject = f'Your Asset has been Updated'
+    body = (
+                f"Dear {first_name},\n\n"
+                f"This mail is to inform you that your asset has been updated.\n\n"
+                f"Thanks,\nAccounts"
+            )
+    
+    Company_verify_oauth2_and_send_email(current_user.email, subject, body,recipient_email, )
+    return True
+
+
+
+
+def is_within_allowed_location(user_lat, user_lon, allowed_locations):
+    for loc in allowed_locations:
+        loc_coords = (loc.latitude, loc.longitude)
+        user_coords = (user_lat, user_lon)
+        distance = geodesic(loc_coords, user_coords).meters
+        if distance <= loc.radius:
+            return True
+    return False
 
 
 

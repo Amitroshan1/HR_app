@@ -16,3 +16,5 @@ pytz==2025.1
 flask_session==0.8.0 
 dotenv==0.9.9 
 flask_jwt_extended==4.7.1
+geopy==2.4.1
+geographiclib==2.0

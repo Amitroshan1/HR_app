@@ -1,7 +1,7 @@
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, DateField
-from wtforms.validators import DataRequired, Email, Length, ValidationError
+from wtforms.validators import DataRequired, Email, Length, ValidationError,Optional
 from werkzeug.security import generate_password_hash, check_password_hash  # For password hashing
 from website.models.signup import Signup  # Importing the Signup model
 
@@ -26,13 +26,13 @@ class SignUpForm(FlaskForm):
 
     password = PasswordField(
         'Password',
-        validators=[DataRequired(), Length(min=8)],
+        validators=[Optional(), Length(min=8)],
         render_kw={"placeholder": "Enter your Password"}
     )
 
     confirm_password = PasswordField(
         'Confirm Password',
-        validators=[DataRequired()],
+        validators=[Optional()],
         render_kw={"placeholder": "Confirm your Password"}
     )
 
@@ -61,7 +61,7 @@ class SignUpForm(FlaskForm):
         validators=[DataRequired()]
     )
 
-    user_type = SelectField(
+    emp_type = SelectField(
         'Employee Type', 
         choices=[('', 'Select Employee Type'),
                  ('Human Resource', 'Human Resource'),
@@ -74,21 +74,21 @@ class SignUpForm(FlaskForm):
 
     submit = SubmitField('Sign Up')
 
-    # Validation Methods for Unique Fields
     def validate_email(self, email):
-        """Check if email is already registered."""
-        if Signup.query.filter_by(email=email.data).first():
+        existing = Signup.query.filter_by(email=email.data).first()
+        if existing and str(existing.email) != str(self.email.data):
             raise ValidationError('This email is already in use.')
 
     def validate_mobile(self, mobile):
-        """Check if mobile number is already registered."""
-        if Signup.query.filter_by(mobile=mobile.data).first():
+        existing = Signup.query.filter_by(mobile=mobile.data).first()
+        if existing and str(existing.email) != str(self.email.data):
             raise ValidationError('This mobile number is already in use.')
 
     def validate_emp_id(self, emp_id):
-        """Check if Employee ID is already registered."""
-        if Signup.query.filter_by(emp_id=emp_id.data).first():
+        existing = Signup.query.filter_by(emp_id=emp_id.data).first()
+        if existing and str(existing.email) != str(self.email.data):
             raise ValidationError('This Employee ID is already in use.')
+
 
     def validate_password(self, password):
         """Check if the password and confirm password fields match."""

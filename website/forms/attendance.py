@@ -10,7 +10,18 @@ from datetime import datetime
 class PunchForm(FlaskForm):
     punch_in = SubmitField('Punch In')
     punch_out = SubmitField('Punch Out')
+    lat = HiddenField()
+    lon = HiddenField()
+    wfh = BooleanField('Work From Home')
 
+
+
+class LocationForm(FlaskForm):
+    name = StringField('Location Name', validators=[DataRequired()])
+    latitude = FloatField('Latitude', validators=[DataRequired()])
+    longitude = FloatField('Longitude', validators=[DataRequired()])
+    radius = FloatField('Radius (meters)', default=100)
+    submit = SubmitField('Add Location')
 
 
 

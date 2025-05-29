@@ -81,11 +81,11 @@
             </div>
 
             <div class="form-group">
-                {{ form.user_type.label }}
-                {{ form.user_type(class="form-control") }}
-                {% if form.user_type.errors %}
+                {{ form.emp_type.label }}
+                {{ form.emp_type(class="form-control") }}
+                {% if form.emp_type.errors %}
                     <div class="text-danger">
-                        {% for error in form.user_type.errors %}
+                        {% for error in form.emp_type.errors %}
                             <p>{{ error }}</p>
                         {% endfor %}
                     </div>

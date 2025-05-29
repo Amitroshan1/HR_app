@@ -343,7 +343,7 @@ form {
 }
 
 .table th, .table td {
-    padding: 30px;
+    padding: 20px;
     text-align: left;
     white-space: nowrap;
     border-bottom: 1px solid #ddd;
@@ -508,6 +508,19 @@ h2 {
 }
 .secontainer a{
     margin-left: 440px;
+}
+
+
+#actinbtn{
+    background-color: white;
+    box-shadow: none;
+    
+    display: inline-block;
+    
+    font-size: 1rem;
+    text-align: center;
+    border-radius: 4px;
+    
 }
 .btn {
     margin-top: 15px;
