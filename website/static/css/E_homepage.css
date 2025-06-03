@@ -2,25 +2,27 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
 
 
+
 :root {
     --nav-width: 92px;
-    
+
     --first-color: #0C5DF4;
     --bg-color: #12192C;
     --sub-color: #B6CEFC;
     --white-color: #FFF;
 
-    
+
     --body-font: 'Poppins', sans-serif;
     --normal-font-size: 1rem;
     --small-font-size: .875rem;
 
-   
+
     --z-fixed: 100;
 }
 
-
-*, ::before, ::after {
+*,
+::before,
+::after {
     box-sizing: border-box;
 }
 
@@ -29,7 +31,7 @@ body {
     line-height: 1.6;
     color: #333;
     max-width: 70%;
-    margin: 0 auto;
+    margin-left: 55px;
     padding: 20px;
 }
 
@@ -47,8 +49,9 @@ ul {
 .notification .btn {
     display: inline-block;
     padding: 10px 15px;
-    
-    background-color:#238af1; /* Primary color */
+
+    background-color: #238af1;
+    /* Primary color */
     color: white;
     text-align: center;
     border-radius: 5px;
@@ -59,22 +62,23 @@ ul {
     background-color: #0056b3; /* Darker shade on hover */
 }
 
-
 table.queries {
     width: 100%;
     border-collapse: collapse;
-    margin: 20px 0;
+    margin-left: 40px;
     font-size: 16px;
     text-align: left;
-    table-layout:fixed; 
+    table-layout: fixed;
+
 }
 
-table.queries th, 
+table.queries th,
 table.queries td {
     padding: 12px 15px;
     border: 1px solid #ddd;
-    white-space: nowrap; 
-    overflow:scroll; /* Hides overflowed content */
+    white-space: nowrap;
+    overflow: scroll;
+    /* Hides overflowed content */
     /* Displays '...' for overflowing text */
 }
 
@@ -102,23 +106,23 @@ table.queries td:last-child {
 
 /* Responsive design */
 @media (max-width: 768px) {
-    table.queries th, 
+
+    table.queries th,
     table.queries td {
         padding: 10px;
         font-size: 14px;
     }
-    
     table.queries thead {
         font-size: 16px;
     }
 }
 
 /* Text overflow handling */
-table.queries th, 
+table.queries th,
 table.queries td {
-    white-space: nowrap;     /* Prevent text wrapping */
-    overflow: hidden;        /* Hide overflow */
-    text-overflow: ellipsis; /* Add ellipsis for overflow */
+    white-space: nowrap;/* Prevent text wrapping */
+    overflow: hidden;/* Hide overflow */
+    text-overflow: ellipsis;/* Add ellipsis for overflow */
 }
 
 
@@ -224,14 +228,19 @@ a {
 }
 
 .collapse__sublink {
-  color: var(--sub-color);
-  font-size: var(--small-font-size);
-  display: block; /* Ensure each link is a block element */
-  white-space: nowrap; /* Prevent line break */
- 
-  text-overflow: ellipsis; /* Add ellipsis for overflowing text */
-  padding: 0.3rem 0; /* Add padding for better spacing */
+    color: var(--sub-color);
+    font-size: var(--small-font-size);
+    display: block;
+    /* Ensure each link is a block element */
+    white-space: nowrap;
+    /* Prevent line break */
+
+    text-overflow: ellipsis;
+    /* Add ellipsis for overflowing text */
+    padding: 0.3rem 0;
+    /* Add padding for better spacing */
 }
+
 .collapse__sublink:hover {
     color: var(--white-color);
 }
@@ -310,14 +319,16 @@ form {
 }
 
 .container-close {
-    max-width: 600px; /* Sets a maximum width for the container */
-    margin: 0 auto; /* Centers the container */
-    padding: 20px; /* Adds padding around the content */
-    background-color: #f9f9f9; /* Light background color */
-    border-radius: 8px; /* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    max-width: 600px;/* Sets a maximum width for the container */
+    margin: 0 auto;/* Centers the container */
+    padding: 20px;/* Adds padding around the content */
+    background-color: #f9f9f9;/* Light background color */
+    border-radius: 8px;/* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);/* Subtle shadow for depth */
 }
-.form-control, .form-control-file {
+
+.form-control,
+.form-control-file {
     width: 100%;
     padding: 8px;
     border: 1px solid #ddd;
@@ -326,7 +337,8 @@ form {
     transition: border-color 0.3s ease;
 }
 
-.form-control:focus, .form-control-file:focus {
+.form-control:focus,
+.form-control-file:focus {
     border-color: #3498db;
     outline: none;
 }
@@ -382,8 +394,9 @@ h3 {
 .container-details {
     width: 100%;
     margin: auto;
-    
+
 }
+
 /* Table Styles */
 .table {
     width: 100%;
@@ -400,7 +413,8 @@ h3 {
     font-weight: bold;
 }
 
-.table th, .table td {
+.table th,
+.table td {
     padding: 12px 15px;
     border: 1px solid #ddd;
 }
@@ -442,7 +456,8 @@ h3 {
 
 h3 {
     color: #333;
-    text-align: left; /* Changed from center to left for subheadings */
+    text-align: left;
+    /* Changed from center to left for subheadings */
     margin: 20px 0;
 }
 
@@ -452,11 +467,24 @@ h3 {
     width: 90%;
     padding: 20px;
     margin: auto;
-    overflow: visible; /* Allow content to grow */
-    border: 3px solid #ccc; /* Border added */
-    border-radius: 30px; /* Optional rounded corners */
-    background-color: #f9f9f9; /* Optional subtle background */
-    min-height: 150px; /* Optional: prevents collapse when content is small */
+    overflow: visible;
+    /* Allow content to grow */
+    border: 3px solid #ccc;
+    /* Border added */
+    border-radius: 30px;
+    /* Optional rounded corners */
+    background-color: #f9f9f9;
+    /* Optional subtle background */
+    min-height: 150px;
+    /* Optional: prevents collapse when content is small */
+}
+
+@media (max-width: 480px) {
+    .container {
+        width: 135%;
+        padding: 15px;
+        border-radius: 20px;
+    }
 }
 
 .row {
@@ -468,7 +496,7 @@ h3 {
 
 .col-md-6 {
     flex: 0 0 50%;
-    
+
     max-width: 50%;
     padding-right: 10px;
     padding-left: 10px;
@@ -534,17 +562,12 @@ h3 {
 }
 
 .img-thumbnail {
-    border: 1px solid #ddd;
+    border: 1px solid #0971c6;
     border-radius: 0.25rem;
     padding: 0.25rem;
     background-color: #fff;
 }
 
-
-.centered-heading {
-    text-align: center;
-    margin-bottom: 20px;
-}
 
 /* Container Styles */
 .container {
@@ -570,7 +593,8 @@ h3 {
     margin-top: 20px;
 }
 
-.table th, .table td {
+.table th,
+.table td {
     padding: 10px;
     text-align: center;
     border: 1px solid #dee2e6;
@@ -578,24 +602,29 @@ h3 {
 
 /* Color Styles for Calendar Cells */
 .bg-success {
-    background-color: hsl(136, 78%, 75%) !important; /* Green for punched in and out */
+    background-color: hsl(136, 78%, 75%) !important;
+    /* Green for punched in and out */
     color: white;
 }
 
 .bg-warning {
-    background-color: #ffc107 !important; /* Yellow for missed punch out */
+    background-color: #ffc107 !important;
+    /* Yellow for missed punch out */
 }
 
 .bg-light {
-    background-color: #f8f9fa !important; /* Light background for days not in current month */
+    background-color: #f8f9fa !important;
+    /* Light background for days not in current month */
 }
 
 .bg-white {
-    background-color: white !important; /* No punch data */
+    background-color: white !important;
+    /* No punch data */
 }
 
 .text-white {
-    color: white !important; /* Ensure text is white on success */
+    color: white !important;
+    /* Ensure text is white on success */
 }
 
 /* Styles for Form Elements */
@@ -605,8 +634,10 @@ h3 {
 
 /* Dropdown Styles */
 .form-control-cal {
-    width: auto; /* Adjust width for dropdowns */
-    display: inline-block; /* Keep them inline */
+    width: auto;
+    /* Adjust width for dropdowns */
+    display: inline-block;
+    /* Keep them inline */
 }
 
 .leave-balance {
@@ -618,10 +649,7 @@ h3 {
     margin-bottom: 15px;
 }
 
-.leave-
-
-
-.btn {
+.leave- .btn {
     width: 100%;
 }
 
@@ -645,7 +673,7 @@ h3 {
     border: 1px solid #ddd;
     border-radius: 5px;
     background-color: #f9f9f9;
-    text-align: center; 
+    text-align: center;
 }
 
 
@@ -658,8 +686,8 @@ h3 {
     background-color: #007bff;
     border: none;
     border-radius: 5px;
-    text-decoration: none; 
-    transition: background-color 0.3s ease; 
+    text-decoration: none;
+    transition: background-color 0.3s ease;
 }
 
 .apply-leave-button:hover {
@@ -667,28 +695,29 @@ h3 {
 }
 
 
+/* Content wrapper with padding */
 .punch-container {
     position: relative;
     padding: 10px;
 }
 
-
-
+/* Punch times positioned at top-right and responsive */
 .punch-times {
     position: absolute;
-    top: 125px; /* As you requested */
+   
+    /* As you requested */
     right: 10px;
     background-color: white;
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ddd;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     white-space: nowrap;
 }
 
-
+/* Make paragraphs tighter */
 .punch-times p {
-    margin: 4px 0; /* Reduces the gap between paragraphs */
+    margin: 4px 0;
 }
 
 
@@ -708,26 +737,35 @@ h3 {
 }
 
 
-.news-feed-container {
-    width: 100%;
-    max-width: 700px;
-    height: 300px; /* Set the height as needed */
-    margin: 0 auto;
+/* News Feed  */
+.news-feed-container-fixed {
+    position: absolute;
+    top: 46px;
+    right: 30px;
+    width: 330px;  /* Reduced width */
+    height: 600px;
+    background-color: #f9f9f9;
+    border: 3px solid whitesmoke;
     padding: 20px;
-   
-    border-radius: 10px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    overflow: hidden; /* Ensures content stays within the box */
+    border-radius: 20px;
+    overflow: hidden;
+    z-index: 999;
+    font-size: 14px; /* Make text smaller to avoid overflow */
+}
+
+@media (max-width: 768px) {
+    .news-feed-container-fixed {
+        display: none;
+    }
 }
 
 .news-feed-item {
-    margin-bottom: 1px;
-    padding: .5px;
-
+    margin-bottom: 5px;
+    word-wrap: break-word;
 }
 
 .news-feed-item a {
-    font-size: 18px;
+    font-size: 14px;
     color: #007bff;
     text-decoration: none;
 }
@@ -737,25 +775,36 @@ h3 {
 }
 
 .new-label {
-    margin-left: 10px;
+    margin-left: 5px;
     background-color: #ff4d4d;
-    color: #ffffff;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
     font-weight: bold;
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
 }
 
-.asset-table {
-    width: 50%;
-    margin: 20px auto; /* Center the table */
+
+
+.centered-heading {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+    margin-left: 40px;
+    padding-top: 24px;
+}
+
+
+.asset-table { 
+    width: 20%;
+    margin: 20px auto;
+    /* Center the table */
     border-collapse: collapse;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.asset-table th, 
+.asset-table th,
 .asset-table td {
     border: 1px solid #ccc;
     padding: 12px;

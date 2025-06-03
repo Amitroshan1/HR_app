@@ -1,4 +1,5 @@
 
+
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
 
 
@@ -112,6 +113,7 @@ table.queries td:last-child {
         font-size: 16px;
     }
 }
+
 
 /* Text overflow handling */
 table.queries th, 
@@ -534,7 +536,7 @@ h3 {
 }
 
 .img-thumbnail {
-    border: 1px solid #0971c6;
+    border: 1px solid #ddd;
     border-radius: 0.25rem;
     padding: 0.25rem;
     background-color: #fff;
@@ -667,16 +669,16 @@ h3 {
 }
 
 
-/* Content wrapper with padding */
 .punch-container {
     position: relative;
     padding: 10px;
 }
 
-/* Punch times positioned at top-right and responsive */
+
+
 .punch-times {
     position: absolute;
-    top: 85px; /* As you requested */
+    top: 125px; /* As you requested */
     right: 10px;
     background-color: white;
     padding: 10px;
@@ -686,9 +688,9 @@ h3 {
     white-space: nowrap;
 }
 
-/* Make paragraphs tighter */
+
 .punch-times p {
-    margin: 4px 0;
+    margin: 4px 0; /* Reduces the gap between paragraphs */
 }
 
 
@@ -710,13 +712,13 @@ h3 {
 
 .news-feed-container {
     width: 100%;
-    max-width: 600px;
+    max-width: 700px;
     height: 300px; /* Set the height as needed */
     margin: 0 auto;
     padding: 20px;
    
     border-radius: 10px;
-  
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     overflow: hidden; /* Ensures content stays within the box */
 }
 
