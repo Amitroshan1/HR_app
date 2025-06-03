@@ -6,24 +6,32 @@ from flask_wtf.file import FileAllowed
 class ManagerContactForm(FlaskForm):
     circle_name = SelectField('Circle', 
                               choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
-                                        ('Noida', 'Noida'), ('Haryana', 'Haryana'),
-                                       ('Gurugram', 'Gurugram'), ('Pune', 'Pune'), 
+                                        ('Noida', 'Noida'), 
+                                        ('Noida-Loire','Noida-Loire'),('Haryana', 'Haryana'),
+                                        ('Haryana-Loyal', 'Haryana-Loyal'),
+                                       ('Gurugram', 'Gurugram'), ('Gurugram-Awesome','Gurugram-Awesome'),
+                                       ('Gurugram-Rabbit','Gurugram-Rabbit'),('Pune', 'Pune'), 
                                        ('Jaipur', 'Jaipur'), ('Greater Noida', 'Greater Noida'), 
-                                        ('Mumbai', 'Mumbai'), ('Ahmedabad', 'Ahmedabad'),
+                                        ('Mumbai', 'Mumbai'),('G.Noida-Rabbit','G.Noida-Rabbit'),
+                                        ('Mumbai-Bonita','Mumbai-Bonita'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
+                                        ('Ahmedabad', 'Ahmedabad'), 
                                        ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
+                                       ('Punjab-Loyal', 'Punjab-Loyal'), ('Ahmedabad', 'Ahmedabad'),
                                        ('Hyderabad', 'Hyderabad'), ('Chennai', 'Chennai'), 
-                                       ('Kolkata', 'Kolkata')],
+                                       ('Kolkata', 'Kolkata'),('Kolkata-Rabbit', 'Kolkata-Rabbit')],
                               validators=[DataRequired()])
     
+    
     user_type = SelectField('Department', 
-                            choices=[('', 'Select Department'),
-                                      ('Human Resource', 'Human Resource'),
-                                        ('Accounts', 'Accounts'), 
-                                     ('IT Department','IT Department'),
+                            choices=[('','Select Employee Type'),
+                                     ('Human Resource','Human Resource'),
+                                     ('Accounts','Accounts'), 
                                      ('Testing', 'Testing'),
-                                     ('Software Development', 'Software Development')],
-                                     
-                            validators=[DataRequired()])
+                                     ('Engineering', 'Engineering'),
+                                     ('Certification', 'Certification'),
+                                     ('Software Development', 'Software Development'),
+                                     ('IT Department', 'IT Department')],
+                              validators=[DataRequired()])
     
     l1_name = StringField('L1 Name', validators=[Optional()])
     l1_mobile = StringField('L1 Mobile', validators=[Optional(), Length(min=10, max=10)])

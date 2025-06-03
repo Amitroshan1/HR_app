@@ -183,7 +183,8 @@ def download_payslip(payslip_id):
 
    
     
-    file_path = os.path.join('C:\\Users\\PC\\Desktop\\HR_app\\website\\static\\uploads', payslip.file_path)
+    file_path = os.path.join('/var/www/HR_app/website/static/uploads', payslip.file_path)
+
 
 
 

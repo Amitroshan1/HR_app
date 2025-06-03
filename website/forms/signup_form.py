@@ -48,29 +48,33 @@ class SignUpForm(FlaskForm):
         render_kw={"placeholder": "Enter your Mobile number"}
     )
 
-    circle = SelectField(
-        'Circle', 
-        choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
-                                        ('Noida', 'Noida'), ('Haryana', 'Haryana'),
-                                       ('Gurugram', 'Gurugram'), ('Pune', 'Pune'), 
+    circle = SelectField('Circle', 
+                            choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
+                                        ('Noida', 'Noida'), 
+                                        ('Noida-Loire','Noida-Loire'),('Haryana', 'Haryana'),
+                                        ('Haryana-Loyal', 'Haryana-Loyal'),
+                                       ('Gurugram', 'Gurugram'), ('Gurugram-Awesome','Gurugram-Awesome'),
+                                       ('Gurugram-Rabbit','Gurugram-Rabbit'),('Pune', 'Pune'), 
                                        ('Jaipur', 'Jaipur'), ('Greater Noida', 'Greater Noida'), 
-                                        ('Mumbai', 'Mumbai'), ('Ahmedabad', 'Ahmedabad'),
+                                        ('Mumbai', 'Mumbai'),('G.Noida-Rabbit','G.Noida-Rabbit'),
+                                        ('Mumbai-Bonita','Mumbai-Bonita'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
+                                        ('Ahmedabad', 'Ahmedabad'), 
                                        ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
+                                       ('Punjab-Loyal', 'Punjab-Loyal'), ('Ahmedabad', 'Ahmedabad'),
                                        ('Hyderabad', 'Hyderabad'), ('Chennai', 'Chennai'), 
-                                       ('Kolkata', 'Kolkata')],
-        validators=[DataRequired()]
-    )
-
-    emp_type = SelectField(
-        'Employee Type', 
-        choices=[('', 'Select Employee Type'),
-                 ('Human Resource', 'Human Resource'),
-                 ('Accounts', 'Accounts'),
-                 ('Testing', 'Testing'),
-                 ('Software Development', 'Software Development'),
-                 ('IT Department', 'IT Department')],
-        validators=[DataRequired()]
-    )
+                                       ('Kolkata', 'Kolkata'),('Kolkata-Rabbit', 'Kolkata-Rabbit')],
+                              validators=[DataRequired()])
+    
+    emp_type = SelectField('Employee Type', 
+                            choices=[('','Select Employee Type'),
+                                     ('Human Resource','Human Resource'),
+                                     ('Accounts','Accounts'), 
+                                     ('Testing', 'Testing'),
+                                     ('Engineering', 'Engineering'),
+                                     ('Certification', 'Certification'),
+                                     ('Software Development', 'Software Development'),
+                                     ('IT Department', 'IT Department')],
+                              validators=[DataRequired()])
 
     submit = SubmitField('Sign Up')
 
@@ -107,13 +111,15 @@ from wtforms.validators import DataRequired, Length
 
 class SelectRoleForm(FlaskForm):
     emp_type = SelectField('Employee Type', 
-                           choices=[('', 'Select Employee Type'),
-                                    ('Human Resource', 'Human Resource'),
-                                    ('Accounts', 'Accounts'),
-                                    ('Testing', 'Testing'),
-                                    ('Software Development', 'Software Development'),
-                                    ('IT Department', 'IT Department')],
-                           validators=[DataRequired()])
+                           choices=[('','Select Employee Type'),
+                                     ('Human Resource','Human Resource'),
+                                     ('Accounts','Accounts'), 
+                                     ('Testing', 'Testing'),
+                                     ('Engineering', 'Engineering'),
+                                     ('Certification', 'Certification'),
+                                     ('Software Development', 'Software Development'),
+                                     ('IT Department', 'IT Department')],
+                              validators=[DataRequired()])
     
     password = PasswordField('Password', 
                              validators=[DataRequired(), Length(min=8, message="Password must be at least 8 characters long")])
