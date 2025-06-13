@@ -12,7 +12,7 @@ class Employee_Details(FlaskForm):
                          validators=[DataRequired()], 
                          render_kw={"placeholder": "Enter your Name"})
     
-    email = StringField('Email_Id *', 
+    email = StringField('Official_Email_Id*', 
                         validators=[DataRequired(), Email()], 
                         render_kw={"placeholder": "Enter your Email_Id"})
     

@@ -12,7 +12,8 @@ from .models.query import Query, QueryReply
 from .forms.query_form import QueryForm, QueryReplyForm,PasswordForm
 from .models.signup import Signup
 from .common import verify_oauth2_and_send_email,Company_verify_oauth2_and_send_email
-
+import pytz
+from datetime import datetime
 
 
 
@@ -228,12 +229,20 @@ def create_query():
     
 
 
+
 @Accounts.route('/query/<int:query_id>/chat', methods=['GET', 'POST'])
 @login_required
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
+    if selected_query.status == 'New':
+        selected_query.status = 'Open'
+        db.session.commit()
+
+    current_email = current_user.email
     
+    signups_data = Signup.query.filter_by(email=current_email).first()
+
     
     form = QueryReplyForm()  
     replies = QueryReply.query.filter(QueryReply.query_id == query_id).order_by(QueryReply.created_at.asc()).all()
@@ -249,11 +258,19 @@ def chat_query(query_id):
                 reply_text=reply_text
             )
             db.session.add(new_reply)
+
+             # ✅ Set IST time using pytz
+            ist = pytz.timezone('Asia/Kolkata')
+            ist_time = datetime.now(ist)
+            selected_query.created_at = ist_time
+
             db.session.commit()
             
             return redirect(url_for('Accounts.chat_query', query_id=query_id))
 
-    return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form)
+    return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form,signups_data=signups_data)
+
+
 
 
 

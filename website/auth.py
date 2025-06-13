@@ -212,8 +212,7 @@ def select_role():
 
     if form.validate_on_submit():
         selected_role = form.emp_type.data  # Get the selected Emp_type
-        entered_password = form.password.data  # Get the entered password
-        print(selected_role, entered_password)  # Debugging print statement
+        entered_password = form.password.data  # Get the entered password  # Debugging print statement
         user = current_user  # Get the current user
 
         # Debugging logs
@@ -223,8 +222,7 @@ def select_role():
         user_email = user.email  # Assuming the user model has an email attribute
 
         # Query the admin/signup record based on the user's email
-        admin = Signup.query.filter_by(email=user_email).first()
-        print(admin.emp_type)  # Debugging print statement to check if admin is fetched correctly
+        admin = Signup.query.filter_by(email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
 
         if admin:
             # Check if the Emp_type matches the selected role
@@ -252,19 +250,21 @@ def select_role():
 
 
 
-
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
-
+    
     if not employee:
         flash("No employee record found for the current user.")
         return render_template("employee/E_homepage.html")
 
     # Get Signup record from email to get emp_type
     emp = Signup.query.filter_by(email=employee.email).first()
+
+    count_new_queries = Query.query.filter_by(emp_type = emp.emp_type,status = 'New').count()
+    print(f"Successful Got the {count_new_queries}queries")
     
     # Get DOJ from Signup model
     DOJ = emp.doj if emp else None
@@ -308,11 +308,7 @@ def E_homepage():
                            DOJ=DOJ,
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
-                           emp_type=emp_type)  # Pass emp_type to the template
-
-
-
-
+                           emp_type=emp_type,count_new_queries=count_new_queries)  # Pass emp_type to the template
 
 
 @auth.route('/logout')

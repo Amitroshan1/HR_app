@@ -7,7 +7,8 @@
 
     <div class="punch-container">
         {% if employee %}
-        <h2>Welcome, {{ employee.name }}..({{ employee.designation | upper}})</h2>
+        <h2>Welcome, {{ employee.name }}..</h2><h3>({{ employee.designation | upper}})</h3>
+        
         {% else %}
         <p>Please Update Employee Details</p>
         {% endif %}
@@ -24,12 +25,18 @@
 
 
     </div>
+
     {% if show_notification %}
     <div class="notification">
-
-        <a href="{{ url_for('Accounts.view_emp_type_queries') }}" class="btn btn-primary">View Queries</a>
+        <a href="{{ url_for('Accounts.view_emp_type_queries') }}" class="btn">
+            View Queries
+            {% if count_new_queries > 0 %}
+            <span class="badge">{{ count_new_queries }}</span>
+            {% endif %}
+        </a>
     </div>
     {% endif %}
+
 
     {% if employee %}
     <div class="container-image text-center">
@@ -83,9 +90,10 @@
 </div>
 
 <!-- News Feed -->
-<div class="news-feed-container-fixed">
+<div class="news-feed-container-fixed"a >
     <h2 class="centered-heading">News Feed</h2>
-    <marquee behavior="scroll" direction="up" scrollamount="3" onmouseover="this.stop();" onmouseout="this.start();">
+    <marquee class="marquee-scroll" behavior="scroll" direction="up" scrollamount="3" onmouseover="this.stop();"
+        onmouseout="this.start();">
         {% for news_feed in news_feeds %}
         <div class="news-feed-item">
             <a href="{{ url_for('hr.view_news_feed', news_feed_id=news_feed.id) }}">
@@ -95,9 +103,14 @@
             <span class="new-label">New</span>
             {% endif %}
         </div>
+        {% else %}
+        <div class="news-feed-item">
+            <em>No news to display.</em>
+        </div>
         {% endfor %}
     </marquee>
 </div>
+
 
 
 

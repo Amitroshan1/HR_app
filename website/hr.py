@@ -486,3 +486,22 @@ def edit_signup(email):
         return redirect(url_for('hr.update_signup'))
 
     return render_template('HumanResource/edit_signup.html', form=form, email=email)
+
+
+
+
+@hr.route('/delete_signup/<string:email>', methods=['POST'])
+@login_required
+def delete_signup(email):
+    print(f"[DEBUG] Request to delete: {email}")
+    employee = Signup.query.filter_by(email=email).first()
+    if not employee:
+        print("[DEBUG] No employee found.")
+        flash('Employee not found.', 'error')
+        return redirect(url_for('hr.update_signup'))
+
+    db.session.delete(employee)
+    db.session.commit()
+    print("[DEBUG] Deleted successfully.")
+    flash(f'Employee {email} deleted successfully.', 'success')
+    return redirect(url_for('hr.update_signup'))

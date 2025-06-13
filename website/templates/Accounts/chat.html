@@ -1,4 +1,4 @@
-{% extends "employee/E_homeBase.html" %} 
+{% extends "employee/E_homeBase.html" %}
 {% block title %}Chat{% endblock %}
 
 {% block content %}
@@ -13,9 +13,10 @@
 
 <div class="chat-box">
     {% for reply in replies %}
-        <p><strong>{{ reply.admin.first_name }}:</strong> {{ reply.reply_text }} <em>({{ reply.created_at.strftime('%Y-%m-%d %H:%M:%S') }})</em></p>
+    <p><strong>{{ reply.admin.first_name }}:</strong> {{ reply.reply_text }} <em>({{ reply.created_at.strftime('%Y-%m-%d
+            %H:%M:%S') }})</em></p>
     {% else %}
-        <p>No replies yet. Be the first to respond!</p>
+    <p>No replies yet. Be the first to respond!</p>
     {% endfor %}
 </div>
 
@@ -24,11 +25,22 @@
     {{ form.hidden_tag() }}
     <textarea name="reply_text" rows="3" cols="60" placeholder="Enter your reply"></textarea><br>
     <input type="submit" value="Send">
-    
 
-<a href="{{ url_for('Accounts.create_query') }}">
-    <button type="button">Back</button>
-</a>
+
+
+    {% if signups_data.emp_type == 'Human Resource' %}
+    <a href="{{ url_for('Accounts.view_emp_type_queries') }}">
+        <button type="button">Back</button>
+    </a>
+
+    {% elif signups_data.emp_type == 'Accounts' %}
+    <a href="{{ url_for('Accounts.view_emp_type_queries') }}">
+        <button type="button">Back</button>
+    </a>
+    {% else %}
+    <a href="{{ url_for('Accounts.create_query') }}">
+        <button type="button">Back</button>
+    </a>
+    {% endif %}
 </form>
 {% endblock %}
- 

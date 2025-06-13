@@ -1,6 +1,4 @@
-
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
-
 
 
 :root {
@@ -20,6 +18,7 @@
     --z-fixed: 100;
 }
 
+
 *,
 ::before,
 ::after {
@@ -31,7 +30,7 @@ body {
     line-height: 1.6;
     color: #333;
     max-width: 70%;
-    margin-left: 55px;
+    margin: 0 auto;
     padding: 20px;
 }
 
@@ -45,31 +44,46 @@ ul {
     list-style: none;
 }
 
-
 .notification .btn {
     display: inline-block;
     padding: 10px 15px;
-
     background-color: #238af1;
-    /* Primary color */
     color: white;
     text-align: center;
     border-radius: 5px;
     text-decoration: none;
+    position: relative;
+    /* Required for badge positioning */
 }
 
 .notification .btn:hover {
-    background-color: #0056b3; /* Darker shade on hover */
+    background-color: #0056b3;
 }
+
+.notification .badge {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background-color: red;
+    color: white;
+    padding: 4px 7px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 18px;
+    text-align: center;
+}
+
+
 
 table.queries {
     width: 100%;
     border-collapse: collapse;
-    margin-left: 40px;
+    margin: 20px 0;
     font-size: 16px;
     text-align: left;
     table-layout: fixed;
-
 }
 
 table.queries th,
@@ -112,6 +126,7 @@ table.queries td:last-child {
         padding: 10px;
         font-size: 14px;
     }
+
     table.queries thead {
         font-size: 16px;
     }
@@ -120,9 +135,12 @@ table.queries td:last-child {
 /* Text overflow handling */
 table.queries th,
 table.queries td {
-    white-space: nowrap;/* Prevent text wrapping */
-    overflow: hidden;/* Hide overflow */
-    text-overflow: ellipsis;/* Add ellipsis for overflow */
+    white-space: nowrap;
+    /* Prevent text wrapping */
+    overflow: hidden;
+    /* Hide overflow */
+    text-overflow: ellipsis;
+    /* Add ellipsis for overflow */
 }
 
 
@@ -319,12 +337,18 @@ form {
 }
 
 .container-close {
-    max-width: 600px;/* Sets a maximum width for the container */
-    margin: 0 auto;/* Centers the container */
-    padding: 20px;/* Adds padding around the content */
-    background-color: #f9f9f9;/* Light background color */
-    border-radius: 8px;/* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);/* Subtle shadow for depth */
+    max-width: 600px;
+    /* Sets a maximum width for the container */
+    margin: 0 auto;
+    /* Centers the container */
+    padding: 20px;
+    /* Adds padding around the content */
+    background-color: #f9f9f9;
+    /* Light background color */
+    border-radius: 8px;
+    /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow for depth */
 }
 
 .form-control,
@@ -479,14 +503,6 @@ h3 {
     /* Optional: prevents collapse when content is small */
 }
 
-@media (max-width: 480px) {
-    .container {
-        width: 135%;
-        padding: 15px;
-        border-radius: 20px;
-    }
-}
-
 .row {
     display: flex;
     flex-wrap: wrap;
@@ -568,6 +584,11 @@ h3 {
     background-color: #fff;
 }
 
+
+.centered-heading {
+    text-align: center;
+    margin-bottom: 20px;
+}
 
 /* Container Styles */
 .container {
@@ -704,7 +725,7 @@ h3 {
 /* Punch times positioned at top-right and responsive */
 .punch-times {
     position: absolute;
-   
+    top: 85px;
     /* As you requested */
     right: 10px;
     background-color: white;
@@ -740,18 +761,20 @@ h3 {
 /* News Feed  */
 .news-feed-container-fixed {
     position: absolute;
-    top: 46px;
-    right: 30px;
-    width: 330px;  /* Reduced width */
-    height: 600px;
+    top: 41px;
+    right: 70px;
+    width: 180px;
+    height: 720px!important;
+    /* your fixed height */
     background-color: #f9f9f9;
-    border: 3px solid whitesmoke;
+    border: 3px solid #ccc;
     padding: 20px;
-    border-radius: 20px;
+    border-radius: 25px;
     overflow: hidden;
     z-index: 999;
-    font-size: 14px; /* Make text smaller to avoid overflow */
+    font-size: 14px;
 }
+
 
 @media (max-width: 768px) {
     .news-feed-container-fixed {
@@ -785,18 +808,27 @@ h3 {
     display: inline-block;
 }
 
+.marquee-scroll {
+    height: 100%;
+    display: block;
+    overflow: hidden;
+}
 
+.centered-heading {
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 8px;
+}
 
 .centered-heading {
     text-align: center;
     font-size: 18px;
     margin-bottom: 10px;
-    margin-left: 40px;
     padding-top: 24px;
 }
 
 
-.asset-table { 
+.asset-table {
     width: 20%;
     margin: 20px auto;
     /* Center the table */
