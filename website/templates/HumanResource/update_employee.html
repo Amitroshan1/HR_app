@@ -1,0 +1,41 @@
+<h2>Update Employee Details</h2>
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    <div>{{ form.Photo.label }} {{ form.Photo() }}</div>
+    <div>{{ form.name.label }} {{ form.name() }}</div>
+    <div>{{ form.email.label }} {{ form.email() }}</div>
+    <div>{{ form.father_name.label }} {{ form.father_name() }}</div>
+    <div>{{ form.mother_name.label }} {{ form.mother_name() }}</div>
+    <div>{{ form.marital_status.label }} {{ form.marital_status() }}</div>
+    <div>{{ form.spouse_name.label }} {{ form.spouse_name() }}</div>
+    <div>{{ form.dob.label }} {{ form.dob() }}</div>
+    <div>{{ form.designation.label }} {{ form.designation() }}</div>
+    <div>{{ form.emp_id.label }} {{ form.emp_id() }}</div>
+    <div>{{ form.mobile.label }} {{ form.mobile() }}</div>
+    <div>{{ form.gender.label }} {{ form.gender() }}</div>
+    <div>{{ form.emergency_mobile.label }} {{ form.emergency_mobile() }}</div>
+    <div>{{ form.caste.label }} {{ form.caste() }}</div>
+    <div>{{ form.nationality.label }} {{ form.nationality() }}</div>
+    <div>{{ form.language.label }} {{ form.language() }}</div>
+    <div>{{ form.religion.label }} {{ form.religion() }}</div>
+    <div>{{ form.blood_group.label }} {{ form.blood_group() }}</div>
+
+    <!-- Permanent Address -->
+    <div>{{ form.permanent_address_line1.label }} {{ form.permanent_address_line1() }}</div>
+    <div>{{ form.permanent_address_line2.label }} {{ form.permanent_address_line2() }}</div>
+    <div>{{ form.permanent_address_line3.label }} {{ form.permanent_address_line3() }}</div>
+    <div>{{ form.permanent_pincode.label }} {{ form.permanent_pincode() }}</div>
+    <div>{{ form.permanent_district.label }} {{ form.permanent_district() }}</div>
+    <div>{{ form.permanent_state.label }} {{ form.permanent_state() }}</div>
+
+    <!-- Present Address -->
+    <div>{{ form.present_address_line1.label }} {{ form.present_address_line1() }}</div>
+    <div>{{ form.present_address_line2.label }} {{ form.present_address_line2() }}</div>
+    <div>{{ form.present_address_line3.label }} {{ form.present_address_line3() }}</div>
+    <div>{{ form.present_pincode.label }} {{ form.present_pincode() }}</div>
+    <div>{{ form.present_district.label }} {{ form.present_district() }}</div>
+    <div>{{ form.present_state.label }} {{ form.present_state() }}</div>
+
+    <div>{{ form.submit() }}</div>
+</form>
