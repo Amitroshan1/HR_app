@@ -1,0 +1,31 @@
+{% extends "HumanResource/hr_base.html" %}
+{% block content %}
+<h2>Update Employee</h2>
+
+<div class="container">
+    {% with errors = get_flashed_messages(category_filter=["error","success"]) %}
+    {% if errors %}
+    <div class="alert-danger">
+        <ul>
+            {%- for msg in errors %}
+            <a class="close" href="/search">{{ msg }}...X</a>
+            {% endfor -%}
+        </ul>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        {% for field in form if field.name != 'submit' %}
+        <div class="form-group">
+            {{ field.label }}
+            {{ field(class="form-control") }}
+            {% for error in field.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {{ form.submit(class="btn btn-success") }}
+    </form>
+    {% endblock %}
