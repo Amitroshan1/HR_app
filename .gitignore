@@ -1,9 +1,1 @@
 .env
-# Python cache
-__pycache__/
-*.py[cod]
-
-# Flask-Migrate folder
-migrations/
-
-website/static/uploads/

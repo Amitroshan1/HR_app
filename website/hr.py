@@ -22,6 +22,7 @@ from werkzeug.utils import secure_filename
 import os
 from .common import asset_email,update_asset_email
 from .forms.signup_form import SignUpForm
+from .forms.Emp_details import Employee_Details
 
 
 hr=Blueprint('hr',__name__)
