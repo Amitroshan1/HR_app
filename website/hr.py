@@ -192,22 +192,7 @@ def display_details():
     return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime)
 
 
-# Update Employee Data
-@hr.route('/update_employee/<int:emp_id>', methods=['GET', 'POST'])
-@login_required
-def update_empl(emp_id):
-    print(emp_id)
-    employee = Employee.query.get_or_404(emp_id)
-    print(employee)
-    form = Employee_Details(obj=employee)  # prefill form
 
-    if form.validate_on_submit():
-        form.populate_obj(employee)  # update fields
-        db.session.commit()
-        flash('Employee details updated successfully.', 'success')
-        return redirect(url_for('hr.display_details'))
-
-    return render_template('HumanResource/update_employee.html', form=form, employee=employee)
 
 
 # for update leave balance search
