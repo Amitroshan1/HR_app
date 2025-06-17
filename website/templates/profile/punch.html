@@ -7,14 +7,14 @@
 <div class="container">
     <h2 class="centered-heading">Punch In/Out</h2>
     {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
 
-   <form method="POST" action="{{ url_for('profile.punch') }}">
+    <form method="POST" action="{{ url_for('profile.punch') }}">
         {{ form.hidden_tag() }}
 
         <!-- Hidden fields for location -->
@@ -27,10 +27,10 @@
         </div>
 
         <div class="form-group text-center">
-            {{ form.punch_in(class_='btn btn-primary') }} 
+            {{ form.punch_in(class_='btn btn-primary') }}
             <span>{{ punch.punch_in if punch else 'Not Punched In' }}</span>
 
-            {{ form.punch_out(class_='btn btn-secondary') }} 
+            {{ form.punch_out(class_='btn btn-secondary') }}
             <span>{{ punch.punch_out if punch else 'Not Punched Out' }}</span>
         </div>
     </form>
@@ -43,28 +43,29 @@
             <label for="month">Select Month:</label>
             <select name="month" id="month" class="form-control-cal">
                 {% for month in range(1, 13) %}
-                    <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
-                        {{ calendar.month_name[month] }}
-                    </option>
+                <option value="{{ month }}" {% if month==selected_month %}selected{% endif %}>
+                    {{ calendar.month_name[month] }}
+                </option>
                 {% endfor %}
             </select>
-        
+
             <label for="year">Select Year:</label>
             <select name="year" id="year" class="form-control-cal">
                 {% for year in range(today.year - 5, today.year + 6) %}
-                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
-                        {{ year }}
-                    </option>
+                <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>
+                    {{ year }}
+                </option>
                 {% endfor %}
             </select>
-        
-        <button type="submit" class="btn btn-primary">Show Calendar</button>
-        <a href="/apply-leave" class="apply-leave-button">Apply for Leave</a>
-    </div>
+
+            <button type="submit" class="btn btn-primary">Show Calendar</button>
+            <a href="/apply-leave" class="apply-leave-button">Apply for Leave</a>
+        </div>
     </form>
 
     <div class="container-details mt-5">
-        <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}</h3>
+        <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
+        </h3>
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -80,15 +81,16 @@
             <tbody>
                 {% set cal = calendar.Calendar() %}
                 {% for week in cal.monthdatescalendar(selected_year, selected_month) %}
-                    <tr>
-                        {% for day in week %}
-                            {% set punch = punch_data.get(day) %}
-                            <td class="{% if day.month != selected_month %}bg-light{% elif punch %}{% if punch.is_holiday %}bg-white{% elif punch.punch_in and punch.punch_out %}bg-success text-white{% else %}bg-warning{% endif %}{% else %}bg-white{% endif %}">
-                                {{ day.day }} <br>
-                                <small>{{ day.strftime('%A') }}</small>  <!-- Show the actual day name -->
-                            </td>
-                        {% endfor %}
-                    </tr>
+                <tr>
+                    {% for day in week %}
+                    {% set punch = punch_data.get(day) %}
+                    <td
+                        class="{% if day.month != selected_month %}bg-light{% elif punch %}{% if punch.is_holiday %}bg-white{% elif punch.punch_in and punch.punch_out %}bg-success text-white{% else %}bg-warning{% endif %}{% else %}bg-white{% endif %}">
+                        {{ day.day }} <br>
+                        <small>{{ day.strftime('%A') }}</small> <!-- Show the actual day name -->
+                    </td>
+                    {% endfor %}
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -98,15 +100,38 @@
 
 
 <script>
-navigator.geolocation.getCurrentPosition(
-    function(position) {
-        document.getElementById('lat').value = position.coords.latitude;
-        document.getElementById('lon').value = position.coords.longitude;
-    },
-    function(error) {
-        alert("Please enable location access to punch in/out.");
-    }
-);
+    document.addEventListener('DOMContentLoaded', function () {
+        const latInput = document.getElementById('lat');
+        const lonInput = document.getElementById('lon');
+        const form = document.querySelector('form');
+
+        let locationReady = false;
+
+        // Try to get the user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    latInput.value = position.coords.latitude;
+                    lonInput.value = position.coords.longitude;
+                    locationReady = true;
+                },
+                function (error) {
+                    alert("Please enable location access to punch in/out.");
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+
+        // Prevent form submission until location is ready
+        form.addEventListener('submit', function (e) {
+            if (!locationReady && !document.getElementById('wfh').checked) {
+                e.preventDefault();
+                alert("Getting your location... Please wait a moment and try again.");
+            }
+        });
+    });
 </script>
+
 
 {% endblock %}

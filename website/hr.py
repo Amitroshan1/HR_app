@@ -1,5 +1,7 @@
 from flask import render_template,flash, redirect,Blueprint, session,url_for, current_app,send_from_directory,request
 from flask_login import login_required
+
+from website.forms.Emp_details import Employee_Details
 from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm
 from .models.Admin_models import Admin
 from . import db
@@ -20,6 +22,7 @@ from werkzeug.utils import secure_filename
 import os
 from .common import asset_email,update_asset_email
 from .forms.signup_form import SignUpForm
+from .forms.Emp_details import Employee_Details
 
 
 hr=Blueprint('hr',__name__)
@@ -190,6 +193,28 @@ def display_details():
 
     return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime)
 
+
+
+@hr.route('/update-employee/<emp_id>', methods=['GET', 'POST'])
+@login_required
+def update_employee(emp_id):
+    emp = Employee.query.filter_by(emp_id=emp_id).first_or_404()
+    form = Employee_Details(obj=emp)
+
+    if form.validate_on_submit():
+        form.populate_obj(emp)
+
+        if form.Photo.data:
+            filename = secure_filename(form.Photo.data.filename)
+            photo_path = os.path.join(current_app.static_folder, 'uploads', filename)
+            form.Photo.data.save(photo_path)
+            emp.photo_filename = filename
+
+        db.session.commit()
+        flash("Employee details updated.", "success")
+        return redirect(url_for('hr.display_details'))
+
+    return render_template('HumanResource/update_employee.html', form=form, emp=emp)
 
 # for update leave balance search
 @hr.route('/employee_list', methods=['GET', 'POST'])
