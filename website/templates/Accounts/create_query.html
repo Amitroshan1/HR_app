@@ -1,74 +1,81 @@
-{% extends "employee/E_homeBase.html" %} 
+{% extends "employee/E_homeBase.html" %}
 {% block title %}Create Query{% endblock %}
 {% block content %}
 
 <div class="container">
-<h2 class="centered-heading">Create Query</h2>
+    <h2 class="centered-heading">Create Query</h2>
     {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+    {% if messages %}
+    <ul>
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     {% endwith %}
 
-    
-    <form method="POST">
+
+    <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-        
+
         <label class="centered-heading">Select Department</label><br>
         {% for choice in form.emp_type.choices %}
-            <div>
-                <input type="checkbox" name="{{ form.emp_type.name }}" value="{{ choice[0] }}" id="{{ choice[0] }}">
-                <label for="{{ choice[0] }}">{{ choice[1] }}</label>
-            </div>
+        <div>
+            <input type="checkbox" name="{{ form.emp_type.name }}" value="{{ choice[0] }}" id="{{ choice[0] }}">
+            <label for="{{ choice[0] }}">{{ choice[1] }}</label>
+        </div>
         {% endfor %}
-        
+
         <br>
         <label>{{ form.title.label }}</label><br>
         {{ form.title(size=50) }}<br><br>
 
         <label>{{ form.query_text.label }}</label><br>
         {{ form.query_text(cols=80, rows=10) }}<br><br>
+
+        <div class="form-group">
+        {{ form.photo.label(class="form-label") }}
+        {{ form.photo(class="form-control") }}
+    </div><br>
+
         {{ form.submit() }}
     </form>
-</div>
-    <h2 class="centered-heading">Your Queries</h2>
-    <table class="queries">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Department</th>
-                <th>Created At</th>
-                <th>Status</th>
-                <th>Action</th>
-                <th>Satisfied then</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for query in queries %}
-                <tr>
-                    <td>{{ query.title }}</td>
-                    <td>{{ query.emp_type }}</td>
-                    <td>{{ query.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                    <td>{{ query.status }}</td>
-                    <td>
-                        <a href="{{ url_for('Accounts.chat_query', query_id=query.id) }}">Chat</a>
-                    </td>
 
-                    <td>
-                        <a href="{{ url_for('Accounts.close_query', query_id=query.id) }}">Close</a>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="5">No queries found.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
+</div>
+<h2 class="centered-heading">Your Queries</h2>
+<table class="queries">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Department</th>
+            <th>Created At</th>
+            <th>Status</th>
+            <th>Action</th>
+            <th>Satisfied then</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for query in queries %}
+        <tr>
+            <td>{{ query.title }}</td>
+            <td>{{ query.emp_type }}</td>
+            <td>{{ query.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ query.status }}</td>
+            <td>
+                <a href="{{ url_for('Accounts.chat_query', query_id=query.id) }}">Chat</a>
+            </td>
+
+            <td>
+                <a href="{{ url_for('Accounts.close_query', query_id=query.id) }}">Close</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5">No queries found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 
 {% endblock %}
