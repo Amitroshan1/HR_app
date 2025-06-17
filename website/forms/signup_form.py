@@ -26,7 +26,7 @@ class SignUpForm(FlaskForm):
 
     password = PasswordField(
         'Password',
-        validators=[Optional(), Length(min=8)],
+        validators=[Optional()],
         render_kw={"placeholder": "Enter your Password"}
     )
 
@@ -122,4 +122,4 @@ class SelectRoleForm(FlaskForm):
                               validators=[DataRequired()])
     
     password = PasswordField('Password', 
-                             validators=[DataRequired(), Length(min=8, message="Password must be at least 8 characters long")])
+                             validators=[DataRequired()])

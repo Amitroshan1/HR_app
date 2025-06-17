@@ -36,15 +36,15 @@ def emp_profile():
 @login_required
 def empl_det():
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
-    form = Employee_Details(obj=employee) 
-    
+    form = Employee_Details(obj=employee)
+
     if form.validate_on_submit():
         # Check if a file is uploaded
         if form.Photo.data:
             # Get the file size
             file = form.Photo.data
             file_size = file.content_length  # Get the file size in bytes
-            
+
             # Check if file size exceeds 100 KB (102400 bytes)
             if file_size > 102400:  # 100 KB
                 flash('File size exceeds 100 KB. Please upload a smaller file.', 'warning')
@@ -59,7 +59,7 @@ def empl_det():
                     flash('Employee details updated successfully!', 'success')
                 else:
                     new_employee = Employee(
-                        admin_id=current_user.id, 
+                        admin_id=current_user.id,
                         photo_filename=filename,
                         name=form.name.data,
                         email=form.email.data,
@@ -97,14 +97,14 @@ def empl_det():
         else:
             # Handle case where no file was uploaded
             flash('No photo was uploaded. Please upload a photo.', 'warning')
-        
+
         return redirect(url_for('profile.empl_det'))
-    
+
     else:
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", category='error')
-    
+
     return render_template('profile/emp_det.html', form=form)
 
 

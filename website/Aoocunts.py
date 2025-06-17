@@ -14,7 +14,7 @@ from .models.signup import Signup
 from .common import verify_oauth2_and_send_email,Company_verify_oauth2_and_send_email
 import pytz
 from datetime import datetime
-
+from flask import current_app
 
 
 Accounts = Blueprint('Accounts', __name__)
@@ -204,12 +204,29 @@ def create_query():
     form = QueryForm()
 
     if form.validate_on_submit():
+        if form.photo.data:
+            file = form.photo.data
+            file_size = request.content_length  # 🔧 safer than file.content_length
+
+            # Check if file size exceeds 100 KB (102400 bytes)
+            if file_size and file_size > 102400:
+                flash('File size exceeds 100 KB. Please upload a smaller file.', 'warning')
+                return redirect(request.url)  # stop the flow if too large
+            else:
+                filename = secure_filename(file.filename)
+                print("Success full get file name:", filename)
+                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                photo_filename = filename  # ✅ Save only filename
+
+
+
         # Create a new query and save it to the database
         new_query = Query(
             admin_id=current_user.id,
             emp_type=', '.join(form.emp_type.data),
             title=form.title.data,
-            query_text=form.query_text.data
+            query_text=form.query_text.data,
+            photo_filename = photo_filename
         )
         db.session.add(new_query)
         db.session.commit()
@@ -235,6 +252,7 @@ def create_query():
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
+    print(f" Success full got the photo name : {selected_query.photo_filename}")
     if selected_query.status == 'New':
         selected_query.status = 'Open'
         db.session.commit()
@@ -245,6 +263,7 @@ def chat_query(query_id):
 
     
     form = QueryReplyForm()  
+    form1 = QueryForm()
     replies = QueryReply.query.filter(QueryReply.query_id == query_id).order_by(QueryReply.created_at.asc()).all()
 
  
@@ -268,7 +287,7 @@ def chat_query(query_id):
             
             return redirect(url_for('Accounts.chat_query', query_id=query_id))
 
-    return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form,signups_data=signups_data)
+    return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form,form1=form1,signups_data=signups_data)
 
 
 
