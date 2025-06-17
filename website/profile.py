@@ -394,52 +394,6 @@ def punch():
 
 
 
-# @profile.route('/punch', methods=['GET', 'POST'])
-# @login_required
-# def punch():
-#     form = PunchForm()
-
-#     today = date.today()
-#     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
-#     selected_month = request.args.get('month', today.month, type=int)
-#     selected_year = request.args.get('year', today.year, type=int)
-
-   
-#     calendar.setfirstweekday(calendar.MONDAY)
-
-#     first_day = date(selected_year, selected_month, 1)
-#     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
-
-#     punches = Punch.query.filter(
-#         Punch.admin_id == current_user.id,
-#         Punch.punch_date.between(first_day, last_day)
-#     ).all()
-
-#     punch_data = {p.punch_date: p for p in punches}
-
-#     if form.validate_on_submit():
-#         if form.punch_in.data:
-#             if punch and punch.punch_in:
-#                 flash('Already punched in today!', 'danger')
-#             else:
-#                 if not punch:
-#                     punch = Punch(admin_id=current_user.id, punch_date=today)
-#                 punch.punch_in = datetime.now().time()
-#                 db.session.add(punch)
-#                 db.session.commit()
-#                 flash('Punched in successfully!', 'warning')
-
-#         elif form.punch_out.data:
-#             if not punch or not punch.punch_in:
-#                 flash('You need to punch in first!', 'danger')
-#             else:
-#                 punch.punch_out = datetime.now().time()
-#                 db.session.commit()
-#                 flash('Punch out time updated successfully!', 'success')
-
-#     return render_template('profile/punch.html', form=form, punch=punch, punch_data=punch_data, today=today, selected_month=selected_month, selected_year=selected_year, calendar=calendar)
-
-
 @profile.route('/manage-locations', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
