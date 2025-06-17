@@ -263,7 +263,7 @@ def E_homepage():
     # Get Signup record from email to get emp_type
     emp = Signup.query.filter_by(email=employee.email).first()
     if emp is None:
-        flash("Your employee profile could not be found.", "danger")
+        flash("offical mail is not same in employee details,Plz contact HR.", "danger")
         return redirect(url_for('auth.logout')) 
 
     count_new_queries = Query.query.filter_by(emp_type = emp.emp_type,status = 'New').count()
