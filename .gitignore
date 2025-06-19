@@ -1,6 +1,6 @@
 .env
 # Python cache
-__pycache_/
+__pycache__/
 *.py[cod]
 
 # Flask-Migrate folder
