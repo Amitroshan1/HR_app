@@ -9,7 +9,7 @@
     <p><strong>Query Title: {{ query.title }}</strong></p>
     <p><strong>Query:</strong> {{ query.query_text }}</p>
     <tr>
-        <th>Photo</th>
+        <th></th>
         <td><img src="{{ url_for('static', filename='uploads/' ~ query.photo_filename) }}" alt="Employee Photo"
                 width="50"></td>
     </tr>
