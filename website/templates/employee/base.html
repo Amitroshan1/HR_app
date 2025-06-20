@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,34 +20,42 @@
             <ul>
                 <li><a href="/">Home</a></li>
                 <li><a href="https://www.saffotech.com/about">About Us</a></li>
-                
+
             </ul>
         </nav>
     </header>
     <div class="container" id="home">
         <div class="login-left">
-          {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
         </div>
         <div class="login-right">
             <img src="{{ url_for('static', filename='photo/Data Arranging_Two Color.svg') }}" alt="">
         </div>
     </div>
-   
+
     <script>
-        let eyeicon = document.getElementById("eyeicon");  
-        let password = document.getElementById("password");
-        
-        eyeicon.onclick = function() {
-            if (password.type === "password"){
-                password.type = "text"; 
-                eyeicon.src = "{{ url_for('static', filename='photo/eye-open.png') }}";
+        document.addEventListener('DOMContentLoaded', function () {
+            // Start fetching location as soon as user loads app
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        localStorage.setItem('lat', position.coords.latitude);
+                        localStorage.setItem('lon', position.coords.longitude);
+                        localStorage.setItem('location_ready', 'true');
+                    },
+                    function (error) {
+                        alert("Please enable location access for attendance.");
+                        localStorage.setItem('location_ready', 'false');
+                    }
+                );
             } else {
-                password.type = "password";
-                eyeicon.src = "{{ url_for('static', filename='photo/eye-close.png') }}";
+                alert("Geolocation not supported by your browser.");
+                localStorage.setItem('location_ready', 'false');
             }
-        }
+        });
     </script>
-    
+
+
     <script src="{{ url_for('static', filename='js/javascript.js') }}"></script>
 </body>
 
