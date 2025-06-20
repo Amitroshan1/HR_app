@@ -98,40 +98,68 @@
 </div>
 
 
-
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const latInput = document.getElementById('lat');
-        const lonInput = document.getElementById('lon');
-        const form = document.querySelector('form');
+document.addEventListener('DOMContentLoaded', function () {
+    const latInput = document.getElementById('lat');
+    const lonInput = document.getElementById('lon');
+    const form = document.querySelector('form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const wfhCheckbox = document.getElementById('wfh');
 
-        let locationReady = false;
+    let locationFetched = false;
 
-        // Try to get the user's location
+    // Disable submit initially
+    submitBtn.disabled = true;
+
+    function fetchLocation(retry = false) {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function (position) {
                     latInput.value = position.coords.latitude;
                     lonInput.value = position.coords.longitude;
-                    locationReady = true;
+                    locationFetched = true;
+                    submitBtn.disabled = false;
                 },
                 function (error) {
-                    alert("Please enable location access to punch in/out.");
+                    if (retry) {
+                        alert("Retrying to fetch location... Please ensure location is enabled.");
+                    } else {
+                        alert("Failed to get location. Please enable location access to punch in/out.");
+                    }
+
+                    // Allow submit if WFH is checked
+                    if (wfhCheckbox.checked) {
+                        submitBtn.disabled = false;
+                    }
                 }
             );
         } else {
             alert("Geolocation is not supported by your browser.");
         }
+    }
 
-        // Prevent form submission until location is ready
-        form.addEventListener('submit', function (e) {
-            if (!locationReady && !document.getElementById('wfh').checked) {
-                e.preventDefault();
-                alert("Getting your location... Please wait a moment and try again.");
-            }
-        });
+    // Initial location fetch
+    fetchLocation();
+
+    // Retry on submit if location not ready
+    form.addEventListener('submit', function (e) {
+        if (!locationFetched && !wfhCheckbox.checked) {
+            e.preventDefault();
+            fetchLocation(true); // retry with alert
+        }
     });
+
+    // Allow submission if WFH checked
+    wfhCheckbox.addEventListener('change', function () {
+        if (wfhCheckbox.checked) {
+            submitBtn.disabled = false;
+        } else if (!locationFetched) {
+            submitBtn.disabled = true;
+        }
+    });
+});
 </script>
+
 
 
 {% endblock %}
