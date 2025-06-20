@@ -21,6 +21,10 @@ from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location
+from sqlalchemy.exc import SQLAlchemyError
+
+
+
 
 profile=Blueprint('profile',__name__)
 
@@ -91,9 +95,17 @@ def empl_det():
                         present_district=form.present_district.data,
                         present_state=form.present_state.data
                     )
-                    db.session.add(new_employee)
-                    db.session.commit()
-                    flash('Employee details saved successfully!', 'success')
+                    
+
+                    try:
+                        db.session.add(new_employee)
+                        db.session.commit()
+                        flash('Employee details saved successfully!', 'success')
+                    except SQLAlchemyError as e:
+                        db.session.rollback()
+                        flash('An error occurred while saving employee details.', 'danger')
+                        print(f"Database Error: {e}")
+
         else:
             # Handle case where no file was uploaded
             flash('No photo was uploaded. Please upload a photo.', 'warning')
@@ -147,8 +159,15 @@ def family_details():
             
         )
         
-        db.session.add(new_family_member)
-        db.session.commit()
+        
+        try:
+            db.session.add(new_family_member)
+            db.session.commit()
+            flash('Employee details saved successfully!', 'success')
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('An error occurred while saving employee details.', 'danger')
+            print(f"Database Error: {e}")
         
         flash('Family member details saved successfully!', 'success')
         return redirect(url_for('profile.fam_det'))
@@ -179,9 +198,14 @@ def previous_company():
             pf_num=form.pf_num.data,
             address=form.address.data
         )
-        db.session.add(new_company)
-        db.session.commit()
-        flash('Previous company details saved successfully!', 'success')
+        try:
+            db.session.add(new_company)
+            db.session.commit()
+            flash('Previous company details saved successfully!', 'success')
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('An error occurred while saving previous company details.', 'danger')
+            
         return redirect(url_for('profile.previous_company'))
 
     previous_companies = PreviousCompany.query.filter_by(admin_id=current_user.id).all()
@@ -213,8 +237,13 @@ def education():
             marks=form.marks.data,
             doc_file=filename
         )
-        db.session.add(new_education)
-        db.session.commit()
+        try:
+            db.session.add(new_education)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('An error occurred while saving education details.', 'danger')
+
         flash('Education details added successfully!', 'success')
         return redirect(url_for('profile.education'))
 
@@ -231,9 +260,12 @@ def delete_education(education_id):
     if education.admin_id != current_user.id:
         flash('You do not have permission to delete this item.', 'danger')
         return redirect(url_for('profile.education'))
-    
-    db.session.delete(education)
-    db.session.commit()
+    try:
+        db.session.delete(education)
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash('An error occurred while deleting education details.', 'danger')
     flash('Education detail deleted successfully!', 'success')
     return redirect(url_for('profile.education'))
 
@@ -261,8 +293,14 @@ def upload_docs():
             issue_date=form.issue_date.data,
             doc_file=filename
         )
-        db.session.add(new_upload_doc)
-        db.session.commit()
+        try:
+            db.session.add(new_upload_doc)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('An error occurred while uploading the document.', 'danger')
+            
+            return redirect(url_for('profile.upload_docs'))
         flash('Document uploaded successfully!', 'success')
         return redirect(url_for('profile.upload_docs'))
 
@@ -285,9 +323,13 @@ def delete_document(doc_id):
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.doc_file)
         if os.path.exists(file_path):
             os.remove(file_path)
-    
-    db.session.delete(document)
-    db.session.commit()
+    try:
+        db.session.delete(document)
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the document.', 'danger')
+        return redirect(url_for('profile.upload_docs'))
     flash('Document deleted successfully!', 'success')
     return redirect(url_for('profile.upload_docs'))
 
@@ -367,10 +409,14 @@ def punch():
                 punch.is_wfh = is_wfh
                 punch.lat = lat
                 punch.lon = lon
-
-                db.session.add(punch)
-                db.session.commit()
-                flash('Punched in successfully!', 'warning')
+                try:
+                    db.session.add(punch)
+                    db.session.commit()
+                    flash('Punched in successfully!', 'warning')
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    flash('An error occurred while punching in.', 'danger')
+                    return redirect(url_for('profile.punch'))
 
         elif form.punch_out.data:
             if not punch or not punch.punch_in:
@@ -407,8 +453,14 @@ def manage_locations():
             longitude=form.longitude.data,
             radius=form.radius.data
         )
-        db.session.add(new_loc)
-        db.session.commit()
+        try:
+            db.session.add(new_loc)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('An error occurred while adding the location.', 'danger')
+            print(f"Database Error: {e}")
+            return redirect(url_for('profile.manage_locations'))
         flash('Location added successfully!', 'success')
         return redirect(url_for('profile.manage_locations'))
 
@@ -482,8 +534,14 @@ def apply_leave():
             end_date=end_date,
             status='Pending'
         )
-        db.session.add(leave_application)
-        db.session.commit()
+        try:
+            db.session.add(leave_application)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('An error occurred while submitting the leave application.', 'danger')
+            
+            return redirect(url_for('profile.apply_leave'))
 
         # Email notification
         manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle, user_type=employee.emp_type).first()
@@ -518,7 +576,7 @@ def apply_leave():
         flash('Your leave application has been submitted.', 'success')
         return redirect(url_for('profile.apply_leave'))
 
-    user_leaves = LeaveApplication.query.filter_by(admin_id=employee.id).all()
+    user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
     return render_template('profile/apply_leave.html', form=form, leave_balance=leave_balance, user_leaves=user_leaves)
 
 
@@ -532,7 +590,13 @@ def approve_leave(leave_id):
 
     
     leave_application.status = 'Approved'
-    db.session.commit()
+    try:
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash('An error occurred while approving the leave application.', 'danger')
+        print(f"Database Error: {e}")
+        return redirect(url_for('profile.apply_leave'))
 
     
     return """
