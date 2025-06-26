@@ -39,7 +39,7 @@ Session = Session()
 
 
 class Config:
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=50)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=10)
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
@@ -283,8 +283,22 @@ def create_app():
     login_manager.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
+
+    
+    # ⬇️ Add this block immediately after
+    from flask_wtf.csrf import CSRFError
+    from flask import redirect, url_for, flash, session
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        session.clear()
+        flash('Your session has expired. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))  # make sure this route exists
+
     scheduler.init_app(app)
     Session.init_app(app)
+
+
 
 
     # Import models before initializing migrate

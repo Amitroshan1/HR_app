@@ -198,7 +198,7 @@ a {
     padding: .75rem;
     color: var(--white-color);
     border-radius: .5rem;
-    margin-bottom: 1rem;
+    margin-bottom: .4rem;
     transition: .3s;
     cursor: pointer;
 }

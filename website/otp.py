@@ -23,11 +23,11 @@ def send_otp_email(recipient_email, otp):
         f"It is valid for 10 minutes only.\n\n"
         f"Please do not share this code with anyone."
     )
-    print(f"Successfull got otp {otp}")
+    
 
     # Get an Admin user with valid refresh token
     admin_sender = "nphatak@saffotech.com"
-    print(f"Successfull got email {admin_sender}")
+    
 
     return verify_oauth2_and_send_email(admin_sender, subject, body, recipient_email)
 #   verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails=None)
@@ -48,6 +48,8 @@ def forgot_password_reset():
         flash("otp has been sent to your email.","success")
         return redirect(url_for('forgot_password.verify_otp',email=email))
     return render_template('OTP/request.html',form=form)
+
+
 
 @forgot_password.route('/verify_otp/<email>',methods=['GET','POST'])
 def verify_otp(email):

@@ -41,6 +41,7 @@ def emp_profile():
 def empl_det():
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
     form = Employee_Details(obj=employee)
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
 
     if form.validate_on_submit():
         # Check if a file is uploaded
@@ -117,7 +118,7 @@ def empl_det():
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", category='error')
 
-    return render_template('profile/emp_det.html', form=form)
+    return render_template('profile/emp_det.html', form=form,emp_type=emp_type)
 
 
 
@@ -138,6 +139,7 @@ def fam_det():
 def family_details():
     form = Family_details()
     
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
     if form.validate_on_submit():
         photo_filename = None
         if form.Photo.data:
@@ -156,6 +158,7 @@ def family_details():
             income=form.Income.data,
             address=form.Address.data,
             remarks  =form.Remarks.data,
+            emp_type=emp_type
             
         )
         
@@ -182,6 +185,7 @@ def family_details():
 @login_required
 def previous_company():
     form = Previous_company()
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
     if form.validate_on_submit():
         new_company = PreviousCompany(
             admin_id=current_user.id,
@@ -209,7 +213,7 @@ def previous_company():
         return redirect(url_for('profile.previous_company'))
 
     previous_companies = PreviousCompany.query.filter_by(admin_id=current_user.id).all()
-    return render_template('profile/previous_company.html', form=form, previous_companies=previous_companies)
+    return render_template('profile/previous_company.html', form=form, previous_companies=previous_companies,emp_type=emp_type)
 
 
 
@@ -219,7 +223,7 @@ def previous_company():
 def education():
     form = EducationForm()
     education = Education.query.filter_by(admin_id=current_user.id).all()
-
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
     if form.validate_on_submit():
         if form.doc_file.data:
             filename = secure_filename(form.doc_file.data.filename)
@@ -247,7 +251,7 @@ def education():
         flash('Education details added successfully!', 'success')
         return redirect(url_for('profile.education'))
 
-    return render_template('profile/education.html', form=form, education=education)
+    return render_template('profile/education.html', form=form, education=education,emp_type=emp_type)
 
 
 
@@ -279,6 +283,8 @@ def upload_docs():
     form = UploadDocForm()
     upload_doc = UploadDoc.query.filter_by(admin_id=current_user.id).all()
 
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
+
     if form.validate_on_submit():
         if form.doc_file.data:
             filename = secure_filename(form.doc_file.data.filename)
@@ -304,7 +310,7 @@ def upload_docs():
         flash('Document uploaded successfully!', 'success')
         return redirect(url_for('profile.upload_docs'))
 
-    return render_template('profile/upload_doc.html', form=form, upload_doc=upload_doc)
+    return render_template('profile/upload_doc.html', form=form, upload_doc=upload_doc, emp_type=emp_type)
 
 
 
@@ -360,6 +366,9 @@ def is_near_saved_location(user_lat, user_lon, locations):
 def punch():
     form = PunchForm()
     today = date.today()
+
+
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
 
     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
     selected_month = request.args.get('month', today.month, type=int)
@@ -434,7 +443,8 @@ def punch():
         today=today,
         selected_month=selected_month,
         selected_year=selected_year,
-        calendar=calendar
+        calendar=calendar,
+        emp_type=emp_type
     )
 
 

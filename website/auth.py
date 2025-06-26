@@ -330,14 +330,15 @@ def logout():
 def my_assets():
     
     emp_id = current_user.id
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
     
    
     assets = Asset.query.filter_by(admin_id=emp_id).all()
     
     if not assets:
         flash('No assets found for your account.', 'info')
-    
-    return render_template('employee/my_assets.html', assets=assets)
+
+    return render_template('employee/my_assets.html', assets=assets, emp_type=emp_type)
 
 
 
@@ -349,7 +350,7 @@ def change_password():
     if form.validate_on_submit():
         original_password = form.original_password.data
         new_password = form.new_password.data
-        
+        emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
         admin = Signup.query.filter_by(email=current_user.email).first()
         # Verify original password
         if current_user.email == admin.email:
@@ -365,4 +366,4 @@ def change_password():
         flash('Your password has been updated successfully', 'success')
         return redirect(url_for('auth.change_password'))  # Redirect to profile or wherever you like
 
-    return render_template('profile/change_password.html',form=form)
+    return render_template('profile/change_password.html',form=form,emp_type=emp_type)  # Pass emp_type to
