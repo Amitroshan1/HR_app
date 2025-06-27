@@ -1,6 +1,6 @@
 from flask import render_template,flash, redirect,Blueprint, session,url_for, current_app,send_from_directory,request
 from flask_login import login_required
-
+from datetime import datetime, timedelta
 from website.forms.Emp_details import Employee_Details
 from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm
 from .models.Admin_models import Admin
@@ -23,7 +23,11 @@ import os
 from .common import asset_email,update_asset_email
 from .forms.signup_form import SignUpForm
 from .forms.Emp_details import Employee_Details
-
+import json
+import pandas as pd
+from flask import send_file,session
+import io
+from openpyxl.styles import Font
 
 hr=Blueprint('hr',__name__)
 
@@ -155,43 +159,156 @@ def display_details():
     elif detail_type == 'Previous_company':
         details = PreviousCompany.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Employee Details':
-        
+
         details = Employee.query.filter_by(admin_id=user_id).all()
-        
+
     elif detail_type == 'Education':
         details = Education.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Attendance':
         num_days = calendar.monthrange(year, month)[1]
+
+        # Get all punches for the selected month
+        punches = Punch.query.filter(
+            Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
+            Punch.admin_id == user_id
+        ).all()
+
+        # Get all approved leaves overlapping with this month
+        leaves = LeaveApplication.query.filter(
+            LeaveApplication.admin_id == user_id,
+            LeaveApplication.status == 'Approved',
+            LeaveApplication.start_date <= f'{year}-{month:02d}-{num_days}',
+            LeaveApplication.end_date >= f'{year}-{month:02d}-01'
+        ).all()
+
+        # Prepare attendance structure with a flag for leave
         details = [
             {
                 'punch_date': f'{year}-{month:02d}-{day:02d}',
                 'punch_in': '',
                 'punch_out': '',
-                'is_wfh': ''  # Default value
+                'is_wfh': '',
+                'on_leave': False
             } for day in range(1, num_days + 1)
         ]
-
-        punches = Punch.query.filter(
-            Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}')
-        ).filter_by(admin_id=user_id).all()
 
         for punch in punches:
             for detail in details:
                 if detail['punch_date'] == punch.punch_date.strftime('%Y-%m-%d'):
-                    detail['punch_in'] = punch.punch_in
-                    detail['punch_out'] = punch.punch_out
+                    detail['punch_in'] = punch.punch_in.strftime('%H:%M:%S') if punch.punch_in else ''
+                    detail['punch_out'] = punch.punch_out.strftime('%H:%M:%S') if punch.punch_out else ''
                     detail['is_wfh'] = 'Yes' if punch.is_wfh else ''
+
+        # Mark leave days in details
+        for leave in leaves:
+            current_date = leave.start_date
+            while current_date <= leave.end_date:
+                date_str = current_date.strftime('%Y-%m-%d')
+                for detail in details:
+                    if detail['punch_date'] == date_str:
+                        detail['on_leave'] = True
+                current_date += timedelta(days=1)
+
+            # Calculate the data of month
+        calcu_data = 0
+        calcu_hdata = 0
+        for pdata in punches:
+            if pdata.punch_date:
+                if pdata.punch_in and pdata.punch_out:
+                    calcu_data += 1
+                elif pdata.punch_in and not pdata.punch_out:
+                    calcu_data += 0.5
+            if pdata.is_wfh:
+                calcu_hdata += 1
+        dict_data = {
+            "attendance": calcu_data,
+            "work from home": calcu_hdata
+        }
+        session["attendance_details"] = json.dumps(details)
+        session["attendance_summary"] = json.dumps(dict_data)
+        session['selected_month'] = month
+        session['selected_year'] = year
+
 
     elif detail_type == 'Document':
         details = UploadDoc.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Leave Details':
-        details = LeaveApplication.query.filter_by(admin_id=user_id).all()   
-    
+        details = LeaveApplication.query.filter_by(admin_id=user_id).all()
+
 
     if admin is None:
         return redirect(url_for('hr.view_details'))
 
-    return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime)
+    return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime,dict_data=dict_data)
+
+
+@hr.route('/download-attendance-excel')
+def download_attendance_excel():
+    details_json = session.get('attendance_details')
+    summary_json = session.get('attendance_summary')
+    user_id = session.get('viewing_user_id')
+    month = session.get('selected_month')
+    year = session.get('selected_year')
+
+    if not details_json:
+        return "No attendance data to export.",400
+    details = json.loads(details_json)
+    summary = json.loads(summary_json)
+
+    for d in details:
+        d['on_leave'] = 'Yes' if d['on_leave'] else ''
+        admin_data = Admin.query.filter_by(id=user_id).first()
+        signups_data = Signup.query.filter_by(email=admin_data.email).first()
+        employee_name = signups_data.first_name
+        circle = signups_data.circle
+        emp_type = signups_data.emp_type
+        # month_str = f"{month_name[month]} {year}"
+
+
+    df = pd.DataFrame(details)
+    df.rename(columns={
+        'punch_date': 'Date',
+        'punch_in': 'Punch In',
+        'punch_out': 'Punch Out',
+        'is_wfh': 'Work From Home',
+        'on_leave': 'On Leave'
+    }, inplace=True)
+    # Add summary row
+    df.loc[len(df.index)] = [
+        '', f'Total = {summary["attendance"]}', '', f'Total = {summary["work from home"]}', ''
+    ]
+
+    # Write to Excel
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        start_row = 5  # Leave space for info rows (row 1–4)
+        df.to_excel(writer, index=False, sheet_name='Attendance', startrow=start_row)
+
+        worksheet = writer.sheets['Attendance']
+        bold_font = Font(bold=True)
+
+        # Info headers with bold labels
+        worksheet.cell(row=1, column=1, value='Employee Name: ').font = bold_font
+        worksheet.cell(row=1, column=2, value=employee_name)
+
+        worksheet.cell(row=2, column=1, value='Employee Type: ').font = bold_font
+        worksheet.cell(row=2, column=2, value=emp_type)
+
+        worksheet.cell(row=3, column=1, value='Circle: ').font = bold_font
+        worksheet.cell(row=3, column=2, value=circle)
+        #
+        # worksheet.cell(row=4, column=1, value='Month')
+        # worksheet.cell(row=4, column=2, value=month_str)
+
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='attendance_report.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
 
 
 

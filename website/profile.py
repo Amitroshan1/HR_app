@@ -21,6 +21,8 @@ from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location
+from .models.attendance import LeaveApplication
+from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
 
@@ -310,6 +312,22 @@ def is_near_saved_location(user_lat, user_lon, locations):
             return True
     return False
 
+def check_leave():
+    today = date.today()
+    leave_data = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == current_user.id,
+        LeaveApplication.start_date <= today,
+        LeaveApplication.end_date >= today
+    ).all()
+
+    for leave in leave_data:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if current_date == today:
+                return True  # User is on leave
+            current_date += timedelta(days=1)
+
+    return False  # Not on leave
 
 
 
@@ -338,10 +356,10 @@ def punch():
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
-        print(lat, lon, is_wfh)
+        # print(lat, lon, is_wfh)
         # Load all saved locations from the DB
         locations = Location.query.all()
-        print(locations)
+        # print(locations)
         # Check if the user is near any saved location
         is_near_location = False
         if lat is not None and lon is not None:
@@ -352,7 +370,12 @@ def punch():
             return redirect(url_for('profile.punch'))
 
         if form.punch_in.data:
-            if punch and punch.punch_in:
+            if check_leave():
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+                return redirect(request.url)  # Stop further execution
+            # if check_leave()
+            # Step 2: Handle Punch logic
+            elif punch and punch.punch_in:
                 flash('Already punched in today!', 'danger')
             else:
                 if not punch:
@@ -373,6 +396,10 @@ def punch():
                 flash('Punched in successfully!', 'warning')
 
         elif form.punch_out.data:
+            if check_leave():
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+                return redirect(request.url)
+
             if not punch or not punch.punch_in:
                 flash('You need to punch in first!', 'danger')
             else:
@@ -518,7 +545,8 @@ def apply_leave():
         flash('Your leave application has been submitted.', 'success')
         return redirect(url_for('profile.apply_leave'))
 
-    user_leaves = LeaveApplication.query.filter_by(admin_id=employee.id).all()
+    user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
+    print(f"succefull got the reason: {user_leaves}")
     return render_template('profile/apply_leave.html', form=form, leave_balance=leave_balance, user_leaves=user_leaves)
 
 

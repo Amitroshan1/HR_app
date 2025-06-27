@@ -16,7 +16,12 @@
     {% endwith %}
 
     <h2 class="centered-heading">Circle: {{ circle | upper }} and Employee Type: {{ emp_type | upper }}</h2>
+
     {% if admins %}
+        <div class="d-flex justify-content-between mb-3">
+            <h4>Search Results:</h4>
+        </div>
+
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -30,7 +35,6 @@
                     <tr>
                         <td>{{ admin.first_name }}</td>
                         <td>{{ admin.email }}</td>
-                        
                         <td>
                             <a href="{{ url_for('Accounts.add_payslip', admin_id=admin.id) }}">Add PaySlip</a>
                         </td>
@@ -41,7 +45,14 @@
     {% else %}
         <p>No matching entries found.</p>
     {% endif %}
+
     <a href="{{ url_for('Accounts.search') }}" class="btn btn-primary search">Back to Search</a>
+
+    <a href="{{ url_for('Accounts.download_excel_acc') }}"
+       class="btn mt-3"
+       style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
+       📥 Download Attendance Excel File
+    </a>
 </div>
 
 {% endblock %}
