@@ -856,3 +856,98 @@ h3 {
 .asset-table tr:hover {
     background-color: #eaeaea;
 }
+
+
+
+
+/* claim_expense.css */
+
+
+.container_claim {
+    max-width: 1200px;
+    margin: 40px auto;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+.row_claim, .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.col_claim, .col_claim2, .col_claim3, .col_claim5 {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 200px;
+}
+
+.col_claim5 {
+    max-width: 80px;
+}
+
+.col_claimbutton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+.form_claim {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 100%;
+    background-color: #f9f9f9;
+}
+
+button[type="submit"], .btn {
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #b52b39;
+}
+
+.expense-item {
+    background-color: #f0f4f8;
+    padding: 15px;
+    border: 1px solid #d3dce6;
+    border-radius: 8px;
+}

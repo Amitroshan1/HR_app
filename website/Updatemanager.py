@@ -1,7 +1,13 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for,current_app
 from .models.manager_model import ManagerContact
+from .models.expense import ExpenseClaimHeader, ExpenseLineItem
+from .forms.expense_form import ExpenseClaimForm
 from .forms.manager import ManagerContactForm  
 from website import db
+import os
+from werkzeug.utils import secure_filename
+
+
 
 manager_bp = Blueprint('manager_bp', __name__)
 
@@ -43,3 +49,61 @@ def manager_contact():
         return redirect(url_for('manager_bp.manager_contact'))
     return render_template('HumanResource/manager.html', form=form)
 
+
+
+
+
+
+
+@manager_bp.route('/claim-expense', methods=['GET', 'POST'])
+def claim_expense():
+    form = ExpenseClaimForm()
+    if form.validate_on_submit():
+        try:
+            # Create header entry
+            header = ExpenseClaimHeader(
+                employee_name=form.employee_name.data,
+                designation=form.designation.data,
+                emp_id=form.emp_id.data,
+                email=form.email.data,
+                project_name=form.project_name.data,
+                country_state=form.country_state.data,
+                travel_from_date=form.travel_from_date.data,
+                travel_to_date=form.travel_to_date.data
+            )
+            db.session.add(header)
+            db.session.flush()  # get header.id
+
+            upload_folder = os.path.join(current_app.root_path, 'static/uploads/')
+            os.makedirs(upload_folder, exist_ok=True)
+
+            # Loop through line items
+            for i, item_form in enumerate(form.expenses.entries):
+                filename = None
+                if item_form.form.Attach_file.data:
+                    file = item_form.form.Attach_file.data
+                    filename = secure_filename(f"{form.emp_id.data}_{i+1}_{file.filename}")
+                    file_path = os.path.join(upload_folder, filename)
+                    file.save(file_path)
+
+                item = ExpenseLineItem(
+                    claim_id=header.id,
+                    sr_no=item_form.form.sr_no.data,
+                    date=item_form.form.date.data,
+                    purpose=item_form.form.purpose.data,
+                    amount=item_form.form.amount.data,
+                    currency=item_form.form.currency.data,
+                    Attach_file=filename  # Add this column in model
+                )
+                db.session.add(item)
+
+            db.session.commit()
+            flash('Expense claim submitted successfully!', 'success')
+            return redirect(url_for('manager_bp.claim_expense'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An error occurred: {str(e)}", 'danger')
+            current_app.logger.error(f"Error in claim_expense: {e}")
+
+    return render_template('OTP/claim_expense.html', form=form)
