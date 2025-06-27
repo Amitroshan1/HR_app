@@ -69,7 +69,6 @@ class SignUpForm(FlaskForm):
                             choices=[('','Select Employee Type'),
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'), 
-                                     ('Testing', 'Testing'),
                                      ('Engineering', 'Engineering'),('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
                                      ('Software Development', 'Software Development'),
@@ -114,7 +113,7 @@ class SelectRoleForm(FlaskForm):
                            choices=[('','Select Employee Type'),
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'), 
-                                     ('Testing', 'Testing'),
+                                
                                      ('Engineering', 'Engineering'),('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
                                      ('Software Development', 'Software Development'),

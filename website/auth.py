@@ -366,25 +366,3 @@ def change_password():
         return redirect(url_for('auth.change_password'))  # Redirect to profile or wherever you like
 
     return render_template('profile/change_password.html',form=form)
-
-def attend_calc(year,month,num_days,user_id):
-
-    punches = Punch.query.filter(
-        Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
-        Punch.admin_id == user_id
-    ).all()
-
-    calcu_data = 0
-    calcu_hdata = 0
-    for pdata in punches:
-        if pdata.punch_date:
-            if pdata.punch_in and pdata.punch_out:
-                calcu_data += 1
-            elif pdata.punch_in and not pdata.punch_out:
-                calcu_data += 0.5
-        if pdata.is_wfh:
-            calcu_hdata += 1
-    return {
-        "attendance": calcu_data,
-        "work from home": calcu_hdata
-    }

@@ -138,7 +138,7 @@ def display_details():
     form = MonthYearForm()
     user_id = session.get('viewing_user_id')
     detail_type = session.get('viewing_detail_type')
-    print(detail_type)
+    
 
     if not user_id or not detail_type:
         return redirect(url_for('hr.view_details'))

@@ -43,7 +43,7 @@ class LeaveBalance(db.Model):
     
     privilege_leave_balance = db.Column(db.Float, default=0.0, nullable=False)
     casual_leave_balance = db.Column(db.Float, default=0.0, nullable=False)
-
+    last_updated = db.Column(db.Date, nullable=True)
     # Relationships
     signup = db.relationship('Signup', back_populates='leave_balance')
     

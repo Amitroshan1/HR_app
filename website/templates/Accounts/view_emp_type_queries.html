@@ -29,7 +29,7 @@
         {% for query in queries %}
             <tr>
                 <td>{{ query.admin_details.first_name }}</td>
-                <td>{{ query.circle }}</td>
+                <td>{{ emp.circle }}</td>
                 <td>{{ query.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                 <td>{{ query.status }}</td>
                 <td>

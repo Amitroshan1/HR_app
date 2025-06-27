@@ -25,7 +25,7 @@ class SearchForm(FlaskForm):
                             choices=[('','Select Employee Type'),
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'), 
-                                     ('Testing', 'Testing'),
+                                
                                      ('Engineering', 'Engineering'),
                                         ('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
@@ -78,7 +78,7 @@ class NewsFeedForm(FlaskForm):
                             choices=[('','Select Employee Type'),('ALL','ALL'),
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'), 
-                                     ('Testing', 'Testing'),
+                                     
                                      ('Engineering', 'Engineering'),
                                      ('TEC', 'TEC'),
                                      ('Certification', 'Certification'),

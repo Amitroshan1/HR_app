@@ -227,11 +227,13 @@ def add_payslip(admin_id):
 def view_payslips():
     payslips = PaySlip.query.filter_by(admin_id=current_user.id).order_by(PaySlip.year.desc(), PaySlip.month.desc()).all()
 
+    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
+
     if not payslips:
         flash('No PaySlips available', 'warning')
         return render_template('Accounts/view_payslips.html', payslips=payslips)  # Redirect to the dashboard or any other relevant page
 
-    return render_template('Accounts/view_payslips.html', payslips=payslips)
+    return render_template('Accounts/view_payslips.html', payslips=payslips,emp_type=emp_type)
 
 
 
