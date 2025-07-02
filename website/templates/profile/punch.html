@@ -13,9 +13,7 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    <div id="loading-msg" class="alert alert-info text-center">
-        Fetching your location, please wait...
-    </div>
+
     <form method="POST" action="{{ url_for('profile.punch') }}">
         {{ form.hidden_tag() }}
 
@@ -102,51 +100,38 @@
 
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const latInput = document.getElementById('lat');
-    const lonInput = document.getElementById('lon');
-    const form = document.querySelector('form');
-    const wfh = document.getElementById('wfh');
-    const loadingMsg = document.getElementById('loading-msg');
+    document.addEventListener('DOMContentLoaded', function () {
+        const latInput = document.getElementById('lat');
+        const lonInput = document.getElementById('lon');
+        const form = document.querySelector('form');
 
-    function checkLocationReady() {
-        const lat = localStorage.getItem('lat');
-        const lon = localStorage.getItem('lon');
-        const ready = localStorage.getItem('location_ready') === 'true';
+        let locationReady = false;
 
-        if (ready && lat && lon) {
-            latInput.value = lat;
-            lonInput.value = lon;
-            if (loadingMsg) loadingMsg.style.display = 'none';
+        // Try to get the user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    latInput.value = position.coords.latitude;
+                    lonInput.value = position.coords.longitude;
+                    locationReady = true;
+                },
+                function (error) {
+                    alert("Please enable location access to punch in/out.");
+                }
+            );
         } else {
-            if (loadingMsg) loadingMsg.style.display = 'block';
+            alert("Geolocation is not supported by your browser.");
         }
 
-        return ready;
-    }
-
-    // Show/hide loading message
-    const isReady = checkLocationReady();
-
-    // Retry every second until location is ready
-    if (!isReady) {
-        const interval = setInterval(() => {
-            if (checkLocationReady()) {
-                clearInterval(interval);
+        // Prevent form submission until location is ready
+        form.addEventListener('submit', function (e) {
+            if (!locationReady && !document.getElementById('wfh').checked) {
+                e.preventDefault();
+                alert("Getting your location... Please wait a moment and try again.");
             }
-        }, 1000);
-    }
-
-    // Prevent submission if not ready
-    form.addEventListener('submit', function (e) {
-        if (!checkLocationReady() && !wfh.checked) {
-            e.preventDefault();
-            alert("Location is still loading. Please wait a moment or enable location.");
-        }
+        });
     });
-});
 </script>
-
 
 
 {% endblock %}

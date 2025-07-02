@@ -15,7 +15,11 @@ from .common import verify_oauth2_and_send_email,Company_verify_oauth2_and_send_
 import pytz
 from datetime import datetime
 from flask import current_app
-
+from .auth import attend_calc
+from zoneinfo import ZoneInfo
+import calendar
+from io import BytesIO
+import pandas as pd
 
 Accounts = Blueprint('Accounts', __name__)
 
@@ -44,9 +48,11 @@ def search():
 
         # Get email addresses from Signup model
         emails = [signup.email for signup in signups]
+        emp_map = {i.email: i.emp_id for i in signups}
 
         # Query Admin model based on email addresses
         admins = Admin.query.filter(Admin.email.in_(emails)).all()
+
 
         if not admins:
             flash('No matching entries found in Admin records', category='error')
@@ -55,6 +61,7 @@ def search():
         session['admin_emails'] = emails
         session['circle'] = circle
         session['emp_type'] = emp_type
+        session['emp_id_map'] = emp_map
 
         return redirect(url_for('Accounts.search_results'))
 
@@ -71,16 +78,73 @@ def search_results():
     emails = session['admin_emails']
     circle = session['circle']
     emp_type = session['emp_type']
-
     # Retrieve Admin details based on email
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
-
+    data = [i.id for i in admins]
+    print(data)
     return render_template(
         'Accounts/search_result.html', 
         admins=admins, 
         circle=circle, 
         emp_type=emp_type
     )
+
+
+@Accounts.route('/download_excel_acc', methods=['GET'])
+@login_required
+def download_excel_acc():
+    # ✅ Check for session data
+    emails = session.get('admin_emails')
+    circle = session.get('circle')
+    emp_type = session.get('emp_type')
+    emp_id_map = session.get('emp_id_map', {})
+
+    if not emails:
+        flash('Session expired. Please search again.', category='error')
+        return redirect(url_for('Accounts.search'))
+
+    # ✅ Fetch matching admins
+    admins = Admin.query.filter(Admin.email.in_(emails)).all()
+
+    # ✅ Get IST current year/month and total days in month
+    ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    year, month = ist_now.year, ist_now.month
+    num_days = calendar.monthrange(year, month)[1]
+
+    # ✅ Prepare attendance records
+    records = []
+    for admin in admins:
+        result = attend_calc(year, month, num_days, admin.id) or {
+            "attendance": 0,
+            "work from home": 0
+        }
+
+        records.append({
+            'Employee ID': emp_id_map.get(admin.email, 'N/A'),
+            'Name': admin.first_name,
+            'Month': f"{year}-{month:02d}",
+            'Circle': circle,
+            'Employee Type': emp_type,
+            'Total Present Days': result['attendance']
+        })
+
+    # ✅ Convert records to Excel
+    output = BytesIO()
+    df = pd.DataFrame(records)
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Attendance')
+    output.seek(0)
+
+    # ✅ Send Excel file to download
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        download_name=f'Attendance_{circle}_{emp_type}_{month}_{year}.xlsx',
+        as_attachment=True
+    )
+
+
+
 
 
 @Accounts.route('/add_payslip/<int:admin_id>', methods=['GET', 'POST'])
@@ -380,3 +444,4 @@ def close_query(query_id):
 
 
 
+# attendance_circle_emp_type_6june25.excel

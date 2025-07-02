@@ -1,9 +1,9 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app,session
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session
 from .models.Admin_models import Admin
 from .models.emp_detail_models import Employee
 from flask_login import login_user, login_required, logout_user, current_user
 from .forms.signup_form import SelectRoleForm
-from datetime import datetime, timedelta,date
+from datetime import datetime, timedelta, date
 from .models.attendance import Punch
 from .models.manager_model import ManagerContact
 from .models.news_feed import NewsFeed
@@ -11,7 +11,7 @@ from .models.emp_detail_models import Asset
 from .models.query import Query
 from .models.signup import Signup
 from werkzeug.security import check_password_hash, generate_password_hash
-from . import db,login_manager
+from . import db, login_manager
 from .forms.manager import ChangePasswordForm
 import os
 import binascii
@@ -19,13 +19,7 @@ from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
 
-
-
-
-
 auth = Blueprint('auth', __name__)
-
-
 
 import logging
 
@@ -37,8 +31,6 @@ ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-
-
 
 
 @auth.app_errorhandler(401)
@@ -113,7 +105,7 @@ def callback():
     oauth_id = user_json["id"]
     email = user_json["mail"] or user_json["userPrincipalName"]
     first_name = user_json.get("givenName", "")
-    
+
     # Check if user exists in the database
     admin = Admin.query.filter_by(oauth_id=oauth_id).first()
 
@@ -175,12 +167,6 @@ def refresh_access_token(admin):
     return admin.oauth_token
 
 
-
-
-
-
-
-
 def get_authenticated_headers(admin):
     """Ensure token is valid before making API requests."""
     if admin.oauth_token_expiry and admin.oauth_token_expiry <= datetime.now():
@@ -196,13 +182,9 @@ def get_authenticated_headers(admin):
     return {"Authorization": f"Bearer {admin.oauth_token}"}
 
 
-
-
-
 @login_manager.user_loader
 def load_admin(admin_id):
     return Admin.query.get(int(admin_id))
-
 
 
 @auth.route('/select_role', methods=['GET', 'POST'])
@@ -222,7 +204,8 @@ def select_role():
         user_email = user.email  # Assuming the user model has an email attribute
 
         # Query the admin/signup record based on the user's email
-        admin = Signup.query.filter_by(email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
+        admin = Signup.query.filter_by(
+            email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
 
         if admin:
             # Check if the Emp_type matches the selected role
@@ -230,7 +213,8 @@ def select_role():
                 # If the role matches, check if the password is correct
                 if admin.check_password(entered_password):  # Assuming check_password is defined in the Signup model
                     # If password matches, redirect to the homepage for that role
-                    return redirect(url_for('auth.E_homepage'))  # Assuming E_homepage is defined correctly in your auth blueprint
+                    return redirect(
+                        url_for('auth.E_homepage'))  # Assuming E_homepage is defined correctly in your auth blueprint
                 else:
                     flash('Incorrect password. Please try again.', category='error')
                     return redirect(url_for('auth.select_role'))  # Redirect to role selection page
@@ -247,15 +231,12 @@ def select_role():
     return render_template('employee/select_role.html', form=form)
 
 
-
-
-
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
-    
+
     if not employee:
         flash("No employee record found for the current user.")
         return render_template("employee/E_homepage.html")
@@ -264,11 +245,10 @@ def E_homepage():
     emp = Signup.query.filter_by(email=employee.email).first()
     if emp is None:
         flash("offical mail is not same in employee details,Plz contact HR.", "danger")
-        return redirect(url_for('auth.logout')) 
+        return redirect(url_for('auth.logout'))
 
-    count_new_queries = Query.query.filter_by(emp_type = emp.emp_type,status = 'New').count()
-    
-    
+    count_new_queries = Query.query.filter_by(emp_type=emp.emp_type, status='New').count()
+
     # Get DOJ from Signup model
     DOJ = emp.doj if emp else None
 
@@ -299,19 +279,18 @@ def E_homepage():
 
     # Determine if there are any notifications for the current emp_type
     show_notification = bool(queries_for_emp_type)
-    
 
     # Pass necessary data to the template
-    return render_template("employee/E_homepage.html", 
-                           employee=employee, 
-                           punch_in_time=punch_in_time, 
+    return render_template("employee/E_homepage.html",
+                           employee=employee,
+                           punch_in_time=punch_in_time,
                            punch_out_time=punch_out_time,
                            manager_contact=manager_contact,
                            news_feeds=news_feeds,
                            DOJ=DOJ,
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
-                           emp_type=emp_type,count_new_queries=count_new_queries)  # Pass emp_type to the template
+                           emp_type=emp_type, count_new_queries=count_new_queries)  # Pass emp_type to the template
 
 
 @auth.route('/logout')
@@ -322,35 +301,28 @@ def logout():
     return redirect(url_for('auth.select_role'))
 
 
-
-
-
 @auth.route('/my_assets', methods=['GET'])
-@login_required  
+@login_required
 def my_assets():
-    
     emp_id = current_user.id
-    emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
-    
-   
+
     assets = Asset.query.filter_by(admin_id=emp_id).all()
-    
+
     if not assets:
         flash('No assets found for your account.', 'info')
 
-    return render_template('employee/my_assets.html', assets=assets, emp_type=emp_type)
-
+    return render_template('employee/my_assets.html', assets=assets)
 
 
 @auth.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
     form = ChangePasswordForm()
-    
+
     if form.validate_on_submit():
         original_password = form.original_password.data
         new_password = form.new_password.data
-        emp_type = Signup.query.filter_by(email=current_user.email).first().emp_type
+
         admin = Signup.query.filter_by(email=current_user.email).first()
         # Verify original password
         if current_user.email == admin.email:
@@ -366,4 +338,27 @@ def change_password():
         flash('Your password has been updated successfully', 'success')
         return redirect(url_for('auth.change_password'))  # Redirect to profile or wherever you like
 
-    return render_template('profile/change_password.html',form=form,emp_type=emp_type)  # Pass emp_type to
+    return render_template('profile/change_password.html', form=form)
+
+
+def attend_calc(year,month,num_days,user_id):
+
+    punches = Punch.query.filter(
+        Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
+        Punch.admin_id == user_id
+    ).all()
+
+    calcu_data = 0
+    calcu_hdata = 0
+    for pdata in punches:
+        if pdata.punch_date:
+            if pdata.punch_in and pdata.punch_out:
+                calcu_data += 1
+            elif pdata.punch_in and not pdata.punch_out:
+                calcu_data += 0.5
+        if pdata.is_wfh:
+            calcu_hdata += 1
+    return {
+        "attendance": calcu_data,
+        "work from home": calcu_hdata
+    }
