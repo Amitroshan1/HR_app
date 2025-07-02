@@ -57,7 +57,6 @@ def manager_contact():
 
 @manager_bp.route('/claim-expense', methods=['GET', 'POST'])
 def claim_expense():
-    print("Claim Expense Page Accessed")
     form = ExpenseClaimForm()
     if form.validate_on_submit():
         print("Form submitted successfully")
@@ -79,7 +78,7 @@ def claim_expense():
 
             upload_folder = os.path.join(current_app.root_path, 'static/uploads/')
             os.makedirs(upload_folder, exist_ok=True)
-            print(f"Upload folder created at: {upload_folder}")
+
             for i, item_form in enumerate(form.expenses.entries):
                 filename = None
                 if item_form.form.Attach_file.data:
@@ -99,7 +98,7 @@ def claim_expense():
                     status=item_form.form.status.data or 'Pending'
                 )
                 db.session.add(item)
-            print("Expense items added successfully")
+
             db.session.commit()
             try:
                 send_claim_submission_email(header)
