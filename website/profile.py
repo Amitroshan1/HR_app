@@ -311,6 +311,22 @@ def is_near_saved_location(user_lat, user_lon, locations):
     return False
 
 
+def check_leave():
+    today = date.today()
+    leave_data = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == current_user.id,
+        LeaveApplication.start_date <= today,
+        LeaveApplication.end_date >= today
+    ).all()
+
+    for leave in leave_data:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if current_date == today:
+                return True  # User is on leave
+            current_date += timedelta(days=1)
+
+    return False  # Not on leave
 
 
 @profile.route('/punch', methods=['GET', 'POST'])
