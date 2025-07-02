@@ -313,6 +313,7 @@ def create_app():
     from .models.signup import Signup
     from .models.news_feed import NewsFeed, PaySlip
     from .models.otp import OTP
+    from .models.expense import ExpenseClaimHeader, ExpenseLineItem
 
     migrate.init_app(app, db)  # Now models are loaded, safe to initialize
 
