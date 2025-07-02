@@ -9,6 +9,9 @@ class ExpenseItemForm(FlaskForm):
     amount = FloatField('Amount', validators=[DataRequired()])
     currency = SelectField('Currency', choices=[('INR', 'INR'), ('USD', 'USD'), ('EUR', 'Euro')], validators=[DataRequired()])
     Attach_file = FileField("Attach File",validators=[Optional()]) # Assuming file path or name is stored as a string
+    status = StringField('Status', default='Pending')  # Added status field
+
+
 
 class ExpenseClaimForm(FlaskForm):
     employee_name = StringField('Employee Name', validators=[DataRequired()])

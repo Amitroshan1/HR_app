@@ -1,10 +1,13 @@
-from flask import flash, current_app
+from flask import flash, current_app,url_for
 from flask_mail import Message,Mail
 import requests
 from flask_login import current_user
 from .auth import refresh_access_token
 from .models.Admin_models import Admin
 from geopy.distance import geodesic
+
+from .models.expense import ExpenseClaimHeader  # adjust path if needed
+  # wherever you defined this
 
 
 
@@ -32,7 +35,7 @@ def verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails
             "message": {
                 "subject": subject,
                 "body": {
-                    "contentType": "Text",
+                    "contentType": "HTML",
                     "content": body
                 },
                 "toRecipients": [{"emailAddress": {"address": recipient_email}}],
@@ -87,7 +90,7 @@ def Company_verify_oauth2_and_send_email(user_email, subject, body, recipient_em
             "message": {
                 "subject": subject,
                 "body": {
-                    "contentType": "Text",
+                    "contentType": "HTML",
                     "content": body
                 },
                 "toRecipients": [{"emailAddress": {"address": recipient_email}}],
@@ -155,3 +158,61 @@ def is_within_allowed_location(user_lat, user_lon, allowed_locations):
 
 
 
+
+def send_claim_submission_email(header):
+    try:
+        subject = f"Expense Claim Submitted: {header.employee_name} ({header.emp_id})"
+
+        # Build line items with file download + approve/reject buttons
+        line_items_html = ""
+        for item in header.expenses:
+            approve_url = url_for('manager_bp.approve_line_item', item_id=item.id, _external=True)
+            reject_url = url_for('manager_bp.reject_line_item', item_id=item.id, _external=True)
+
+            file_link = (
+                f'<a href="{url_for("static", filename="uploads/" + item.Attach_file, _external=True)}" '
+                f'target="_blank" style="color: #007bff;">Download File</a>'
+                if item.Attach_file else "No attachment"
+            )
+
+            line_items_html += f"""
+                <p>
+                    <strong>{item.sr_no}.</strong> {item.date.strftime('%Y-%m-%d')} | {item.purpose} | {item.amount} {item.currency} |
+                    {file_link} | Status: {item.status}
+                </p>
+                <div style="margin-top: 8px; margin-bottom: 12px;">
+                    <a href="{approve_url}" style="padding: 6px 12px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px;">Approve</a>
+                    &nbsp;
+                    <a href="{reject_url}" style="padding: 6px 12px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px;">Reject</a>
+                </div>
+                <hr>
+            """
+
+        body = f"""
+        <html>
+        <body>
+            <p><strong>An expense claim has been submitted.</strong></p>
+
+            <p>
+                <strong>Employee:</strong> {header.employee_name}<br>
+                <strong>Employee ID:</strong> {header.emp_id}<br>
+                <strong>Designation:</strong> {header.designation}<br>
+                <strong>Project:</strong> {header.project_name}<br>
+                <strong>Country/State:</strong> {header.country_state}<br>
+                <strong>Travel Dates:</strong> {header.travel_from_date} to {header.travel_to_date}
+            </p>
+
+            <p><strong>Expense Details:</strong></p>
+            {line_items_html}
+        </body>
+        </html>
+        """
+
+        recipient_email = "akumar4@saffotech.com"
+        cc_emails = ["singhroshan968@gmail.com"]
+
+        return verify_oauth2_and_send_email(header.email, subject, body, recipient_email, cc_emails)
+
+    except Exception as e:
+        print(f"[Email Error] Failed to send claim email: {e}")
+        return False

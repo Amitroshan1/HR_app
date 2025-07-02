@@ -875,7 +875,7 @@ h3 {
 
 
 
-.row_claim, .row {
+.row_claim{
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
@@ -909,7 +909,8 @@ h3 {
     background-color: #f9f9f9;
 }
 
-button[type="submit"], .btn {
+button[type="button"], .btn {
+    margin:10px;
     font-size: 16px;
     padding: 10px 20px;
     border-radius: 6px;
@@ -918,21 +919,21 @@ button[type="submit"], .btn {
     transition: all 0.3s ease;
 }
 
-.btn-primary {
+.btnsubmit {
     background-color: #007bff;
     color: white;
 }
 
-.btn-primary:hover {
+.btnsubmit:hover {
     background-color: #0056b3;
 }
 
-.btn-secondary {
-    background-color: #6c757d;
+.btnadd{
+    background-color: #0e86ef;
     color: white;
 }
 
-.btn-secondary:hover {
+.btnadd:hover {
     background-color: #5a6268;
 }
 

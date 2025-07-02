@@ -3,13 +3,13 @@
 {% block content %}
 
 {% with messages = get_flashed_messages(with_categories=True) %}
-  {% if messages %}
-    <ul>
+{% if messages %}
+<ul>
     {% for category, message in messages %}
-      <li class="{{ category }}">{{ message }}</li>
+    <li class="{{ category }}">{{ message }}</li>
     {% endfor %}
-    </ul>
-  {% endif %}
+</ul>
+{% endif %}
 {% endwith %}
 
 <div class="container_claim">
@@ -29,7 +29,8 @@
         </div>
 
         <div class="row mb-4">
-            <div class="col_claim2">{{ form.travel_from_date.label }} {{ form.travel_from_date(class="form_claim") }}</div>
+            <div class="col_claim2">{{ form.travel_from_date.label }} {{ form.travel_from_date(class="form_claim") }}
+            </div>
             <div class="col_claim2">{{ form.travel_to_date.label }} {{ form.travel_to_date(class="form_claim") }}</div>
         </div>
 
@@ -42,20 +43,61 @@
                     <div class="col_claim3">{{ subform.date.label }} {{ subform.date(class="form_claim") }}</div>
                     <div class="col_claim">{{ subform.purpose.label }} {{ subform.purpose(class="form_claim") }}</div>
                     <div class="col_claim3">{{ subform.amount.label }} {{ subform.amount(class="form_claim") }}</div>
-                    <div class="col_claim3">{{ subform.currency.label }} {{ subform.currency(class="form_claim") }}</div>
-                    <div class="col_claim3">{{ subform.Attach_file.label }} {{ subform.Attach_file(class="form_claim") }}</div>
+                    <div class="col_claim3">{{ subform.currency.label }} {{ subform.currency(class="form_claim") }}
+                    </div>
+                    <div class="col_claim3">{{ subform.Attach_file.label }} {{ subform.Attach_file(class="form_claim")
+                        }}</div>
                     <div class="col_claimbutton">
-                        <button type="button" class="btn btn-danger btn-sm remove-btn" onclick="removeItem(this)">X</button>
+                        <button type="button" class="btn btn-danger btn-sm remove-btn"
+                            onclick="removeItem(this)">X</button>
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
 
-        <button type="submit" class="btn btn-primary">Submit</button>
-        <button type="button" class="btn btn-secondary mb-3" onclick="addExpenseItem()">+ Add More</button>
+        <button type="submit" class="btnsubmit btn-primary">Submit</button>
+        <button type="button" class="btnadd btn-secondary mb-3" onclick="addExpenseItem()">+ Add More</button>
     </form>
 </div>
+
+
+
+<h3 class="centered-heading">Submitted Claims</h3>
+<div class="table-responsive">
+    <table class="table table-bordered" style="width:100%; background:rgb(255, 255, 255); margin-top:20px;">
+        <thead>
+            <tr style="background-color: #8ff782;">
+                <th>#</th>
+                <th>Country</th>
+                <th>Date</th>
+                <th>Purpose</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for claim, items in claims_with_items %}
+            {% for item in items %}
+            <tr>
+                <td>{{ item.sr_no }}</td>
+                <td>{{ claim.country_state }}</td>
+                <td>{{ item.date }}</td>
+                <td>{{ item.purpose }}</td>
+                <td>{{ item.amount }} {{ item.currency }}</td>
+                <td>{{ item.status }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">No claims submitted yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+
 
 <script>
     let expenseIndex = parseInt("{{ form.expenses|length|default(0, true) }}");
