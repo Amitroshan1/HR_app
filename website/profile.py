@@ -338,10 +338,10 @@ def punch():
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
-        print(lat, lon, is_wfh)
+        # print(lat, lon, is_wfh)
         # Load all saved locations from the DB
         locations = Location.query.all()
-        print(locations)
+        # print(locations)
         # Check if the user is near any saved location
         is_near_location = False
         if lat is not None and lon is not None:
@@ -352,7 +352,12 @@ def punch():
             return redirect(url_for('profile.punch'))
 
         if form.punch_in.data:
-            if punch and punch.punch_in:
+            if check_leave():
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+                return redirect(request.url)  # Stop further execution
+            # if check_leave()
+            # Step 2: Handle Punch logic
+            elif punch and punch.punch_in:
                 flash('Already punched in today!', 'danger')
             else:
                 if not punch:
@@ -373,6 +378,10 @@ def punch():
                 flash('Punched in successfully!', 'warning')
 
         elif form.punch_out.data:
+            if check_leave():
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+                return redirect(request.url)
+
             if not punch or not punch.punch_in:
                 flash('You need to punch in first!', 'danger')
             else:
@@ -394,7 +403,7 @@ def punch():
 
 
 
-@profile.route('/manage-locations', methods=['GET', 'POST'])
+@profile.route('/manage-location\s', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
     form = LocationForm()
@@ -487,8 +496,8 @@ def apply_leave():
 
         # Email notification
         manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle, user_type=employee.emp_type).first()
-        department_email = 'hr@saffotech.com'
-        cc_emails = ['accounts@saffotech.com']
+        department_email = 'chauguleshubham390@gmail.com'
+        cc_emails = ['skchaugule@saffotech.com']
         if manager_contact:
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 
