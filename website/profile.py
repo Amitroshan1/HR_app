@@ -434,7 +434,6 @@ def delete_location(location_id):
     return redirect(url_for('profile.manage_locations'))
 
 
-
 @profile.route('/apply-leave', methods=['GET', 'POST'])
 @login_required  # Ensure the user is logged in
 def apply_leave():
@@ -495,44 +494,41 @@ def apply_leave():
         db.session.commit()
 
         # Email notification
-        manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle, user_type=employee.emp_type).first()
-        department_email = 'chauguleshubham390@gmail.com'
-        cc_emails = ['skchaugule@saffotech.com']
+        manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle,
+                                                         user_type=employee.emp_type).first()
+        department_email = 'singhroshan968@gmail.com'
+        cc_emails = ['singhroshan9688@gmail.com']
         if manager_contact:
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 
         subject = f"New Leave Application: {leave_type}"
         body = (
-                "Hi\n\n"
-                "Greetings!\n"
-                "Dear Sir/Madam,\n\n"
-                "Please find the details of the leave application below:\n\n"
-                f"Leave application submitted by {employee.first_name}.\n"
-                f"Leave Type: {leave_type}\n\n"
-                f"Reason: {reason}\n\n"
-                f"Start Date: {start_date}\n"
-                f"End Date: {end_date}\n"
-                f"Total Days: {leave_days}\n"
-                f"Privilege Leave Balance After Deduction: {leave_balance.privilege_leave_balance}\n\n")
+            "Hi\n\n"
+            "Greetings!\n"
+            "Dear Sir/Madam,\n\n"
+            "Please find the details of the leave application below:\n\n"
+            f"Leave application submitted by {employee.first_name}.\n"
+            f"Leave Type: {leave_type}\n\n"
+            f"Reason: {reason}\n\n"
+            f"Start Date: {start_date}\n"
+            f"End Date: {end_date}\n"
+            f"Total Days: {leave_days}\n"
+            f"Privilege Leave Balance After Deduction: {leave_balance.privilege_leave_balance}\n\n")
 
         # If extra leave is required, include it in the email
         if extra_leave > 0:
             body += f"⚠️ Extra Leave Days Required: {extra_leave} (Not covered by Privilege Leave)\n"
-            
 
         body += f"Click here to approve: {url_for('profile.approve_leave', leave_id=leave_application.id, _external=True)}\n\n"
         body += "Thanks $ Regards\n"
         body += f"{employee.first_name}\n"
-        verify_oauth2_and_send_email(emp,subject, body, department_email, cc_emails)
+        verify_oauth2_and_send_email(emp, subject, body, department_email, cc_emails)
         flash('Your leave application has been submitted.', 'success')
         return redirect(url_for('profile.apply_leave'))
 
-    user_leaves = LeaveApplication.query.filter_by(admin_id=employee.id).all()
+    user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
+    print(f"succefull got the reason: {user_leaves}")
     return render_template('profile/apply_leave.html', form=form, leave_balance=leave_balance, user_leaves=user_leaves)
-
-
-
-
 
 
 @profile.route('/approve-leave/<int:leave_id>', methods=['GET'])
