@@ -272,6 +272,7 @@
     </table>
     {% elif detail_type == 'Attendance' %}
     <h3 class="centered-heading">Attendance</h3>
+
     <table class="table_details table-striped">
         <thead>
             <tr>
@@ -279,20 +280,41 @@
                 <th>Punch In</th>
                 <th>Punch Out</th>
                 <th>Work from Home</th>
-
             </tr>
         </thead>
         <tbody>
             {% for detail in details %}
             <tr>
                 <td>{{ detail.punch_date }}</td>
-                <td class="{% if not detail.punch_in %}missing{% endif %}">{{ detail.punch_in }}</td>
-                <td class="{% if not detail.punch_out %}missing{% endif %}">{{ detail.punch_out }}</td>
+
+                {% if detail.on_leave %}
+                    <td colspan="2"><b>Employee on Leave</b></td>
+                {% else %}
+                    <td class="{% if not detail.punch_in %}missing{% endif %}">{{ detail.punch_in }}</td>
+                    <td class="{% if not detail.punch_out %}missing{% endif %}">{{ detail.punch_out }}</td>
+                {% endif %}
+
                 <td>{{ detail.is_wfh }}</td>
             </tr>
             {% endfor %}
+
+            <tr style="font-weight: bold;">
+                <td></td>
+                <td colspan="2">Total Present Days (Including Half Days): {{ dict_data['attendance'] }}</td>
+                <td>Work From Home Days: {{ dict_data['work from home'] }}</td>
+            </tr>
         </tbody>
     </table>
+
+    <!-- Excel Download Button -->
+    <a style="margin-left: 760px" href="{{ url_for('hr.download_attendance_excel') }}"
+   class="btn btn-primary mt-3 float-end">
+   Download Excel File
+</a>
+
+
+
+
     {% elif detail_type == 'Document' %}
     <h3 class="centered-heading">Documents</h3>
     <table class="table_details table-striped">
