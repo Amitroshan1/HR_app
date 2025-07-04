@@ -18,6 +18,7 @@ import binascii
 from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
+from .models.manager_model import ManagerContact
 
 auth = Blueprint('auth', __name__)
 
@@ -234,6 +235,17 @@ def select_role():
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
+    emails_data = [
+        email
+        for manager in ManagerContact.query.all()
+        for email in [manager.l1_email, manager.l2_email, manager.l3_email]
+        if email
+    ]
+    flag = False
+    if current_user.email in emails_data:
+        flag = True
+    # print("flag status: ", flag)
+
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
 
@@ -246,6 +258,7 @@ def E_homepage():
     if emp is None:
         flash("offical mail is not same in employee details,Plz contact HR.", "danger")
         return redirect(url_for('auth.logout'))
+
 
     count_new_queries = Query.query.filter_by(emp_type=emp.emp_type, status='New').count()
 
@@ -261,6 +274,7 @@ def E_homepage():
     # Get emp_type and circle from Signup model
     emp_type = emp.emp_type if emp else None
     circle = emp.circle if emp else None
+
 
     # Get manager contact information based on circle and emp_type
     manager_contact = ManagerContact.query.filter_by(circle_name=circle, user_type=emp_type).first()
@@ -288,6 +302,7 @@ def E_homepage():
                            manager_contact=manager_contact,
                            news_feeds=news_feeds,
                            DOJ=DOJ,
+                           flag=flag,
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
                            emp_type=emp_type, count_new_queries=count_new_queries)  # Pass emp_type to the template

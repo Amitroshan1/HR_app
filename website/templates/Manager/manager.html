@@ -1,0 +1,96 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}Manager Approve{% endblock %}
+
+{% block style %}
+#button1{
+padding:10px;
+width:100px;
+background-color: #ff0000;
+color: black;
+}
+#button2{
+padding:10px;
+width:100px;
+background-color: #00ff00;
+color: black;
+}
+{% endblock %}
+
+
+
+{% block content %}
+<!-- ✅ FLASH MESSAGES GO HERE, at top of content block -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}" style="text-align: center;">
+        <h3>{{ message }}</h3>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<h2 style="text-align: center">Leave For Approval</h2>
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Leave Type</th>
+            <th>Reason</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leave in leave_apps %}
+        <tr>
+            <td>{{ leave.admin.first_name }}</td>
+            <td>{{ leave.leave_type }}</td>
+            <td>{{ leave.reason }}</td>
+            <td>{{ leave.start_date }}</td>
+            <td>{{ leave.end_date }}</td>
+            <td>
+                <button id="button1"><a href="{{ url_for('profile.reject_leave', leave_id=leave.id) }}">
+                        Reject
+                    </a></button>
+                    <button id="button2"><a href="{{ url_for('profile.approve_leave', leave_id=leave.id) }}">
+                        Accept
+                    </a></button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<h2 style="text-align: center">Leave Status</h2>
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+    <tr>
+            <th>Name</th>
+            <th>Leave Type</th>
+            <th>Reason</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for leaves in leave_another %}
+    <tr>
+        <td>{{ leaves.admin.first_name }}</td>
+        <td>{{ leaves.leave_type }}</td>
+        <td>{{ leaves.reason }}</td>
+        <td>{{ leaves.start_date }}</td>
+        <td>{{ leaves.end_date }}</td>
+        <td>{{leaves.status}}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+
+
+</table>
+{% endblock %}
+

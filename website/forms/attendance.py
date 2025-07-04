@@ -33,19 +33,22 @@ class MonthYearForm(FlaskForm):
 
 
 class LeaveForm(FlaskForm):
-    leave_type = SelectField('Leave Type', 
-                            choices=[('','Select Leave Option'),
-                                     ('Privilege Leave','Privilege Leave'),
-                                     ('Casual Leave','Casual Leave')
-                                    ],
-                              validators=[DataRequired()])
+    leave_type = SelectField('Leave Type',
+                             choices=[('', 'Select Leave Option'),
+                                      ('Privilege Leave', 'Privilege Leave'),
+                                      ('Casual Leave', 'Casual Leave'),
+                                      ("Half Day Leave", "Half Day Leave"),
+                                      ('Compensatory Leave', 'Compensatory Leave'),
+                                      ],
+                             validators=[DataRequired()])
     reason= StringField('Reason For Leave * ', 
                          validators=[DataRequired()], 
                          render_kw={"placeholder": "Reason For Leave.... "})
     start_date = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()])
     end_date = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()])
-    
+
     submit = SubmitField('Apply for Leave')
+
 
 
 

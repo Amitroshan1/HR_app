@@ -39,7 +39,7 @@ Session = Session()
 
 
 class Config:
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=10)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=20)
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)

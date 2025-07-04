@@ -21,6 +21,7 @@ from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location
+from datetime import timedelta  
 
 profile=Blueprint('profile',__name__)
 
@@ -483,7 +484,7 @@ def apply_leave():
 
         # Validate leave balances
         if leave_type == 'Casual Leave' and leave_days > leave_balance.casual_leave_balance:
-            flash('You do not have enough Casual Leave balance.', 'danger')
+            flash('You do not have enough Casual Leave balance Try Privilege Leave.', 'danger')
             return redirect(url_for('profile.apply_leave'))
 
         if leave_type == 'Privilege Leave':
@@ -496,6 +497,23 @@ def apply_leave():
         # Deduct Casual Leave balance if applicable
         if leave_type == 'Casual Leave':
             leave_balance.casual_leave_balance -= leave_days
+
+        if leave_type == "Half Day Leave":
+            if leave_days > 1:
+                flash('Half Day Leave can only be applied for one day.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+            elif leave_balance.casual_leave_balance < 0.5:
+                flash('You do not have enough Casual Leave balance for Half Day Leave.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+            leave_balance.casual_leave_balance -= 0.5
+
+        if leave_type == "Compensatory Leave":
+            if leave_days > 2:
+                flash('Compensatory Leave can only be applied for Two days.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+        
+            flash('Please ask Lead/manager for Compensatory Leave.', 'danger')
+        
 
         # Save leave application
         leave_application = LeaveApplication(
@@ -518,28 +536,65 @@ def apply_leave():
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 
         subject = f"New Leave Application: {leave_type}"
-        body = (
-            "Hi\n\n"
-            "Greetings!\n"
-            "Dear Sir/Madam,\n\n"
-            "Please find the details of the leave application below:\n\n"
-            f"Leave application submitted by {employee.first_name}.\n"
-            f"Leave Type: {leave_type}\n\n"
-            f"Reason: {reason}\n\n"
-            f"Start Date: {start_date}\n"
-            f"End Date: {end_date}\n"
-            f"Total Days: {leave_days}\n"
-            f"Privilege Leave Balance After Deduction: {leave_balance.privilege_leave_balance}\n\n")
+        body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <p>Hi,</p>
+                <p>Greetings!</p>
+                <p>Dear Sir/Madam,</p>
 
-        # If extra leave is required, include it in the email
+                <p>Please find the details of the leave application below:</p>
+
+                <table style="border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.2;">
+                <tr>
+                    <td style="padding: 4px 2px; margin: 0;"><strong>Employee Name:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{employee.first_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Leave Type:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_type}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Reason:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{reason}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Start Date:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{start_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>End Date:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{end_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Total Days:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_days}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Privilege Leave Balance After Deduction:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_balance.privilege_leave_balance}</td>
+                </tr>
+                </table>
+            """
+
         if extra_leave > 0:
-            body += f"⚠️ Extra Leave Days Required: {extra_leave} (Not covered by Privilege Leave)\n"
+                body += f"""
+                <p style="color: red;"><strong>⚠️ Extra Leave Days Required:</strong> {extra_leave} (Not covered by Privilege Leave)</p>
+                """
 
-        body += f"Click here to approve: {url_for('profile.approve_leave', leave_id=leave_application.id, _external=True)}\n\n"
-        body += "Thanks $ Regards\n"
-        body += f"{employee.first_name}\n"
+        body += f"""
+                <p>
+                <a href="http://127.0.0.1:5000/" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Login to HRMS to Approve</a>
+                </p>
+
+                <p>Thanks & Regards,<br>
+                {employee.first_name}</p>
+            </body>
+            </html>
+            """
+
         verify_oauth2_and_send_email(emp, subject, body, department_email, cc_emails)
-        flash('Your leave application has been submitted.', 'success')
+        flash('Your leave application has been submitted & Mail Sent for approval.', 'success')
         return redirect(url_for('profile.apply_leave'))
 
     user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
@@ -550,18 +605,18 @@ def apply_leave():
 @profile.route('/approve-leave/<int:leave_id>', methods=['GET'])
 def approve_leave(leave_id):
     leave_application = LeaveApplication.query.get_or_404(leave_id)
-
-    
     leave_application.status = 'Approved'
     db.session.commit()
+    flash('✅ Leave has been approved successfully.', 'success')
+    return redirect(url_for('manager_bp.manager_access'))
 
-    
-    return """
-        <h1>Leave application has been approved.</h1>
-        <p>Thank you for approving the leave application. The status has been updated successfully.</p>
-    """
-
-
+@profile.route('/reject-leave/<int:leave_id>', methods=['GET'])
+def reject_leave(leave_id):
+    leave_app_data = LeaveApplication.query.get_or_404(leave_id)
+    leave_app_data.status = 'Rejected'
+    db.session.commit()
+    flash('❌ Leave application has been rejected.', 'danger')
+    return redirect(url_for('manager_bp.manager_access'))
   
     
 
