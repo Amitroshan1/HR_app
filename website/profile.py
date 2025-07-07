@@ -20,8 +20,8 @@ from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import  send_wfh_approval_email_to_managers
-from datetime import timedelta  
+from .common import is_within_allowed_location
+from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
 
@@ -465,7 +465,6 @@ def submit_wfh():
         wfh_applications=user_wfh_applications
     )
 
- 
 
 @profile.route('/manage-location', methods=['GET', 'POST'])
 @login_required
@@ -543,11 +542,11 @@ def apply_leave():
             if leave_days > 2:
                 flash('You cannot apply for more than 2 days of Casual Leave.', 'warning')
                 return redirect(url_for('profile.apply_leave'))
-            
+
             if leave_days > leave_balance.casual_leave_balance:
                 flash('You do not have enough Casual Leave balance for the requested days. Please apply under Privilege Leave instead.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
-            
+
             # If valid, deduct the exact number of leave days
             leave_balance.casual_leave_balance -= leave_days
 
@@ -573,9 +572,9 @@ def apply_leave():
             if leave_days > 3:
                 flash('Compensatory Leave can only be applied for Two days.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
-        
+
             flash('Please ask Lead/manager for Approve Compensatory Leave.', 'danger')
-        
+
 
         # Save leave application
         leave_application = LeaveApplication(
@@ -667,20 +666,21 @@ def apply_leave():
 @profile.route('/approve-leave/<int:leave_id>', methods=['GET'])
 def approve_leave(leave_id):
     leave_application = LeaveApplication.query.get_or_404(leave_id)
-
-    
     leave_application.status = 'Approved'
     db.session.commit()
 
-    
-    return """
-        <h1>Leave application has been approved.</h1>
-        <p>Thank you for approving the leave application. The status has been updated successfully.</p>
-    """
+@profile.route('/reject-leave/<int:leave_id>', methods=['GET'])
+def reject_leave(leave_id):
+    leave_app_data = LeaveApplication.query.get_or_404(leave_id)
+    leave_app_data.status = 'Rejected'
+    db.session.commit()
+    flash('❌ Leave application has been rejected.', 'danger')
+    return redirect(url_for('manager_bp.manager_access'))
 
 
-  
-    
+
+
+
 
 
 

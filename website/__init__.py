@@ -39,7 +39,7 @@ Session = Session()
 
 
 class Config:
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=10)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=20)
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
@@ -139,9 +139,9 @@ def send_reminder_emails():
 
                 # Assign department email (example)
                 if 'Human Resource' in departments:
-                    department_email = 'hr@saffotech.com'
+                    department_email = 'chauguleshubham390@gmail.com'
                 elif 'Accounts' in departments:
-                    department_email = 'accounts@saffotech.com'
+                    department_email = 'skchaugule@saffotech.com'
                
 
                 cc = None

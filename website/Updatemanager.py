@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for,current_app
+
+from .models.Admin_models import Admin
 from .models.manager_model import ManagerContact
 from .models.expense import ExpenseClaimHeader, ExpenseLineItem
 from .forms.expense_form import ExpenseClaimForm
@@ -7,11 +9,13 @@ from website import db
 import os
 from werkzeug.utils import secure_filename
 from .common import send_claim_submission_email
-
+from flask_login import current_user, login_required
+from .models.signup import Signup
+from .models.attendance import LeaveApplication
 
 manager_bp = Blueprint('manager_bp', __name__)
 
-
+@login_required
 @manager_bp.route('/manager_contact', methods=['GET', 'POST'])
 def manager_contact():
     form = ManagerContactForm()
@@ -54,7 +58,7 @@ def manager_contact():
 
 
 
-
+@login_required
 @manager_bp.route('/claim-expense', methods=['GET', 'POST'])
 def claim_expense():
     form = ExpenseClaimForm()
@@ -127,7 +131,7 @@ def claim_expense():
 
     return render_template('OTP/claim_expense.html', form=form, claims=claims, claims_with_items=claims_with_items)
 
-
+@login_required
 @manager_bp.route('/approve-line-item/<int:item_id>')
 def approve_line_item(item_id):
     item = ExpenseLineItem.query.get_or_404(item_id)
@@ -144,7 +148,7 @@ def approve_line_item(item_id):
             <h1>Error</h1>
             <p>Failed to approve item: {str(e)}</p>
         """
-
+@login_required
 @manager_bp.route('/reject-line-item/<int:item_id>')
 def reject_line_item(item_id):
     item = ExpenseLineItem.query.get_or_404(item_id)
@@ -161,3 +165,51 @@ def reject_line_item(item_id):
             <h1>Error</h1>
             <p>Failed to reject item: {str(e)}</p>
         """
+
+
+@manager_bp.route('/manager_access', methods=['GET', 'POST'])
+@login_required
+def manager_access():
+    current_email = current_user.email
+
+    # Get all departments the manager is handling
+    manager_data = ManagerContact.query.filter(
+        (ManagerContact.l1_email == current_email) |
+        (ManagerContact.l2_email == current_email) |
+        (ManagerContact.l3_email == current_email)
+    ).all()
+
+    # Collect user types and circles (may contain duplicates, so use set if needed)
+    users_type_list = [m.user_type for m in manager_data]
+    circle_name_list = [m.circle_name for m in manager_data]
+
+    # Get all HRs based on user_type and circle
+    signup_data = Signup.query.filter(
+        Signup.emp_type.in_(users_type_list),
+        Signup.circle.in_(circle_name_list)
+    ).all()
+
+    # Extract email list
+    email_list = [i.email for i in signup_data]
+
+    # Get matching Admins
+    data_admin = Admin.query.filter(Admin.email.in_(email_list)).all()
+    admin_ids = [a.id for a in data_admin]
+
+    # Get Leave Applications
+    leave_apps = LeaveApplication.query.filter(LeaveApplication.admin_id.in_(admin_ids),LeaveApplication.status=='Pending').all()
+    leave_data = [i for i in leave_apps]
+
+    # for get not pending data means approved and rejected
+    leave_another = LeaveApplication.query.filter(LeaveApplication.admin_id.in_(admin_ids),LeaveApplication.status!='Pending').all()
+
+
+    return render_template(
+        'Manager/manager.html',
+        users_type_list=users_type_list,
+        circle_name_list=circle_name_list,
+        signup_data = signup_data,
+        leave_apps=leave_apps,
+        leave_another = leave_another
+
+    )
