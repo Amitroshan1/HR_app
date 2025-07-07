@@ -2,19 +2,53 @@
 {% block title %}Manager Approve{% endblock %}
 
 {% block style %}
-#button1{
-padding:10px;
-width:100px;
-background-color: #ff0000;
-color: black;
+.button-reject,
+.button-accept {
+    display: inline-block;
+    padding: 10px 15px;
+    min-width: 100px;
+    border-radius: 8px;
+    text-decoration: none !important;
+    font-weight: bold;
+    text-align: center;
+    color: white !important;
+    margin: 6px !important;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-sizing: border-box;
 }
-#button2{
-padding:10px;
-width:100px;
-background-color: #00ff00;
-color: black;
+
+.button-reject {
+    background-color: #ff4d4d !important;
+
+}
+
+.button-accept {
+    background-color: #4CAF50;
+}
+
+.button-reject:hover {
+    background-color: #cc0000 !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+.button-accept:hover {
+    background-color: #2e8b57;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+/* Responsive: stack buttons on small screens */
+@media (max-width: 600px) {
+    .button-reject,
+    .button-accept {
+        width: 100%;
+        display: block;
+        margin: 10px 0 !important;
+    }
 }
 {% endblock %}
+
 
 
 
@@ -52,13 +86,11 @@ color: black;
             <td>{{ leave.start_date }}</td>
             <td>{{ leave.end_date }}</td>
             <td>
-                <button id="button1"><a href="{{ url_for('profile.reject_leave', leave_id=leave.id) }}">
-                        Reject
-                    </a></button>
-                    <button id="button2"><a href="{{ url_for('profile.approve_leave', leave_id=leave.id) }}">
-                        Accept
-                    </a></button>
+                <a href="{{ url_for('profile.reject_leave', leave_id=leave.id) }}" class="button-reject">Reject</a>
+
+                <a href="{{ url_for('profile.approve_leave', leave_id=leave.id) }}" class="button-accept">Accept</a>
             </td>
+
         </tr>
         {% endfor %}
     </tbody>
