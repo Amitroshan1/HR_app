@@ -234,6 +234,13 @@ def select_role():
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
+    emails = [
+    email
+    for contact in ManagerContact.query.all()
+    for email in (contact.l1_email, contact.l2_email, contact.l3_email)
+    if email
+]
+    print("Emails from ManagerContact:", emails)
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
 

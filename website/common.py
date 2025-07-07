@@ -5,9 +5,10 @@ from flask_login import current_user
 from .auth import refresh_access_token
 from .models.Admin_models import Admin
 from geopy.distance import geodesic
-
+from .models.manager_model import ManagerContact  # adjust path if needed
 from .models.expense import ExpenseClaimHeader  # adjust path if needed
   # wherever you defined this
+from .models.signup import Signup  # adjust path if needed
 
 
 
@@ -57,8 +58,8 @@ def verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails
             return False
 
     except Exception as e:
-        flash(f"Error: {str(e)}", 'error')
-        return False
+        raise e
+        
 
 
 
@@ -112,8 +113,8 @@ def Company_verify_oauth2_and_send_email(user_email, subject, body, recipient_em
             return False
 
     except Exception as e:
-        flash(f"Error: {str(e)}", 'error')
-        return False
+        raise e
+        
 
 
 
@@ -166,8 +167,7 @@ def send_claim_submission_email(header):
         # Build line items with file download + approve/reject buttons
         line_items_html = ""
         for item in header.expenses:
-            approve_url = url_for('manager_bp.approve_line_item', item_id=item.id, _external=True)
-            reject_url = url_for('manager_bp.reject_line_item', item_id=item.id, _external=True)
+            "https://solviotec.com/"
 
             file_link = (
                 f'<a href="{url_for("static", filename="uploads/" + item.Attach_file, _external=True)}" '
@@ -181,9 +181,8 @@ def send_claim_submission_email(header):
                     {file_link} | Status: {item.status}
                 </p>
                 <div style="margin-top: 8px; margin-bottom: 12px;">
-                    <a href="{approve_url}" style="padding: 6px 12px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px;">Approve</a>
+                    <a href= https://solviotec.com/ style="padding: 6px 12px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px;">Approve</a>
                     &nbsp;
-                    <a href="{reject_url}" style="padding: 6px 12px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px;">Reject</a>
                 </div>
                 <hr>
             """
@@ -214,5 +213,61 @@ def send_claim_submission_email(header):
         return verify_oauth2_and_send_email(header.email, subject, body, recipient_email, cc_emails)
 
     except Exception as e:
-        print(f"[Email Error] Failed to send claim email: {e}")
+        raise e
+
+
+def send_wfh_approval_email_to_managers(user, wfh):
+    """
+    Sends an approval request email to the manager(s) for a submitted WFH application.
+    If no manager is found, email is still sent to HR without CC.
+    """
+    hr_mail = "singhroshan968@gmail.com"
+
+
+    # Get user circle & emp_type from Signup model
+    data = Signup.query.filter_by(email=user.email).first()
+    if not data:
+        flash("Signup record not found for user.", "error")
         return False
+
+    print("Data from Signup:", data)
+    print("Circle:", data.circle, "| Emp Type:", data.emp_type)
+
+    # Try to fetch manager contact
+    manager_contacts = ManagerContact.query.filter_by(
+        circle_name=data.circle,
+        user_type=data.emp_type
+    ).first()
+
+    # Collect manager emails if found
+    if manager_contacts:
+        manager_emails = [manager_contacts.l2_email, manager_contacts.l3_email]
+        manager_emails = [email for email in manager_emails if email]  # filter out None
+    else:
+        manager_emails = []
+        print("⚠️ No manager contacts found. Sending only to HR.")
+
+    # Prepare email content
+    subject = f"WFH Request from {user.first_name} ({user.email})"
+    body = f"""
+        <p>Hi,</p>
+    <p>
+        This is to inform you that <strong>{user.first_name}</strong> has submitted a Work From Home (WFH) request.<br>
+        So please review and take necessary action.
+    </p>
+        <p><strong>Employee Name:</strong> {user.first_name}</p>
+        <p><strong>Start Date:</strong> {wfh.start_date.strftime('%d-%m-%Y')}</p>
+        <p><strong>End Date:</strong> {wfh.end_date.strftime('%d-%m-%Y')}</p>
+        <p><strong>Reason:</strong> {wfh.reason}</p>
+        <p>Status: <b>{wfh.status}</b></p>
+        <p>Login to HRMS to approve or reject this WFH request.</p>
+    """
+
+    # Send email
+    return verify_oauth2_and_send_email(
+        user=user,
+        subject=subject,
+        body=body,
+        recipient_email=hr_mail,
+        cc_emails=manager_emails if manager_emails else None
+    )

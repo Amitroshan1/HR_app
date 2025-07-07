@@ -14,13 +14,14 @@ from .models.education import Education,UploadDoc
 from .forms.family_details import Family_details
 from .forms.previous_company import Previous_company
 from .models.prev_com import PreviousCompany
-from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location
-from .forms.attendance import PunchForm,LeaveForm,LocationForm
+from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location,WorkFromHomeApplication
+from .forms.attendance import PunchForm,LeaveForm,LocationForm,WorkFromHomeForm
 from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location
+from .common import  send_wfh_approval_email_to_managers
+from datetime import timedelta  
 
 profile=Blueprint('profile',__name__)
 
@@ -417,9 +418,56 @@ def punch():
     )
 
 
+  # adjust the import path if needed
 
+@profile.route('/submit-wfh', methods=['GET', 'POST'])
+@login_required
+def submit_wfh():
+    form = WorkFromHomeForm()
+    print("Current user:", current_user.id)
 
-@profile.route('/manage-location\s', methods=['GET', 'POST'])
+    if form.validate_on_submit():
+        print("Form submitted successfully")
+        wfh_application = WorkFromHomeApplication(
+            admin_id=current_user.id,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            reason=form.reason.data,
+            status='Pending',
+            created_at=datetime.now()
+        )
+        db.session.add(wfh_application)
+        db.session.commit()
+        print("WFH application submitted:", wfh_application)
+
+        try:
+            success = send_wfh_approval_email_to_managers(current_user, wfh_application)
+            if success:
+                flash('WFH request submitted and email sent for approval.', 'success')
+            else:
+                flash('WFH submitted, but failed to send approval email.', 'warning')
+        except Exception as e:
+            app.logger.error(f"Email send failed: {e}")
+            flash('WFH submitted, but error occurred while sending approval email.', 'danger')
+
+        return redirect(url_for('profile.submit_wfh'))
+
+    if request.method == 'POST':
+        print("Form validation failed:", form.errors)
+
+    user_wfh_applications = WorkFromHomeApplication.query.filter_by(
+        admin_id=current_user.id
+    ).order_by(WorkFromHomeApplication.created_at.desc()).all()
+
+    return render_template(
+        'profile/submit_wfh.html',
+        form=form,
+        wfh_applications=user_wfh_applications
+    )
+
+ 
+
+@profile.route('/manage-location', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
     form = LocationForm()
@@ -481,21 +529,53 @@ def apply_leave():
 
         extra_leave = 0  # Variable to track extra leave days
 
-        # Validate leave balances
-        if leave_type == 'Casual Leave' and leave_days > leave_balance.casual_leave_balance:
-            flash('You do not have enough Casual Leave balance.', 'danger')
-            return redirect(url_for('profile.apply_leave'))
 
         if leave_type == 'Privilege Leave':
             if leave_days > leave_balance.privilege_leave_balance:
-                extra_leave = leave_days - leave_balance.privilege_leave_balance
-                leave_balance.privilege_leave_balance = 0  # Set remaining balance to 0
+                extra_leave = leave_days - int(leave_balance.privilege_leave_balance)  # Use only full days
+                leave_balance.privilege_leave_balance -= (leave_days - extra_leave)    # Deduct full days used
             else:
-                leave_balance.privilege_leave_balance -= leave_days  # Deduct normally
+                leave_balance.privilege_leave_balance -= leave_days
+
 
         # Deduct Casual Leave balance if applicable
         if leave_type == 'Casual Leave':
+            if leave_days > 2:
+                flash('You cannot apply for more than 2 days of Casual Leave.', 'warning')
+                return redirect(url_for('profile.apply_leave'))
+            
+            if leave_days > leave_balance.casual_leave_balance:
+                flash('You do not have enough Casual Leave balance for the requested days. Please apply under Privilege Leave instead.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+            
+            # If valid, deduct the exact number of leave days
             leave_balance.casual_leave_balance -= leave_days
+
+
+
+        if leave_type == "Half Day Leave":
+            if leave_days > 1:
+                flash('Half Day Leave can only be applied for one day.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+
+            elif leave_balance.casual_leave_balance < 0.5:
+                if leave_balance.privilege_leave_balance >= 0.5:
+                    leave_balance.privilege_leave_balance -= 0.5
+                    flash('0.5 day deducted from Privilege Leave due to insufficient Casual Leave.', 'info')
+                else:
+                    extra_leave = 0.5
+                    flash(f'Not enough Privilege Leave either. {extra_leave} day marked as Extra Leave.', 'warning')
+            else:
+                leave_balance.casual_leave_balance -= 0.5
+
+
+        if leave_type == "Compensatory Leave":
+            if leave_days > 3:
+                flash('Compensatory Leave can only be applied for Two days.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+        
+            flash('Please ask Lead/manager for Approve Compensatory Leave.', 'danger')
+        
 
         # Save leave application
         leave_application = LeaveApplication(
@@ -518,32 +598,69 @@ def apply_leave():
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 
         subject = f"New Leave Application: {leave_type}"
-        body = (
-            "Hi\n\n"
-            "Greetings!\n"
-            "Dear Sir/Madam,\n\n"
-            "Please find the details of the leave application below:\n\n"
-            f"Leave application submitted by {employee.first_name}.\n"
-            f"Leave Type: {leave_type}\n\n"
-            f"Reason: {reason}\n\n"
-            f"Start Date: {start_date}\n"
-            f"End Date: {end_date}\n"
-            f"Total Days: {leave_days}\n"
-            f"Privilege Leave Balance After Deduction: {leave_balance.privilege_leave_balance}\n\n")
+        body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <p>Hi,</p>
+                <p>Greetings!</p>
+                <p>Dear Sir/Madam,</p>
 
-        # If extra leave is required, include it in the email
+                <p>Please find the details of the leave application below:</p>
+
+                <table style="border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.2;">
+                <tr>
+                    <td style="padding: 4px 2px; margin: 0;"><strong>Employee Name:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{employee.first_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Leave Type:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_type}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Reason:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{reason}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Start Date:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{start_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>End Date:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{end_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Total Days:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_days}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Privilege Leave Balance After Deduction:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_balance.privilege_leave_balance}</td>
+                </tr>
+                </table>
+            """
+
         if extra_leave > 0:
-            body += f"⚠️ Extra Leave Days Required: {extra_leave} (Not covered by Privilege Leave)\n"
+                body += f"""
+                <p style="color: red;"><strong>⚠️ Extra Leave Days Required:</strong> {extra_leave} (Not covered by Privilege Leave)</p>
+                """
 
-        body += f"Click here to approve: {url_for('profile.approve_leave', leave_id=leave_application.id, _external=True)}\n\n"
-        body += "Thanks $ Regards\n"
-        body += f"{employee.first_name}\n"
+        body += f"""
+                <p>
+                <a href="https://solviotec.com/" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Login to HRMS to Approve</a>
+                </p>
+
+                <p>Thanks & Regards,<br>
+                {employee.first_name}</p>
+            </body>
+            </html>
+            """
+
         verify_oauth2_and_send_email(emp, subject, body, department_email, cc_emails)
-        flash('Your leave application has been submitted.', 'success')
+        flash('Your leave application has been submitted & Mail Sent for approval.', 'success')
         return redirect(url_for('profile.apply_leave'))
 
     user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
-    print(f"succefull got the reason: {user_leaves}")
+
     return render_template('profile/apply_leave.html', form=form, leave_balance=leave_balance, user_leaves=user_leaves)
 
 

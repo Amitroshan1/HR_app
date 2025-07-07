@@ -37,6 +37,8 @@ class Admin(db.Model, UserMixin):
     payslips = db.relationship('PaySlip', back_populates='admin', cascade="all, delete-orphan")
     queries = db.relationship('Query', back_populates='admin', cascade="all, delete-orphan")
     query_replies = db.relationship('QueryReply', back_populates='admin', cascade="all, delete-orphan")
+    work_from_home_applications = db.relationship('WorkFromHomeApplication', back_populates='admin', cascade='all, delete-orphan')
+
     # sessions = db.relationship('Session', back_populates='admin', cascade="all, delete-orphan")
 
 

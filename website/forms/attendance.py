@@ -36,7 +36,9 @@ class LeaveForm(FlaskForm):
     leave_type = SelectField('Leave Type', 
                             choices=[('','Select Leave Option'),
                                      ('Privilege Leave','Privilege Leave'),
-                                     ('Casual Leave','Casual Leave')
+                                     ('Casual Leave','Casual Leave'),
+                                     ("Half Day Leave","Half Day Leave"),
+                                     ('Compensatory Leave','Compensatory Leave'),
                                     ],
                               validators=[DataRequired()])
     reason= StringField('Reason For Leave * ', 
@@ -72,3 +74,10 @@ class BalanceUpdateForm(FlaskForm):
             raise ValidationError("Casual Leave Balance must be a number.")
 
 
+
+
+class WorkFromHomeForm(FlaskForm):
+    start_date = DateField('Start Date',validators=[DataRequired()])
+    end_date = DateField('End Date', validators=[DataRequired()])
+    reason = TextAreaField('Reason', validators=[DataRequired()])
+    submit = SubmitField('Submit WFH Request')

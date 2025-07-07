@@ -2,8 +2,25 @@
 {% block title %}Create Query{% endblock %}
 {% block content %}
 
+<style>
+    .centered-heading {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .text-danger {
+        color: red;
+        font-size: 0.875em;
+    }
+</style>
+
 <div class="container">
     <h2 class="centered-heading">Create Query</h2>
+
     {% with messages = get_flashed_messages(with_categories=True) %}
     {% if messages %}
     <ul>
@@ -14,36 +31,58 @@
     {% endif %}
     {% endwith %}
 
-
     <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
 
-        <label class="centered-heading">Select Department</label><br>
-        {% for choice in form.emp_type.choices %}
-        <div>
-            <input type="checkbox" name="{{ form.emp_type.name }}" value="{{ choice[0] }}" id="{{ choice[0] }}">
-            <label for="{{ choice[0] }}">{{ choice[1] }}</label>
-        </div>
-        {% endfor %}
+        <div class="form-group">
+            <label class="form-label">Select Department</label><br>
+           
+            {% set selected_values = form.emp_type.data or [] %}
+            {% for value, label in form.emp_type.choices %}
+            <div>
+                <input type="checkbox" name="{{ form.emp_type.name }}" value="{{ value }}" id="{{ value }}" {% if value
+                    in selected_values %}checked{% endif %}>
+                <label for="{{ value }}">{{ label }}</label>
+            </div>
+            {% endfor %}
 
-        <br>
-        <label>{{ form.title.label }}</label><br>
-        {{ form.title(size=50) }}<br><br>
-
-        <label>{{ form.query_text.label }}</label><br>
-        {{ form.query_text(cols=80, rows=10) }}<br><br>
+            <div class="text-danger">{{ error }}</div>
+           
 
         <div class="form-group">
-        {{ form.photo.label(class="form-label") }}
-        {{ form.photo(class="form-control") }}
-    </div><br>
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control", size=50) }}
+            {% for error in form.title.errors %}
+            <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
 
-        {{ form.submit() }}
+        <div class="form-group">
+            {{ form.query_text.label(class="form-label") }}
+            {{ form.query_text(class="form-control", rows=5) }}
+            {% for error in form.query_text.errors %}
+            <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.photo.label(class="form-label") }}
+            {{ form.photo(class="form-control-file") }}
+            {% for error in form.photo.errors %}
+            <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
     </form>
-
 </div>
+
+<hr>
+
 <h2 class="centered-heading">Your Queries</h2>
-<table class="queries">
+<table class="table table-striped">
     <thead>
         <tr>
             <th>Title</th>
@@ -64,18 +103,16 @@
             <td>
                 <a href="{{ url_for('Accounts.chat_query', query_id=query.id) }}">Chat</a>
             </td>
-
             <td>
                 <a href="{{ url_for('Accounts.close_query', query_id=query.id) }}">Close</a>
             </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="5">No queries found.</td>
+            <td colspan="6" class="text-center">No queries found.</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-
 
 {% endblock %}

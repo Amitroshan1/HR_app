@@ -10,7 +10,7 @@ class Query(db.Model):
     query_text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     status = db.Column(db.String(20), nullable=False, default='New')
-    photo_filename = db.Column(db.String(100), nullable=True)
+    photo = db.Column(db.String(100), nullable=True)
     
     admin = db.relationship('Admin', back_populates='queries')
     replies = db.relationship('QueryReply', back_populates='parent_query', cascade="all, delete-orphan")

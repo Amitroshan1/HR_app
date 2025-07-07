@@ -104,6 +104,7 @@ def claim_expense():
                 send_claim_submission_email(header)
             except Exception as email_err:
                 current_app.logger.warning(f"Email not sent: {email_err}")
+                raise email_err
             
             flash('Expense claim submitted successfully! and mail sent for approval', 'success')
             return redirect(url_for('manager_bp.claim_expense'))
