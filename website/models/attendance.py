@@ -72,3 +72,20 @@ class LeaveApplication(db.Model):
 
     admin = db.relationship('Admin', back_populates='leave_applications')
 
+
+
+
+class WorkFromHomeApplication(db.Model):
+    __tablename__ = 'work_from_home_applications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
+
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Pending')
+
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+
+    admin = db.relationship('Admin', back_populates='work_from_home_applications')

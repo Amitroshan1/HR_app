@@ -263,48 +263,42 @@ def download_payslip(payslip_id):
     return send_file(file_path, as_attachment=True)
 
 
-
 @Accounts.route('/create_query', methods=['GET', 'POST'])
 @login_required
 def create_query():
     form = QueryForm()
+    photo_filename = None  # ✅ Initialize this at the top
 
     if form.validate_on_submit():
         if form.photo.data:
             file = form.photo.data
-            file_size = request.content_length  # 🔧 safer than file.content_length
+            file_size = request.content_length
 
-            # Check if file size exceeds 100 KB (102400 bytes)
-            if file_size and file_size > 102400:
+            if file_size and file_size > 1048576:
                 flash('File size exceeds 100 KB. Please upload a smaller file.', 'warning')
-                return redirect(request.url)  # stop the flow if too large
+                return redirect(request.url)
             else:
                 filename = secure_filename(file.filename)
-                print("Success full get file name:", filename)
+                print("Successfully got file name:", filename)
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-                photo_filename = filename  # ✅ Save only filename
+                photo_filename = filename  # ✅ Set it only if file exists
 
-
-
-        # Create a new query and save it to the database
+        # ✅ Now it's safe to use photo_filename
         new_query = Query(
             admin_id=current_user.id,
             emp_type=', '.join(form.emp_type.data),
             title=form.title.data,
             query_text=form.query_text.data,
-            photo_filename = photo_filename
+            photo=photo_filename
         )
         db.session.add(new_query)
         db.session.commit()
 
-        # Notify the user that the query has been created
         flash('Your query has been created successfully.', 'success')
-
         return redirect(url_for('Accounts.create_query'))
 
-    # Display the user's previous queries
     user_queries = Query.query.filter_by(admin_id=current_user.id).order_by(Query.created_at.desc()).all()
-    
+
     return render_template('Accounts/create_query.html', form=form, queries=user_queries)
 
 
@@ -318,7 +312,7 @@ def create_query():
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
-    print(f" Success full got the photo name : {selected_query.photo_filename}")
+    print(f" Success full got the photo name : {selected_query.photo}")
     if selected_query.status == 'New':
         selected_query.status = 'Open'
         db.session.commit()

@@ -14,7 +14,7 @@ class QueryForm(FlaskForm):
                               validators=[DataRequired()])
     title = StringField('Title', validators=[DataRequired()])
     query_text = TextAreaField('Query', validators=[DataRequired()])
-    photo = FileField('Attach File ', validators=[FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')])
+    photo = FileField('Attach File ')
     submit = SubmitField('Submit Query')
 
 

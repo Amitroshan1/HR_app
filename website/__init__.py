@@ -17,7 +17,7 @@ import os
 from flask_session import Session 
 from dotenv import load_dotenv
 from dateutil.relativedelta import relativedelta
-
+from urllib3.exceptions import NewConnectionError
 
 
 
@@ -294,6 +294,19 @@ def create_app():
         session.clear()
         flash('Your session has expired. Please log in again.', 'warning')
         return redirect(url_for('auth.login'))  # make sure this route exists
+    
+ 
+
+    from requests.exceptions import RequestException
+    
+
+    @app.errorhandler(RequestException)
+    @app.errorhandler(NewConnectionError)
+    def handle_network_errors(e):
+        session.clear()
+        flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
+        return redirect(url_for('auth.login'))  # or your actual login route
+
 
     scheduler.init_app(app)
     Session.init_app(app)

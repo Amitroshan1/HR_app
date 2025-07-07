@@ -14,14 +14,14 @@ from .models.education import Education,UploadDoc
 from .forms.family_details import Family_details
 from .forms.previous_company import Previous_company
 from .models.prev_com import PreviousCompany
-from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location
-from .forms.attendance import PunchForm,LeaveForm,LocationForm
+from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location,WorkFromHomeApplication
+from .forms.attendance import PunchForm,LeaveForm,LocationForm,WorkFromHomeForm
 from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location
-from datetime import timedelta  
+from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
 
@@ -418,9 +418,55 @@ def punch():
     )
 
 
+  # adjust the import path if needed
+
+@profile.route('/submit-wfh', methods=['GET', 'POST'])
+@login_required
+def submit_wfh():
+    form = WorkFromHomeForm()
+    print("Current user:", current_user.id)
+
+    if form.validate_on_submit():
+        print("Form submitted successfully")
+        wfh_application = WorkFromHomeApplication(
+            admin_id=current_user.id,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            reason=form.reason.data,
+            status='Pending',
+            created_at=datetime.now()
+        )
+        db.session.add(wfh_application)
+        db.session.commit()
+        print("WFH application submitted:", wfh_application)
+
+        try:
+            success = send_wfh_approval_email_to_managers(current_user, wfh_application)
+            if success:
+                flash('WFH request submitted and email sent for approval.', 'success')
+            else:
+                flash('WFH submitted, but failed to send approval email.', 'warning')
+        except Exception as e:
+            app.logger.error(f"Email send failed: {e}")
+            flash('WFH submitted, but error occurred while sending approval email.', 'danger')
+
+        return redirect(url_for('profile.submit_wfh'))
+
+    if request.method == 'POST':
+        print("Form validation failed:", form.errors)
+
+    user_wfh_applications = WorkFromHomeApplication.query.filter_by(
+        admin_id=current_user.id
+    ).order_by(WorkFromHomeApplication.created_at.desc()).all()
+
+    return render_template(
+        'profile/submit_wfh.html',
+        form=form,
+        wfh_applications=user_wfh_applications
+    )
 
 
-@profile.route('/manage-location\s', methods=['GET', 'POST'])
+@profile.route('/manage-location', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
     form = LocationForm()
@@ -482,38 +528,53 @@ def apply_leave():
 
         extra_leave = 0  # Variable to track extra leave days
 
-        # Validate leave balances
-        if leave_type == 'Casual Leave' and leave_days > leave_balance.casual_leave_balance:
-            flash('You do not have enough Casual Leave balance Try Privilege Leave.', 'danger')
-            return redirect(url_for('profile.apply_leave'))
 
         if leave_type == 'Privilege Leave':
             if leave_days > leave_balance.privilege_leave_balance:
-                extra_leave = leave_days - leave_balance.privilege_leave_balance
-                leave_balance.privilege_leave_balance = 0  # Set remaining balance to 0
+                extra_leave = leave_days - int(leave_balance.privilege_leave_balance)  # Use only full days
+                leave_balance.privilege_leave_balance -= (leave_days - extra_leave)    # Deduct full days used
             else:
-                leave_balance.privilege_leave_balance -= leave_days  # Deduct normally
+                leave_balance.privilege_leave_balance -= leave_days
+
 
         # Deduct Casual Leave balance if applicable
         if leave_type == 'Casual Leave':
+            if leave_days > 2:
+                flash('You cannot apply for more than 2 days of Casual Leave.', 'warning')
+                return redirect(url_for('profile.apply_leave'))
+
+            if leave_days > leave_balance.casual_leave_balance:
+                flash('You do not have enough Casual Leave balance for the requested days. Please apply under Privilege Leave instead.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+
+            # If valid, deduct the exact number of leave days
             leave_balance.casual_leave_balance -= leave_days
+
+
 
         if leave_type == "Half Day Leave":
             if leave_days > 1:
                 flash('Half Day Leave can only be applied for one day.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
+
             elif leave_balance.casual_leave_balance < 0.5:
-                flash('You do not have enough Casual Leave balance for Half Day Leave.', 'danger')
-                return redirect(url_for('profile.apply_leave'))
-            leave_balance.casual_leave_balance -= 0.5
+                if leave_balance.privilege_leave_balance >= 0.5:
+                    leave_balance.privilege_leave_balance -= 0.5
+                    flash('0.5 day deducted from Privilege Leave due to insufficient Casual Leave.', 'info')
+                else:
+                    extra_leave = 0.5
+                    flash(f'Not enough Privilege Leave either. {extra_leave} day marked as Extra Leave.', 'warning')
+            else:
+                leave_balance.casual_leave_balance -= 0.5
+
 
         if leave_type == "Compensatory Leave":
-            if leave_days > 2:
+            if leave_days > 3:
                 flash('Compensatory Leave can only be applied for Two days.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
-        
-            flash('Please ask Lead/manager for Compensatory Leave.', 'danger')
-        
+
+            flash('Please ask Lead/manager for Approve Compensatory Leave.', 'danger')
+
 
         # Save leave application
         leave_application = LeaveApplication(
@@ -584,7 +645,7 @@ def apply_leave():
 
         body += f"""
                 <p>
-                <a href="http://127.0.0.1:5000/" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Login to HRMS to Approve</a>
+                <a href="https://solviotec.com/" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Login to HRMS to Approve</a>
                 </p>
 
                 <p>Thanks & Regards,<br>
@@ -598,7 +659,7 @@ def apply_leave():
         return redirect(url_for('profile.apply_leave'))
 
     user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
-    print(f"succefull got the reason: {user_leaves}")
+
     return render_template('profile/apply_leave.html', form=form, leave_balance=leave_balance, user_leaves=user_leaves)
 
 
@@ -607,8 +668,6 @@ def approve_leave(leave_id):
     leave_application = LeaveApplication.query.get_or_404(leave_id)
     leave_application.status = 'Approved'
     db.session.commit()
-    flash('✅ Leave has been approved successfully.', 'success')
-    return redirect(url_for('manager_bp.manager_access'))
 
 @profile.route('/reject-leave/<int:leave_id>', methods=['GET'])
 def reject_leave(leave_id):
@@ -617,8 +676,11 @@ def reject_leave(leave_id):
     db.session.commit()
     flash('❌ Leave application has been rejected.', 'danger')
     return redirect(url_for('manager_bp.manager_access'))
-  
-    
+
+
+
+
+
 
 
 

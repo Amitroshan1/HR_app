@@ -1,0 +1,113 @@
+{% extends "employee/E_homeBase.html" %}
+{% block title %}WFH_form{% endblock %}
+{% block content %}
+
+<style>
+    .container_WFH {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .centered-heading {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .form-whf {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .col_claim3_WFH,
+    .col_claim3_WHF {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .col_claim3 {
+        margin-bottom: 20px;
+    }
+
+    .form-groupwhf {
+        text-align: center;
+    }
+</style>
+
+<div class="container_WFH">
+    <h2 class="centered-heading">Apply for Work from Home</h2>
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+            {% endwith %}
+
+    <form method="POST" action="{{ url_for('profile.submit_wfh') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-whf">
+            <div class="col_claim3_WFH">
+                {{ form.start_date.label(class="form-label") }}
+                {{ form.start_date(class="form-control") }}
+            </div>
+
+            <div class="col_claim3_WHF">
+                {{ form.end_date.label(class="form-label") }}
+                {{ form.end_date(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="col_claim3">
+            {{ form.reason.label(class="form-label") }}
+            {{ form.reason(class="form-control") }}
+        </div>
+
+        <div class="form-groupwhf mt-3">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+
+
+
+<hr>
+
+<h3 class="centered-heading">Your Work From Home Requests</h3>
+
+<table class="table is-striped is-fullwidth mt-3">
+    <thead>
+        <tr>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Submitted On</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for wfh in wfh_applications %}
+        <tr>
+            <td>{{ wfh.start_date.strftime('%d-%m-%Y') }}</td>
+            <td>{{ wfh.end_date.strftime('%d-%m-%Y') }}</td>
+            <td>{{ wfh.reason }}</td>
+            <td>{{ wfh.status }}</td>
+            <td>{{ wfh.created_at.strftime('%d-%m-%Y %I:%M %p') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="has-text-centered">No WFH applications submitted yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+
+
+
+{% endblock %}
