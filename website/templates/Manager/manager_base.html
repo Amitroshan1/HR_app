@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manager_style.css') }}">
     <title>{% block title %}{% endblock %}</title>
-    <style>{% block style %}{% endblock %}</style>
 </head>
 
 <body>
@@ -22,12 +22,19 @@
                 <li>
                     <a href="/E_homepage" class="active">Home</a>
                 </li>
-
-
-
-
                 <li>
-                    <a href="/search">Search</a>
+                    <a href="/manager_access" class="active">Leave</a>
+                </li>
+
+
+
+
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">Approve</a>
+                    <div class="dropdown-content">
+                        <a href="#">Claim</a>
+                        <a href="/wfh_approval">Work From Home</a>
+                    </div>
                 </li>
 
 

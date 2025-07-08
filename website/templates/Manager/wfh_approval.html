@@ -1,0 +1,70 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}Manager Approve WFH{% endblock %}
+
+{% block content %}
+<!-- ✅ FLASH MESSAGES GO HERE, at top of content block -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}" style="text-align: center;">
+        <h3>{{ message }}</h3>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<h2 style="text-align: center">WFH For Approval</h2>
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Reason</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for wfh in wfh_data %}
+    <tr>
+        <td>{{wfh.admin.first_name}}</td>
+        <td>{{wfh.reason}}</td>
+        <td>{{wfh.start_date}}</td>
+        <td>{{wfh.end_date}}</td>
+        <td>
+            <a href="{{url_for('profile.reject_wfh',wfh_id = wfh.id)}}" class="button-reject">Reject</a>
+            <a href="{{url_for('profile.approve_wfh',wfh_id = wfh.id)}}" class="button-accept">Accept</a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h2 style="text-align: center">WFH For Approval</h2>
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Reason</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for wfh in wfh_another %}
+    <tr>
+        <td>{{wfh.admin.first_name}}</td>
+        <td>{{wfh.reason}}</td>
+        <td>{{wfh.start_date}}</td>
+        <td>{{wfh.end_date}}</td>
+        <td>{{wfh.status}}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+

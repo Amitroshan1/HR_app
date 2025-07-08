@@ -20,7 +20,7 @@ from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location
+from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
 from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
@@ -329,6 +329,23 @@ def check_leave():
 
     return False  # Not on leave
 
+def check_wfh():
+    today = date.today()
+    wfh_data  = WorkFromHomeApplication.query.filter(
+        WorkFromHomeApplication.admin_id == current_user.id,
+        WorkFromHomeApplication.start_date <= today,
+        WorkFromHomeApplication.end_date >= today,
+        WorkFromHomeApplication.status == 'Pending'
+    ).all()
+    for wfh in wfh_data:
+        current_date = wfh.start_date
+        while current_date <= wfh.end_date:
+            if current_date == today:
+                return True
+            current_date += timedelta(days=1)
+        return False
+
+
 
 @profile.route('/punch', methods=['GET', 'POST'])
 @login_required
@@ -372,8 +389,9 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)  # Stop further execution
-            # if check_leave()
-            # Step 2: Handle Punch logic
+            elif check_wfh():
+                flash("WFM Mode access is restricted until your request is approved.", "danger")
+                return redirect(request.url)
             elif punch and punch.punch_in:
                 flash('Already punched in today!', 'danger')
             else:
@@ -398,7 +416,9 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)
-
+            elif check_wfh():
+                flash("WFM Mode access is restricted until your request is approved.", "danger")
+                return redirect(request.url)
             if not punch or not punch.punch_in:
                 flash('You need to punch in first!', 'danger')
             else:
@@ -668,6 +688,8 @@ def approve_leave(leave_id):
     leave_application = LeaveApplication.query.get_or_404(leave_id)
     leave_application.status = 'Approved'
     db.session.commit()
+    flash('Leave application has been approved.', 'success')
+    return redirect(url_for('manager_bp.manager_access'))
 
 @profile.route('/reject-leave/<int:leave_id>', methods=['GET'])
 def reject_leave(leave_id):
@@ -677,6 +699,21 @@ def reject_leave(leave_id):
     flash('❌ Leave application has been rejected.', 'danger')
     return redirect(url_for('manager_bp.manager_access'))
 
+@profile.route('/approve-wfh/<int:wfh_id>', methods=['GET'])
+def approve_wfh(wfh_id):
+    wfh_app_data = WorkFromHomeApplication.query.get_or_404(wfh_id)
+    wfh_app_data.status = 'Approved'
+    db.session.commit()
+    flash('Work From Home Application has been approved.', 'success')
+    return redirect(url_for('manager_bp.wfh_approval'))
+
+@profile.route('/reject-wfh/<int:wfh_id>', methods=['GET'])
+def reject_wfh(wfh_id):
+    wfh_app_data = WorkFromHomeApplication.query.get_or_404(wfh_id)
+    wfh_app_data.status = 'Rejected'
+    db.session.commit()
+    flash('Work From Home Application has been rejected.', 'success')
+    return redirect(url_for('manager_bp.wfh_approval'))
 
 
 

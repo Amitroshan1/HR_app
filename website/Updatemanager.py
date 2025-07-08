@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 from .common import send_claim_submission_email
 from flask_login import current_user, login_required
 from .models.signup import Signup
-from .models.attendance import LeaveApplication
+from .models.attendance import LeaveApplication,WorkFromHomeApplication
 
 manager_bp = Blueprint('manager_bp', __name__)
 
@@ -213,3 +213,40 @@ def manager_access():
         leave_another = leave_another
 
     )
+@manager_bp.route('wfh_approval', methods=['GET', 'POST'])
+def wfh_approval():
+    current_email = current_user.email
+    # print(f"Current email: {current_email}")
+    manager_data = ManagerContact.query.filter(
+        (ManagerContact.l1_email == current_email) |
+        (ManagerContact.l2_email == current_email) |
+        (ManagerContact.l3_email == current_email)
+    ).all()
+
+    emp_type = [manager.user_type for manager in manager_data]
+    circle_type = [manager.circle_name for manager in manager_data]
+    # print(f"emp_type: {emp_type}, circle_type: {circle_type}")
+
+    signups_data = Signup.query.filter(
+        Signup.emp_type.in_(emp_type),
+        Signup.circle.in_(circle_type),
+    ).all()
+
+    sing_emails = [signup.email for signup in signups_data]
+    admin_data = Admin.query.filter(Admin.email.in_(sing_emails)).all()
+    admin_ids = [admin.id for admin in admin_data]
+
+    wfh_data = WorkFromHomeApplication.query.filter(
+        WorkFromHomeApplication.admin_id.in_(admin_ids),
+        WorkFromHomeApplication.status=='Pending',
+    ).all()
+
+    wfh_another = WorkFromHomeApplication.query.filter(
+        WorkFromHomeApplication.admin_id.in_(admin_ids),
+        WorkFromHomeApplication.status!='Pending',
+    ).all()
+
+
+
+
+    return render_template('Manager/wfh_approval.html',admin_data=admin_data,wfh_data=wfh_data,wfh_another=wfh_another)
