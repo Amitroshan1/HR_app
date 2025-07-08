@@ -20,7 +20,7 @@ from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location
+from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
 from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
@@ -668,6 +668,8 @@ def approve_leave(leave_id):
     leave_application = LeaveApplication.query.get_or_404(leave_id)
     leave_application.status = 'Approved'
     db.session.commit()
+    flash(' Leave application has been Approved.', 'danger')
+    return redirect(url_for('manager_bp.manager_access'))
 
 @profile.route('/reject-leave/<int:leave_id>', methods=['GET'])
 def reject_leave(leave_id):

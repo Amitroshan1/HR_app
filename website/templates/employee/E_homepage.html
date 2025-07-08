@@ -7,11 +7,20 @@
 
     <div class="punch-container">
         {% if employee %}
-        <h2>Welcome, {{ employee.name }}..</h2><h3>({{ employee.designation | upper}})</h3>
-        
+        <h2>Welcome, {{ employee.name }}..</h2>
+        <div class="attendance-summary">
+
+            <strong>PL:-</strong> {{ data.privilege_leave_balance }}
+            <strong>CL:</strong> {{ data.casual_leave_balance }}
+            <strong>Working Days:</strong> {{ data.present_days }}
+        </div>
+        <h3>({{ employee.designation | upper}})</h3>
+
+
         {% else %}
         <p>Please Update Employee Details</p>
         {% endif %}
+
 
         {% if employee %}
         <div class="punch-times">
@@ -90,7 +99,7 @@
 </div>
 
 <!-- News Feed -->
-<div class="news-feed-container-fixed"a >
+<div class="news-feed-container-fixed" a>
     <h2 class="centered-heading">News Feed</h2>
     <marquee class="marquee-scroll" behavior="scroll" direction="up" scrollamount="3" onmouseover="this.stop();"
         onmouseout="this.start();">

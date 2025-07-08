@@ -15,7 +15,7 @@ from .common import verify_oauth2_and_send_email,Company_verify_oauth2_and_send_
 import pytz
 from datetime import datetime
 from flask import current_app
-from .auth import attend_calc
+from .utility import attend_calc
 from zoneinfo import ZoneInfo
 import calendar
 from io import BytesIO

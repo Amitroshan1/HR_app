@@ -19,6 +19,14 @@ from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
 from .models.manager_model import ManagerContact
+from .utility import get_user_working_summary
+
+
+
+
+
+
+
 
 auth = Blueprint('auth', __name__)
 
@@ -248,6 +256,8 @@ def E_homepage():
 
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
+    data =get_user_working_summary(current_user.id, datetime.now().year, datetime.now().month)
+    print(f"Working summary data: {data}")
 
     if not employee:
         flash("No employee record found for the current user.")
@@ -303,6 +313,7 @@ def E_homepage():
                            news_feeds=news_feeds,
                            DOJ=DOJ,
                            flag=flag,
+                           data=data,  # Pass the working summary data
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
                            emp_type=emp_type, count_new_queries=count_new_queries)  # Pass emp_type to the template
@@ -355,25 +366,3 @@ def change_password():
 
     return render_template('profile/change_password.html', form=form)
 
-
-def attend_calc(year,month,num_days,user_id):
-
-    punches = Punch.query.filter(
-        Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
-        Punch.admin_id == user_id
-    ).all()
-
-    calcu_data = 0
-    calcu_hdata = 0
-    for pdata in punches:
-        if pdata.punch_date:
-            if pdata.punch_in and pdata.punch_out:
-                calcu_data += 1
-            elif pdata.punch_in and not pdata.punch_out:
-                calcu_data += 0.5
-        if pdata.is_wfh:
-            calcu_hdata += 1
-    return {
-        "attendance": calcu_data,
-        "work from home": calcu_hdata
-    }
