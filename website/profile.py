@@ -20,7 +20,7 @@ from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
+from .common import is_within_allowed_location
 from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
