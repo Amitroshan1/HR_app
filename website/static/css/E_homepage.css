@@ -952,3 +952,28 @@ button[type="button"], .btn {
     border: 1px solid #d3dce6;
     border-radius: 8px;
 }
+
+.ms-button {
+        display: inline-block;
+        background-color: #16893a;
+        /* Microsoft blue */
+        color: #ffffff;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 10px 20px;
+        margin-left: 40px;
+        border: none;
+        border-radius: 10px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .ms-button:hover {
+        background-color: #3c7a08;
+    }
+
+    .ms-button:active {
+        background-color: #aff522;
+    }
