@@ -276,6 +276,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
     app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'png', 'jpeg', 'pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'jfif'}
     app.config['WTF_CSRF_ENABLED'] = True
+    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 
 
     # Initialize extensions
     db.init_app(app)
@@ -311,6 +312,10 @@ def create_app():
     scheduler.init_app(app)
     Session.init_app(app)
 
+    @app.errorhandler(413)
+    def too_large(e):
+        flash("Upload failed: File size exceeds limit.", "warning")
+        return redirect(request.url)
 
 
 

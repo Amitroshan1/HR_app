@@ -146,6 +146,7 @@ def display_details():
     admin = Admin.query.get(user_id)
     
     details = None
+    dict_data=None
 
     if form.validate_on_submit():
         month = int(form.month.data)
@@ -210,6 +211,7 @@ def display_details():
                 current_date += timedelta(days=1)
 
             # Calculate the data of month
+        
         calcu_data = 0
         calcu_hdata = 0
         for pdata in punches:
@@ -220,6 +222,7 @@ def display_details():
                     calcu_data += 0.5
             if pdata.is_wfh:
                 calcu_hdata += 1
+        
         dict_data = {
             "attendance": calcu_data,
             "work from home": calcu_hdata

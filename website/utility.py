@@ -3,6 +3,9 @@ from .models.Admin_models import Admin
 from .models.signup import Signup
 from .models.attendance import LeaveBalance
 from calendar import monthrange
+from datetime import date,datetime
+
+
 
 def attend_calc(year,month,num_days,user_id):
 
@@ -57,4 +60,30 @@ def get_user_working_summary(user_id, year, month):
         "privilege_leave_balance": pl_balance,
         "casual_leave_balance": cl_balance,
         "total_working_days": num_days
+    }
+
+
+
+def punch_time(user_id):
+    """
+    Get today's punch in, punch out, and total worked time.
+    """
+    today = date.today()
+    punch = Punch.query.filter_by(admin_id=user_id, punch_date=today).first()
+    
+    if punch and punch.punch_in and punch.punch_out:
+        # Calculate time difference
+        in_time = datetime.combine(today, punch.punch_in)
+        out_time = datetime.combine(today, punch.punch_out)
+        worked_duration = out_time - in_time
+
+        # Convert to hours and minutes
+        total_minutes = int(worked_duration.total_seconds() // 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+
+        return f"Todays work time :  {hours}h {minutes}m"
+        
+    return {
+        "Todays work time": "0h 0m"
     }
