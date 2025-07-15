@@ -100,3 +100,4 @@ class WorkFromHomeApplication(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
 
     admin = db.relationship('Admin', back_populates='work_from_home_applications')
+   
