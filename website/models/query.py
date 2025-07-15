@@ -24,6 +24,7 @@ class QueryReply(db.Model):
     admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
     reply_text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    user_type= db.Column(db.String(255), nullable=False)
 
     parent_query = db.relationship('Query', back_populates='replies')  # Renamed relationship
     admin = db.relationship('Admin')

@@ -119,7 +119,7 @@ def send_reminder_emails():
     with scheduler.app.app_context():
         # Get all open queries
         queries = Query.query.filter_by(status='open').all()
-        print(f"Found {len(queries)} open queries")
+        
 
         for query in queries:
             # Make sure query.created_at is timezone-aware in IST

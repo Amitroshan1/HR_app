@@ -321,32 +321,46 @@ def chat_query(query_id):
     
     signups_data = Signup.query.filter_by(email=current_email).first()
 
+    # First, get the Admin who created the query
+    query_creator = Admin.query.get(selected_query.admin_id)
+
+    # Then, use their email to fetch the Signup record
+    emp_type_of_creator = Signup.query.filter_by(email=query_creator.email).first()
+
+
     
     form = QueryReplyForm()  
     form1 = QueryForm()
     replies = QueryReply.query.filter(QueryReply.query_id == query_id).order_by(QueryReply.created_at.asc()).all()
 
- 
     if form.validate_on_submit():
-        reply_text = form.reply_text.data 
+        reply_text = form.reply_text.data
 
         if reply_text:
+            # Determine if current user is the one who created the query
+            is_creator = emp_type_of_creator.emp_type == signups_data.emp_type
+            print(f"Is creator: {is_creator}")  # Debugging line
+
+            # Set user_type accordingly
+            user_type = "User" if is_creator else "Team"
+
             new_reply = QueryReply(
                 query_id=query_id,
                 admin_id=current_user.id,
-                reply_text=reply_text
+                reply_text=reply_text,
+                user_type=user_type
             )
             db.session.add(new_reply)
 
-             # ✅ Set IST time using pytz
+            # Update the query timestamp
             ist = pytz.timezone('Asia/Kolkata')
             ist_time = datetime.now(ist)
             selected_query.created_at = ist_time
 
             db.session.commit()
-            
-            return redirect(url_for('Accounts.chat_query', query_id=query_id))
 
+            return redirect(url_for('Accounts.chat_query', query_id=query_id))
+        
     return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form,form1=form1,signups_data=signups_data)
 
 
