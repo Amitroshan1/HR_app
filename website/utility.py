@@ -3,6 +3,11 @@ from .models.Admin_models import Admin
 from .models.signup import Signup
 from .models.attendance import LeaveBalance
 from calendar import monthrange
+from .forms.search_from import PunchManuallyForm
+from flask import render_template, flash, redirect, url_for
+from . import db
+
+
 from datetime import date,datetime
 
 
@@ -70,7 +75,7 @@ def punch_time(user_id):
     """
     today = date.today()
     punch = Punch.query.filter_by(admin_id=user_id, punch_date=today).first()
-    
+
     if punch and punch.punch_in and punch.punch_out:
         # Calculate time difference
         in_time = datetime.combine(today, punch.punch_in)
@@ -83,7 +88,7 @@ def punch_time(user_id):
         minutes = total_minutes % 60
 
         return f"Todays work time :  {hours}h {minutes}m"
-        
+
     return {
         "Todays work time": "0h 0m"
     }

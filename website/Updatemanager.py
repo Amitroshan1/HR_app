@@ -1,3 +1,5 @@
+from pickletools import read_stringnl_noescape
+
 from flask import Blueprint, render_template, request, flash, redirect, url_for,current_app
 
 from .models.Admin_models import Admin
@@ -12,6 +14,7 @@ from .common import send_claim_submission_email
 from flask_login import current_user, login_required
 from .models.signup import Signup
 from .models.attendance import LeaveApplication,WorkFromHomeApplication
+from .models.expense import ExpenseClaimHeader,ExpenseLineItem
 
 manager_bp = Blueprint('manager_bp', __name__)
 
@@ -216,7 +219,6 @@ def manager_access():
 @manager_bp.route('wfh_approval', methods=['GET', 'POST'])
 def wfh_approval():
     current_email = current_user.email
-    # print(f"Current email: {current_email}")
     manager_data = ManagerContact.query.filter(
         (ManagerContact.l1_email == current_email) |
         (ManagerContact.l2_email == current_email) |
@@ -250,3 +252,58 @@ def wfh_approval():
 
 
     return render_template('Manager/wfh_approval.html',admin_data=admin_data,wfh_data=wfh_data,wfh_another=wfh_another)
+
+
+@manager_bp.route('/claim_approval', methods=['GET', 'POST'])
+def claim_approval():
+    claims = ExpenseClaimHeader.query.order_by(
+        ExpenseClaimHeader.travel_from_date.desc()
+    ).all()
+    return render_template('Manager/manager_claims.html', claim_data=claims)
+
+
+@manager_bp.route('/view_items/<int:claim_id>', methods=['GET', 'POST'])
+def view_items(claim_id):
+    print(f"view claims: {claim_id}")
+    claim = ExpenseClaimHeader.query.get_or_404(claim_id)
+    print(claim.id)
+
+
+    # Filter items in one go
+    items = ExpenseLineItem.query.filter_by(claim_id=claim_id).all()
+    for i in items:
+        print(f" view3 item: {i.claim_id}")
+
+    # Split pending and non-pending items
+    pending_items = [item for item in items if item.status == "Pending"]
+
+    not_pending_items = [item for item in items if item.status != "Pending"]
+
+    return render_template(
+        'Manager/view_items.html',
+        claim_item_data=pending_items,
+        claim=claim,
+        not_pending_items=not_pending_items
+    )
+
+
+@manager_bp.route('/accept_item/<int:item_id>', methods=['GET', 'POST'])
+def accept(item_id):
+    print(f"accept item: {item_id}")
+    item = ExpenseLineItem.query.get_or_404(item_id)
+
+    item.status = "Approved"
+    db.session.commit()
+    print(f"item id got accepted: {item.claim_id}")
+    return redirect(url_for('manager_bp.view_items',claim_id=item.claim_id))
+
+
+@manager_bp.route('/reject_item/<int:item_id>', methods=['GET', 'POST'])
+def reject(item_id):
+    print(f"reject item: {item_id}")
+    item = ExpenseLineItem.query.get_or_404(item_id)
+    print(f"Item ID: {item.id}, Belongs to Claim ID: {item.claim_id}, Status: {item.status}")
+
+    item.status = "Rejected"
+    db.session.commit()
+    return redirect(url_for('manager_bp.view_items', claim_id=item.claim_id))

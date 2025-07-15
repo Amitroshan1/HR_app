@@ -20,7 +20,7 @@ from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import send_wfh_approval_email_to_managers
+from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
 from datetime import timedelta
 from .utility import punch_time
 from sqlalchemy.exc import SQLAlchemyError
@@ -123,6 +123,7 @@ def empl_det():
                 flash(f"Error in {getattr(form, field).label.text}: {error}", category='error')
 
     return render_template('profile/emp_det.html', form=form)
+
 
 
 
@@ -346,19 +347,13 @@ def check_leave():
 
 def check_wfh():
     today = date.today()
-    wfh_data  = WorkFromHomeApplication.query.filter(
+    approved = WorkFromHomeApplication.query.filter(
         WorkFromHomeApplication.admin_id == current_user.id,
         WorkFromHomeApplication.start_date <= today,
         WorkFromHomeApplication.end_date >= today,
-        WorkFromHomeApplication.status == 'Pending'
-    ).all()
-    for wfh in wfh_data:
-        current_date = wfh.start_date
-        while current_date <= wfh.end_date:
-            if current_date == today:
-                return True
-            current_date += timedelta(days=1)
-        return False
+        WorkFromHomeApplication.status == 'Approved'
+    ).first()
+    return True if approved else False
 
 
 
@@ -404,7 +399,7 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)  # Stop further execution
-            elif check_wfh():
+            elif not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
             elif punch and punch.punch_in:
@@ -431,7 +426,7 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)
-            elif check_wfh():
+            elif not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
             if not punch or not punch.punch_in:
@@ -535,8 +530,6 @@ def delete_location(location_id):
     return redirect(url_for('profile.manage_locations'))
 
 
-
-
 @profile.route('/apply-leave', methods=['GET', 'POST'])
 @login_required  # Ensure the user is logged in
 def apply_leave():
@@ -561,7 +554,7 @@ def apply_leave():
 
 
     deducted_days = 0.0  # This will store how much was actually cut from balances
-    extra_leave = 0.0   
+    extra_leave = 0.0
 
     if form.validate_on_submit():
         start_date = form.start_date.data
