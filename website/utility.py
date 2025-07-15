@@ -57,7 +57,7 @@ def get_user_working_summary(user_id, year, month):
     pl_balance = leave_balance.privilege_leave_balance if leave_balance else 0.0
     cl_balance = leave_balance.casual_leave_balance if leave_balance else 0.0
 
-    print(f"PL Balance: {pl_balance}, CL Balance: {cl_balance}")
+    
 
     return {
         "present_days": attendance_data["attendance"],

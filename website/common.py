@@ -230,8 +230,7 @@ def send_wfh_approval_email_to_managers(user, wfh):
         flash("Signup record not found for user.", "error")
         return False
 
-    print("Data from Signup:", data)
-    print("Circle:", data.circle, "| Emp Type:", data.emp_type)
+    
 
     # Try to fetch manager contact
     manager_contacts = ManagerContact.query.filter_by(
@@ -245,7 +244,7 @@ def send_wfh_approval_email_to_managers(user, wfh):
         manager_emails = [email for email in manager_emails if email]  # filter out None
     else:
         manager_emails = []
-        print("⚠️ No manager contacts found. Sending only to HR.")
+        
 
     # Prepare email content
     subject = f"WFH Request from {user.first_name} ({user.email})"

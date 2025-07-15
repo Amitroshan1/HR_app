@@ -81,7 +81,7 @@ def search_results():
     # Retrieve Admin details based on email
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
     data = [i.id for i in admins]
-    print(data)
+   
     return render_template(
         'Accounts/search_result.html', 
         admins=admins, 
@@ -279,7 +279,7 @@ def create_query():
                 return redirect(request.url)
             else:
                 filename = secure_filename(file.filename)
-                print("Successfully got file name:", filename)
+                
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                 photo_filename = filename  # ✅ Set it only if file exists
 
@@ -312,7 +312,7 @@ def create_query():
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
-    print(f" Success full got the photo name : {selected_query.photo}")
+    
     if selected_query.status == 'New':
         selected_query.status = 'Open'
         db.session.commit()

@@ -231,7 +231,7 @@ def display_details():
             "attendance": calcu_data,
             "work from home": calcu_hdata
         }
-        print(f"calcu_data: {calcu_data}")
+        
         session["attendance_details"] = json.dumps(details)
         session["attendance_summary"] = json.dumps(dict_data)
         session['selected_month'] = month
@@ -281,7 +281,7 @@ def display_details():
 
                     db.session.commit()
             else:
-                print("Form not valid:", punch_form.errors)
+                flash(f"Form not valid: {punch_form.errors}", "danger")
 
         details = punch_form
 
@@ -437,7 +437,7 @@ def leave_balance(employee_id):
             
             if form.personal_leave_balance.data is not None:
                 leave_balance.privilege_leave_balance = form.personal_leave_balance.data
-                print(form.personal_leave_balance.data)
+                
 
             if form.casual_leave_balance.data is not None:
                 leave_balance.casual_leave_balance = form.casual_leave_balance.data
@@ -690,15 +690,15 @@ def edit_signup(email):
 @hr.route('/delete_signup/<string:email>', methods=['POST'])
 @login_required
 def delete_signup(email):
-    print(f"[DEBUG] Request to delete: {email}")
+    
     employee = Signup.query.filter_by(email=email).first()
     if not employee:
-        print("[DEBUG] No employee found.")
+        
         flash('Employee not found.', 'error')
         return redirect(url_for('hr.update_signup'))
 
     db.session.delete(employee)
     db.session.commit()
-    print("[DEBUG] Deleted successfully.")
+    
     flash(f'Employee {email} deleted successfully.', 'success')
     return redirect(url_for('hr.update_signup'))

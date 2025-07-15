@@ -457,10 +457,10 @@ def punch():
 @login_required
 def submit_wfh():
     form = WorkFromHomeForm()
-    print("Current user:", current_user.id)
+    
 
     if form.validate_on_submit():
-        print("Form submitted successfully")
+        
         wfh_application = WorkFromHomeApplication(
             admin_id=current_user.id,
             start_date=form.start_date.data,
@@ -471,7 +471,7 @@ def submit_wfh():
         )
         db.session.add(wfh_application)
         db.session.commit()
-        print("WFH application submitted:", wfh_application)
+        
 
         try:
             success = send_wfh_approval_email_to_managers(current_user, wfh_application)
@@ -486,7 +486,7 @@ def submit_wfh():
         return redirect(url_for('profile.submit_wfh'))
 
     if request.method == 'POST':
-        print("Form validation failed:", form.errors)
+        flash(f"Form validation failed: {form.errors}", "danger")
 
     user_wfh_applications = WorkFromHomeApplication.query.filter_by(
         admin_id=current_user.id
