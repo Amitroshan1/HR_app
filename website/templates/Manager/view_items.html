@@ -1,0 +1,76 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}Claim Approval{% endblock %}
+
+{% block content %}
+
+{% if claim %}
+<h2>Claim Items Of {{claim.employee_name}}</h2>
+{% endif %}
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Purpose</th>
+        <th>Amount</th>
+        <th>Currency</th>
+        <th>Photo</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for claim_item in claim_item_data %}
+    <tr>
+        <td>{{claim_item.date}}</td>
+        <td>{{claim_item.purpose}}</td>
+        <td>{{claim_item.amount}}</td>
+        <td>{{claim_item.currency}}</td>
+        <td> {% if claim_item.Attach_file %}
+            <a href="{{ url_for('static', filename='uploads/' ~ claim_item.Attach_file) }}" target="_blank" style="text-decoration: None;">View</a>
+            {% else %}
+            N/A
+            {% endif %}
+        </td>
+        <td><a href="{{ url_for('manager_bp.accept', item_id=claim_item.id) }}" class="claim-approval-bt">Accept</a>
+            <a href="{{ url_for('manager_bp.reject', item_id=claim_item.id) }}" class="claim-reject-bt">Reject</a></td>
+
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<h2>Claim Status</h2>
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Purpose</th>
+        <th>Amount</th>
+        <th>Currency</th>
+        <th>Photo</th>
+        <th>Status</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for pending_items in not_pending_items %}
+    <tr>
+        <td>{{pending_items.date}}</td>
+        <td>{{pending_items.purpose}}</td>
+        <td>{{pending_items.amount}}</td>
+        <td>{{pending_items.currency}}</td>
+        <td> {% if pending_items.Attach_file %}
+            <a href="{{ url_for('static', filename='uploads/' ~ pending_items.Attach_file) }}" target="_blank" style="text-decoration: None;">View</a>
+            {% else %}
+            N/A
+            {% endif %}
+        </td>
+        <td>{{pending_items.status}}</td>
+
+    </tr>
+    {% endfor %}
+    </tbody>
+
+</table>
+
+    <a href="{{ url_for('manager_bp.claim_approval') }}" class="back-button">Back to Claims List</a>
+{% endblock %}

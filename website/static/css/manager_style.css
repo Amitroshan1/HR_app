@@ -1,5 +1,8 @@
 .button-reject,
-.button-accept {
+.button-accept,
+.claim-button,
+.claim-approval-bt,
+.claim-reject-bt {
     display: inline-block;
     padding: 10px 15px;
     min-width: 100px;
@@ -21,6 +24,19 @@
 .button-accept {
     background-color: #4CAF50;
 }
+.claim-button {
+    background-color: #1E90FF !important;
+}
+
+.claim-approval-bt{
+    background-color: #4CAF50 !important;
+}
+
+.claim-reject-bt{
+    background-color: #ff4d4d !important;
+}
+
+
 
 .button-reject:hover {
     background-color: #cc0000 !important;
@@ -33,13 +49,69 @@
     transform: scale(1.05);
     text-decoration: none !important;
 }
+.claim-button:hover {
+    background-color: #1E90FF !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+
+}
+
+.claim-approval-bt:hover{
+    background-color: #4CAF50 !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+.claim-reject-bt:hover{
+    background-color: #ff4d4d !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+
 
 /* Responsive: stack buttons on small screens */
 @media (max-width: 600px) {
     .button-reject,
-    .button-accept {
+    .button-accept,
+    .claim-button,
+    .claim-accept-bt,
+    .claim-reject-bt {
         width: 100%;
         display: block;
         margin: 10px 0 !important;
     }
 }
+
+.back-button{
+    display: inline-block;
+    position: absolute;
+    padding: 10px 15px;
+    min-width: 100px;
+    border-radius: 8px;
+    text-decoration: none !important;
+    font-weight: bold;
+    text-align: center;
+    color: white !important;
+    margin: 6px !important;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-sizing: border-box;
+    background-color: #0C5DF4;
+    right: 120px;
+}
+
+.back-button:hover {
+    background-color: #0C5DF4 !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+@media (max-width: 600px) {
+    .back-button {
+        width: 40%;
+        display: block;
+        margin: 10px 0 !important;
+        left: 300px;
+    }
+}
+

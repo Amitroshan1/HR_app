@@ -47,7 +47,8 @@ class DetailForm(FlaskForm):
         ('Previous_company', 'Previous Company'),
         ('Education', 'Education'),
         ('Attendance', 'Attendance'),
-        ('Leave Details', 'Leave Details')
+        ('Leave Details', 'Leave Details'),
+        ('Punch In-Out', 'Punch In-Out')
         ])
     
     submit = SubmitField('View Details')
@@ -114,5 +115,9 @@ class AssetForm(FlaskForm):
     submit = SubmitField('Add Asset')
 
 
-
-
+class PunchManuallyForm(FlaskForm):
+    date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()])
+    punch_in = TimeField('Punch In', format='%H:%M:%S', validators=[Optional()])
+    punch_out = TimeField('Punch Out', format='%H:%M:%S', validators=[Optional()])
+    submit = SubmitField('Search')
+    punch_submit = SubmitField('Save')

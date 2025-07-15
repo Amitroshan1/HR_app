@@ -20,7 +20,7 @@ from .models.manager_model import ManagerContact
 from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location
+from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
 from datetime import timedelta
 
 profile=Blueprint('profile',__name__)
@@ -331,19 +331,13 @@ def check_leave():
 
 def check_wfh():
     today = date.today()
-    wfh_data  = WorkFromHomeApplication.query.filter(
+    approved = WorkFromHomeApplication.query.filter(
         WorkFromHomeApplication.admin_id == current_user.id,
         WorkFromHomeApplication.start_date <= today,
         WorkFromHomeApplication.end_date >= today,
-        WorkFromHomeApplication.status == 'Pending'
-    ).all()
-    for wfh in wfh_data:
-        current_date = wfh.start_date
-        while current_date <= wfh.end_date:
-            if current_date == today:
-                return True
-            current_date += timedelta(days=1)
-        return False
+        WorkFromHomeApplication.status == 'Approved'
+    ).first()
+    return True if approved else False
 
 
 
@@ -389,7 +383,7 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)  # Stop further execution
-            elif check_wfh():
+            elif not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
             elif punch and punch.punch_in:
@@ -416,7 +410,7 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)
-            elif check_wfh():
+            elif not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
             if not punch or not punch.punch_in:

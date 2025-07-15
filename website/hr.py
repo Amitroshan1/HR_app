@@ -2,7 +2,7 @@ from flask import render_template,flash, redirect,Blueprint, session,url_for, cu
 from flask_login import login_required
 from datetime import datetime, timedelta
 from website.forms.Emp_details import Employee_Details
-from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm
+from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm,PunchManuallyForm
 from .models.Admin_models import Admin
 from . import db
 from .models.emp_detail_models import Employee,Asset
@@ -28,6 +28,9 @@ import pandas as pd
 from flask import send_file,session
 import io
 from openpyxl.styles import Font
+# from .utility import hr_manual_punch
+
+
 
 hr=Blueprint('hr',__name__)
 
@@ -116,6 +119,7 @@ def search_results():
 @login_required
 def view_details():
     form = DetailForm()
+    punch_form = PunchManuallyForm
     form.user.choices = [(admin.id, admin.first_name) for admin in Admin.query.all()] 
 
     if form.validate_on_submit():
@@ -144,7 +148,7 @@ def display_details():
         return redirect(url_for('hr.view_details'))
 
     admin = Admin.query.get(user_id)
-    
+    dict_data = None
     details = None
 
     if form.validate_on_submit():
@@ -224,11 +228,59 @@ def display_details():
             "attendance": calcu_data,
             "work from home": calcu_hdata
         }
+        print(f"calcu_data: {calcu_data}")
         session["attendance_details"] = json.dumps(details)
         session["attendance_summary"] = json.dumps(dict_data)
         session['selected_month'] = month
         session['selected_year'] = year
 
+    elif detail_type == 'Punch In-Out':
+        punch_form = PunchManuallyForm()
+        selected_date = None
+        punch = None
+
+        if request.method == 'POST':
+            if punch_form.validate_on_submit():
+                selected_date = punch_form.date.data
+
+                # Always fetch punch record for selected date
+                punch = Punch.query.filter_by(admin_id=user_id, punch_date=selected_date).first()
+
+                if punch_form.submit.data:
+                    # Search button clicked
+                    if punch:
+                        flash("Existing punch record found. You can modify.", "info")
+                        punch_form.punch_in.data = punch.punch_in
+                        punch_form.punch_out.data = punch.punch_out
+                    else:
+                        flash("No record found. You can enter punch in-out manually.", "warning")
+                        punch_form.punch_in.data = None
+                        punch_form.punch_out.data = None
+
+                elif punch_form.punch_submit.data:
+                    # Save button clicked
+                    punch_in_time = punch_form.punch_in.data
+                    punch_out_time = punch_form.punch_out.data
+
+                    if not punch:
+                        new_punch = Punch(
+                            admin_id=user_id,
+                            punch_date=selected_date,
+                            punch_in=punch_in_time,
+                            punch_out=punch_out_time
+                        )
+                        db.session.add(new_punch)
+                        flash("Punch In and Out saved.",  "success")
+                    else:
+                        punch.punch_in = punch_in_time
+                        punch.punch_out = punch_out_time
+                        flash("Punch In-Out updated successfully.", "success")
+
+                    db.session.commit()
+            else:
+                print("Form not valid:", punch_form.errors)
+
+        details = punch_form
 
     elif detail_type == 'Document':
         details = UploadDoc.query.filter_by(admin_id=user_id).all()

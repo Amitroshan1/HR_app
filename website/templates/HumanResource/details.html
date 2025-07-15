@@ -3,6 +3,7 @@
 {% block content %}
 
 
+
 <div class="container_details">
 
     {% if detail_type == 'Attendance' %}
@@ -342,6 +343,68 @@
         </thead>
 
     </table>
+
+    {% elif detail_type == 'Punch In-Out' %}
+
+    <div class="text-center">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} d-inline-block">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% if details.errors %}
+    <div class="alert alert-danger d-inline-block text-start">
+      <ul class="mb-0">
+        {% for field, errors in details.errors.items() %}
+          {% for error in errors %}
+            <li><strong>{{ field }}:</strong> {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
+
+     <h3 class="centered-heading">Manually Punch In - Out</h3>
+
+<form method="POST">
+    {{ details.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ details.date.label(class="form-label") }}
+        {{ details.date(class="form-control") }}
+    </div>
+
+
+    <div class="mb-3">
+            {{ details.punch_in.label(class="form-label") }}
+            {{ details.punch_in(
+                class="form-control",
+                step="1",
+                value=details.punch_in.data.strftime('%H:%M:%S') if details.punch_in.data else ''
+            ) }}
+        </div>
+
+   <div class="mb-3">
+            {{ details.punch_out.label(class="form-label") }}
+            {{ details.punch_out(
+                class="form-control",
+                step="1",
+                value=details.punch_out.data.strftime('%H:%M:%S') if details.punch_out.data else ''
+            ) }}
+        </div>
+
+    <div class="d-flex gap-2">
+        {{ details.submit(class="btn btn-primary") }}
+        {{ details.punch_submit(class="btn btn-success") }}
+    </div>
+</form>
+    <!--end-->
+
+
     {% elif detail_type == 'Leave Details' %}
     <h3 class="centered-heading">Leave Applied</h3>
     <table class="table_details table-striped">
@@ -366,5 +429,6 @@
     {% endif %}
     {% endif %}
 </div>
+
 
 {% endblock %}
