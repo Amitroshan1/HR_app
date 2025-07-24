@@ -313,7 +313,7 @@ def delete_document(doc_id):
 
 def is_near_saved_location(user_lat, user_lon, locations):
     def haversine(lat1, lon1, lat2, lon2):
-        # Earth radius in meters
+        # Earth radius in meters  
         R = 6371000  
         dlat = radians(lat2 - lat1)
         dlon = radians(lon2 - lon1)
@@ -333,7 +333,8 @@ def check_leave():
     leave_data = LeaveApplication.query.filter(
         LeaveApplication.admin_id == current_user.id,
         LeaveApplication.start_date <= today,
-        LeaveApplication.end_date >= today
+        LeaveApplication.end_date >= today,
+        LeaveApplication.status == 'Approved'
     ).all()
 
     for leave in leave_data:

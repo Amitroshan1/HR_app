@@ -332,6 +332,7 @@ def create_app():
     from .models.news_feed import NewsFeed, PaySlip
     from .models.otp import OTP
     from .models.expense import ExpenseClaimHeader, ExpenseLineItem
+    from .models.seperation import Resignation
 
     migrate.init_app(app, db)  # Now models are loaded, safe to initialize
 
@@ -361,6 +362,7 @@ def create_app():
     from .Aoocunts import Accounts
     from .auth_helper import auth_helper
     from .otp import forgot_password
+    from .offboard import offboard
 
     app.register_blueprint(profile, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
@@ -371,6 +373,7 @@ def create_app():
     app.register_blueprint(Accounts, url_prefix='/')
     app.register_blueprint(auth_helper, url_prefix='/')
     app.register_blueprint(forgot_password, url_prefix='/')
+    app.register_blueprint(offboard, url_prefix='/')
     
 
     scheduler.add_job(

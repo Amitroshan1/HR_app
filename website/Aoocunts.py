@@ -151,68 +151,73 @@ def download_excel_acc():
 @login_required
 def add_payslip(admin_id):
     form = PaySlipForm()
-    try:
-        # Fetch the employee details
-        employee = Admin.query.get_or_404(admin_id)
-    except Exception as e:
-        flash(f"Error fetching employee details: {e}", 'error')
-        return redirect(url_for('Accounts.search_results'))
+    
 
-    if form.validate_on_submit():
+
+    try:
+        employee = Admin.query.get_or_404(admin_id)
+    except Exception:
+        flash("Employee details not found.", 'error')
+        return redirect(url_for('Accounts.search_results'))
+           
+    if request.method == 'POST':
+        print("==== INSIDE POST ====")
+        print("Request method:", request.method)
+        print("Form validated?", form.validate_on_submit())
+        print("Form errors:", form.errors)
+        print("Form data:", form.data)
+
+        file = request.files.get('payslip_file')
+        print("Uploaded file object:", file)
+        print("Uploaded file name:", file.filename if file else "No file uploaded")
+
+        file_path = None
+        filename = None
+
         try:
-            file_path = None
-            filename = None
-            # Handle file upload
+            # Handle optional file upload
             if form.payslip_file.data:
                 filename = secure_filename(form.payslip_file.data.filename)
                 file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
                 form.payslip_file.data.save(file_path)
-        except Exception as e:
-            flash(f"Error saving file: {e}", 'error')
-            return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
 
-        try:
-            # Create a new PaySlip entry
+            # Prepare and send email
+            email = employee.email
+            account_email = current_user.email
+            subject = f'Payslip of Month {form.month.data} Uploaded'
+            body = f"""
+            <html>
+            <body>
+                <p>Dear <strong>{employee.first_name}</strong>,</p>
+                <p>Your payslip for <strong>{form.month.data}</strong> is now available.</p>
+                <p>Thanks,<br><strong>Accounts</strong></p>
+            </body>
+            </html>
+            """
+            
+
+            # Save to database
             new_payslip = PaySlip(
                 admin_id=employee.id,
                 month=form.month.data,
                 year=form.year.data,
-                file_path=filename  
+                file_path=filename
             )
             db.session.add(new_payslip)
             db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error saving PaySlip to the database: {e}", 'error')
-            return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
-                
-        try:
-            # Send email notifica
-            email = employee.email
-            
-            account_email = current_user.email
-            
-            subject = f'Payslip of Month {form.month.data} Uploaded'
-            body = (
-                f"Dear {employee.first_name},\n\n"
-                f"This mail is to inform you that Payslip for the month {form.month.data} has been generated.\n"
-                f"Please find the Payslip in HRMS.\n\n"
-                f"Thanks,\nAccounts"
-            )
-
-            # Use OAuth2 authentication to send email
-            Company_verify_oauth2_and_send_email(account_email, subject, body, email, cc_emails=None)
-            flash('PaySlip added successfully! Email has been sent.', 'success')
+            Company_verify_oauth2_and_send_email(account_email, subject, body, email)
+            flash('PaySlip added successfully! Email sent.', 'success')
             return redirect(url_for('Accounts.search_results'))
 
         except Exception as e:
-            flash(f"Error sending email: {e}", 'error')
+            db.session.rollback()
+            flash(f"Error occurred: {str(e)}", 'error')
             return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
 
-        
-    
+    # ✅ ALWAYS return something, even if form not submitted
+    return render_template('accounts/add_payslip.html', form=form, employee=employee)
 
-    return render_template('Accounts/add_payslip.html', form=form, employee=employee)
+    
 
 
 

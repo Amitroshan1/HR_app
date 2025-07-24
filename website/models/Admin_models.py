@@ -5,7 +5,7 @@ from website import login_manager
 from datetime import datetime
 
 
-class Admin(db.Model, UserMixin):
+class Admin(db.Model, UserMixin):  
     __tablename__ = 'admins'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -38,7 +38,7 @@ class Admin(db.Model, UserMixin):
     queries = db.relationship('Query', back_populates='admin', cascade="all, delete-orphan")
     query_replies = db.relationship('QueryReply', back_populates='admin', cascade="all, delete-orphan")
     work_from_home_applications = db.relationship('WorkFromHomeApplication', back_populates='admin', cascade='all, delete-orphan')
-
+    resignations = db.relationship('Resignation', back_populates='admin', lazy='dynamic', cascade="all, delete-orphan")
     # sessions = db.relationship('Session', back_populates='admin', cascade="all, delete-orphan")
 
 
