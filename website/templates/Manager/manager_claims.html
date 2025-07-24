@@ -29,7 +29,17 @@
         <td>{{claims.country_state}}</td>
         <td>{{claims.travel_from_date}}</td>
         <td>{{claims.travel_to_date}}</td>
-        <td><a href="{{ url_for('manager_bp.view_items', claim_id = claims.id) }}" class="claim-button">View Items</a></td>
+         <td>
+      <a href="{{ url_for('manager_bp.view_items', claim_id=claims.id) }}" class="claim-button">
+        <span class="badge-container">
+          View Items
+          {% if claim_item_counts.get(claims.id) %}
+            <span class="claim-badge">{{ claim_item_counts.get(claims.id) }}</span>
+          {% endif %}
+        </span>
+      </a>
+    </td>
+
     </tr>
     {% endfor %}
     </tbody>

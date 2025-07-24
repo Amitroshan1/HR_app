@@ -81,7 +81,7 @@ def search_results():
     # Retrieve Admin details based on email
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
     data = [i.id for i in admins]
-   
+
     return render_template(
         'Accounts/search_result.html', 
         admins=admins, 
@@ -151,7 +151,7 @@ def download_excel_acc():
 @login_required
 def add_payslip(admin_id):
     form = PaySlipForm()
-    
+
 
 
     try:
@@ -159,7 +159,7 @@ def add_payslip(admin_id):
     except Exception:
         flash("Employee details not found.", 'error')
         return redirect(url_for('Accounts.search_results'))
-           
+
     if request.method == 'POST':
         print("==== INSIDE POST ====")
         print("Request method:", request.method)
@@ -194,7 +194,7 @@ def add_payslip(admin_id):
             </body>
             </html>
             """
-            
+
 
             # Save to database
             new_payslip = PaySlip(
@@ -217,7 +217,7 @@ def add_payslip(admin_id):
     # ✅ ALWAYS return something, even if form not submitted
     return render_template('accounts/add_payslip.html', form=form, employee=employee)
 
-    
+
 
 
 
@@ -272,7 +272,7 @@ def download_payslip(payslip_id):
 @login_required
 def create_query():
     form = QueryForm()
-    photo_filename = None  # ✅ Initialize this at the top
+    photo_filename = None
 
     if form.validate_on_submit():
         if form.photo.data:
@@ -284,7 +284,7 @@ def create_query():
                 return redirect(request.url)
             else:
                 filename = secure_filename(file.filename)
-                
+
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                 photo_filename = filename  # ✅ Set it only if file exists
 
@@ -317,7 +317,7 @@ def create_query():
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
-    
+
     if selected_query.status == 'New':
         selected_query.status = 'Open'
         db.session.commit()
@@ -333,7 +333,7 @@ def chat_query(query_id):
     emp_type_of_creator = Signup.query.filter_by(email=query_creator.email).first()
 
 
-    
+
     form = QueryReplyForm()  
     form1 = QueryForm()
     replies = QueryReply.query.filter(QueryReply.query_id == query_id).order_by(QueryReply.created_at.asc()).all()
@@ -365,7 +365,7 @@ def chat_query(query_id):
             db.session.commit()
 
             return redirect(url_for('Accounts.chat_query', query_id=query_id))
-        
+
     return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form,form1=form1,signups_data=signups_data)
 
 
@@ -389,12 +389,9 @@ def view_emp_type_queries():
     
     for query in queries_for_emp_type:
         admin_details = Admin.query.filter_by(id=query.admin_id).first()
-        query.admin_details = admin_details  
+        query.admin_details = admin_details
 
     return render_template('Accounts/view_emp_type_queries.html', queries=queries_for_emp_type,emp=emp)
-
-
-
 
 
 @Accounts.route('/delete_query/<int:query_id>', methods=['GET'])
@@ -457,4 +454,40 @@ def close_query(query_id):
 
 
 
-# attendance_circle_emp_type_6june25.excel
+
+
+@Accounts.route('/policy_structure', methods=['GET', 'POST'])
+@login_required
+def policy_structure():
+    user_email = current_user.email
+    print(user_email)
+    signup_data  = Signup.query.filter_by(email=user_email).first()
+    return render_template('policy/policy_structure.html',signup_data=signup_data)
+
+@Accounts.route('/service_policy', methods=['GET', 'POST'])
+@login_required
+def service_policy():
+    return render_template('policy/service_policy.html')
+
+@Accounts.route('/leave_policy', methods=['GET', 'POST'])
+@login_required
+def leave_policy():
+    return render_template('policy/leave_policy.html')
+
+
+@Accounts.route('/travel_policy', methods=['GET', 'POST'])
+@login_required
+def travel_policy():
+    return render_template('policy/travel_policy.html')
+
+@Accounts.route('/domestic_travel', methods=['GET', 'POST'])
+@login_required
+def domestic_travel():
+    return render_template('policy/domestic_travel.html')
+
+@Accounts.route('/international_travel', methods=['GET', 'POST'])
+@login_required
+def international_travel():
+    return render_template('policy/international_travel.html')
+
+

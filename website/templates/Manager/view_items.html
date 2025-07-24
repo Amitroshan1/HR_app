@@ -31,8 +31,8 @@
             N/A
             {% endif %}
         </td>
-        <td><a href="{{ url_for('manager_bp.accept', item_id=claim_item.id) }}" class="claim-approval-bt">Accept</a>
-            <a href="{{ url_for('manager_bp.reject', item_id=claim_item.id) }}" class="claim-reject-bt">Reject</a></td>
+        <td><a href="{{ url_for('manager_bp.reject', item_id=claim_item.id) }}" class="claim-reject-bt">Reject</a>
+            <a href="{{ url_for('manager_bp.accept', item_id=claim_item.id) }}" class="claim-approval-bt">Accept</a></td>
 
     </tr>
     {% endfor %}
@@ -71,6 +71,22 @@
     </tbody>
 
 </table>
-
     <a href="{{ url_for('manager_bp.claim_approval') }}" class="back-button">Back to Claims List</a>
+    <br>
+
+  <!-- 📧 Claim Email Button -->
+<button class="claim-email-button" onclick="sendEmail({{ claim.id }})">
+    📧 Send Email To Accounts
+</button>
+
+<!-- 📧 JS Function to Send Email -->
+<script>
+    function sendEmail(claimId) {
+        const url = `/send_claim_email/${claimId}`;
+        window.location.href = url;
+    }
+</script>
+
+
+
 {% endblock %}

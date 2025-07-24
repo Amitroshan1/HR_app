@@ -26,6 +26,7 @@
 }
 .claim-button {
     background-color: #1E90FF !important;
+
 }
 
 .claim-approval-bt{
@@ -115,3 +116,146 @@
     }
 }
 
+.dropdown-content a {
+    position: relative;
+    display: inline-block;
+    padding-right: 25px; /* Add space for the badge */
+}
+
+.wfh-badge {
+    position: absolute;
+    top: 1px;
+    right: 12px;
+    background-color: #FF4500;
+    color: white;
+    padding: 4px 7px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 18px;
+    text-align: center;
+}
+
+
+.leave-badge {
+    position: absolute;
+    top: 1px;
+    right: 12px;
+    background-color: #FF4500;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 18px;
+    text-align: center;
+    z-index: 1;
+}
+
+/* Responsive adjustment for smaller screens */
+@media (max-width: 600px) {
+    .leave-badge {
+        top: 1px;
+        right: 25px;
+        font-size: 12px;
+        padding: 2px 5px;
+        min-width: 16px;
+    }
+}
+
+
+
+.claim-email-button {
+    position: absolute;
+    top: 458px;
+    right: 105px;
+    display: inline-block;
+    padding: 12px 15px;
+    min-width: 140px;
+
+    background-color: #008000;
+    color: white !important;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none !important;
+
+    margin: 6px !important;
+    box-sizing: border-box;
+    z-index: 100;
+
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.claim-email-button:hover {
+    background-color: #008000 !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+/* Responsive for small screens */
+@media (max-width: 768px) {
+    .claim-email-button {
+        position: relative;
+        top: 80px;
+        left: 170px;
+
+        width: 80%;
+        max-width: 300px;
+        margin: 20px auto !important;
+        display: block;
+        text-align: center;
+    }
+}
+
+.badge-container {
+    position: relative;
+    display: inline-block;
+}
+
+.claim-badge {
+    position: absolute;
+    top: -18px;
+    right: -20px;
+    background-color: #FF4500;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 18px;
+    text-align: center;
+    z-index: 1;
+}
+
+/* Responsive adjustment for smaller screens */
+@media (max-width: 600px) {
+    .claim-badge {
+        top: -15px;        /* Shift badge slightly closer to text */
+        right: -19px;      /* Avoid badge overflow */
+        font-size: 12px;
+        padding: 2px 5px;
+        min-width: 16px;
+    }
+}
+
+.approval-badge {
+    position: absolute;
+    top: 18px;
+    right: 115px;
+    background-color: #FF4500;
+    color: white;
+    width: 16px;
+    height:17px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}

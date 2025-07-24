@@ -22,20 +22,34 @@
                 <li>
                     <a href="/E_homepage" class="active">Home</a>
                 </li>
-                <li>
-                    <a href="/manager_access" class="active">Leave</a>
-                </li>
+       <li style="position: relative;">
+    <a href="/manager_access" class="active">
+        Leave
+        {% if count_new_leaves and count_new_leaves > 0 %}
+            <span class="leave-badge">{{ count_new_leaves }}</span>
+        {% endif %}
+    </a>
+</li>
 
 
 
 
-                <li class="dropdown">
-                    <a href="#" class="dropbtn">Approve</a>
+
+        <li class="dropdown">
+                    <a href="#" class="dropbtn">Approve
+                    {% if has_pending_items %}
+                            <span class="approval-badge"></span>
+                            {% endif %} </a>
                     <div class="dropdown-content">
                         <a href="/claim_approval">Claim</a>
-                        <a href="/wfh_approval">Work From Home</a>
+                        <a href="/wfh_approval">Work From Home
+                            {% if count_new_wfhs and count_new_wfhs > 0 %}
+                            <span class="wfh-badge">{{ count_new_wfhs }}</span>
+                            {% endif %}
+                        </a>
                     </div>
                 </li>
+
 
 
 

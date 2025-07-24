@@ -15,7 +15,7 @@ from .models.signup import Signup  # adjust path if needed
 def verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails=None):
     try:
         # Ensure `user` is a Signup object, not a string (email)
-        if isinstance(user, str):  
+        if isinstance(user, str):
             user = Admin.query.filter_by(email=user).first()
         if not user or not user.oauth_refresh_token:
             flash("Failed to authenticate with Microsoft. Please re-login.", 'error')
@@ -59,7 +59,7 @@ def verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails
 
     except Exception as e:
         raise e
-        
+
 
 
 
