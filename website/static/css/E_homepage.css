@@ -979,6 +979,105 @@ button[type="button"], .btn {
     }
 
 
+    /* Main form container */
+#separation-form.custom-resignation-form {
+    max-width: 600px;
+    margin: 15px auto;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Headings inside the form page (assumes outside form) */
+.centered-heading {
+    text-align: center;
+    color: #333;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+/* Alert box for errors */
+.resignation-alert {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #ffe6e6;
+    color: #a94442;
+    border: 1px solid #f5c2c7;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+/* Form fields wrapper */
+
+
+/* Label styles */
+.resignation-field label {
+    display: block;
+    font-weight: 600;
+    color: #444;
+}
+
+/* Input and textarea styles */
+.resignation-input,
+.resignation-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    transition: border-color 0.3s ease;
+}
+
+.resignation-input:focus,
+.resignation-textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+/* Error text */
+.resignation-error {
+    color: red;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Submit button */
+.resignation-submit-btn {
+    background-color: #007bff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.resignation-submit-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    #separation-form.custom-resignation-form {
+        padding: 20px;
+        margin: 20px;
+    }
+
+    .resignation-submit-btn {
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+
+
 
 
 

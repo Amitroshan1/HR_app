@@ -189,23 +189,46 @@ def send_claim_submission_email(header):
 
         body = f"""
         <html>
-        <body>
-            <p><strong>An expense claim has been submitted.</strong></p>
+    <body style="font-family: Arial, sans-serif;">
 
-            <p>
-                <strong>Employee:</strong> {header.employee_name}<br>
-                <strong>Employee ID:</strong> {header.emp_id}<br>
-                <strong>Designation:</strong> {header.designation}<br>
-                <strong>Project:</strong> {header.project_name}<br>
-                <strong>Country/State:</strong> {header.country_state}<br>
-                <strong>Travel Dates:</strong> {header.travel_from_date} to {header.travel_to_date}
-            </p>
+        <p><strong>An expense claim has been submitted.</strong></p>
 
-            <p><strong>Expense Details:</strong></p>
-            {line_items_html}
-        </body>
-        </html>
-        """
+        <table style="border-collapse: collapse; width: 100%;" border="1" cellpadding="8">
+            
+            <tr>
+                <td><strong>Employee</strong></td>
+                <td>{header.employee_name}</td>
+            </tr>
+            <tr>
+                <td><strong>Employee ID</strong></td>
+                <td>{header.emp_id}</td>
+            </tr>
+            <tr>
+                <td><strong>Designation</strong></td>
+                <td>{header.designation}</td>
+            </tr>
+            <tr>
+                <td><strong>Project</strong></td>
+                <td>{header.project_name}</td>
+            </tr>
+            <tr>
+                <td><strong>Country/State</strong></td>
+                <td>{header.country_state}</td>
+            </tr>
+            <tr>
+                <td><strong>Travel Dates</strong></td>
+                <td>{header.travel_from_date} to {header.travel_to_date}</td>
+            </tr>
+        </table>
+
+        <br>
+        <p><strong>Expense Details:</strong></p>
+        {line_items_html}
+
+    </body>
+    </html>
+    """
+
 
         recipient_email = "akumar4@saffotech.com"
         cc_emails = ["singhroshan968@gmail.com"]
@@ -230,8 +253,7 @@ def send_wfh_approval_email_to_managers(user, wfh):
         flash("Signup record not found for user.", "error")
         return False
 
-    print("Data from Signup:", data)
-    print("Circle:", data.circle, "| Emp Type:", data.emp_type)
+    
 
     # Try to fetch manager contact
     manager_contacts = ManagerContact.query.filter_by(
@@ -245,23 +267,44 @@ def send_wfh_approval_email_to_managers(user, wfh):
         manager_emails = [email for email in manager_emails if email]  # filter out None
     else:
         manager_emails = []
-        print("⚠️ No manager contacts found. Sending only to HR.")
+        
 
     # Prepare email content
     subject = f"WFH Request from {user.first_name} ({user.email})"
     body = f"""
         <p>Hi,</p>
-    <p>
-        This is to inform you that <strong>{user.first_name}</strong> has submitted a Work From Home (WFH) request.<br>
-        So please review and take necessary action.
-    </p>
-        <p><strong>Employee Name:</strong> {user.first_name}</p>
-        <p><strong>Start Date:</strong> {wfh.start_date.strftime('%d-%m-%Y')}</p>
-        <p><strong>End Date:</strong> {wfh.end_date.strftime('%d-%m-%Y')}</p>
-        <p><strong>Reason:</strong> {wfh.reason}</p>
-        <p>Status: <b>{wfh.status}</b></p>
-        <p>Login to HRMS to approve or reject this WFH request.</p>
-    """
+
+        <p>
+            This is to inform you that <strong>{user.first_name}</strong> has submitted a Work From Home (WFH) request.<br>
+            Please review the details below and take the necessary action.
+        </p>
+
+        <table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;" border="1" cellpadding="8">
+            
+            <tr>
+                <td><strong>Employee Name</strong></td>
+                <td>{user.first_name}</td>
+            </tr>
+            <tr>
+                <td><strong>Start Date</strong></td>
+                <td>{wfh.start_date.strftime('%d-%m-%Y')}</td>
+            </tr>
+            <tr>
+                <td><strong>End Date</strong></td>
+                <td>{wfh.end_date.strftime('%d-%m-%Y')}</td>
+            </tr>
+            <tr>
+                <td><strong>Reason</strong></td>
+                <td>{wfh.reason.replace('\n', '<br>')}</td>
+            </tr>
+            <tr>
+                <td><strong>Status</strong></td>
+                <td><strong>{wfh.status}</strong></td>
+            </tr>
+        </table>
+
+        <p>Please log in to the HRMS portal to approve or reject this WFH request.</p>
+        """
 
     # Send email
     return verify_oauth2_and_send_email(
@@ -270,4 +313,117 @@ def send_wfh_approval_email_to_managers(user, wfh):
         body=body,
         recipient_email=hr_mail,
         cc_emails=manager_emails if manager_emails else None
+    )
+
+
+
+
+def send_resignation_email(user, resignation,signup_date
+                           ,manager=None):
+    subject = f"Resignation Submitted by {user.first_name} ({user.email})"
+    body = f"""
+    <p>Dear Sir/Madam,</p>
+
+    <p>I hope this message finds you well.</p>
+
+    <p>This is to inform you that <strong>{user.first_name} ({user.email})</strong> has submitted a resignation request. Please find the details below:</p>
+
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;" border="1" cellpadding="8">
+        
+        <tr>
+            <td><strong>Employee Name</strong></td>
+            <td>{user.first_name}</td>
+        </tr>
+        <tr>
+            <td><strong>Employee ID</strong></td>
+            <td>{signup_date.emp_id}</td>
+        </tr>
+        <tr>
+            <td><strong>Date OF Joining</strong></td>
+            <td>{signup_date.doj}</td>
+        </tr>
+        <tr>
+            <td><strong>Employee Type</strong></td>
+            <td>{signup_date.emp_type}</td>
+        </tr>
+        <tr>
+            <td><strong>Employee Circle</strong></td>
+            <td>{signup_date.circle}</td>
+        </tr>
+        <tr>
+            <td><strong>Resignation Date</strong></td>
+            <td>{resignation.resignation_date.strftime('%d-%b-%Y')}</td>
+        </tr>
+        <tr>
+            <td><strong>Reason for Resignation</strong></td>
+            <td>{resignation.reason.replace('\n', '<br>')}</td>
+        </tr>
+    </table>
+
+    <p>Please take the necessary steps to initiate the offboarding process at your earliest convenience.</p>
+
+    <p>Thank you for your attention to this matter.</p>
+
+    <br>
+    <p>Warm regards,<br>
+    {user.first_name}</p>
+    """
+
+
+    # Primary recipient (e.g., HR)
+    recipient_email = "singhroshan968@gmail.com"
+
+    # Add L2 and L3 manager emails to CC if available
+    cc_emails = []
+    if manager:
+        if manager.l2_email:
+            cc_emails.append(manager.l2_email)
+        if manager.l3_email:
+            cc_emails.append(manager.l3_email)
+
+    return verify_oauth2_and_send_email(
+        user=user,
+        subject=subject,
+        body=body,
+        recipient_email=recipient_email,
+        cc_emails=cc_emails
+    )
+
+
+
+def send_rollback_resignation_email(user, manager=None):
+    subject = f"Resignation Rolled Back by {user.first_name} ({user.email})"
+    body = f"""
+    <p>Dear Sir/Madam,</p>
+
+    <p>I hope this message finds you in good health and spirits.</p>
+    <p>I am writing to formally withdraw my resignation submitted earlier. After careful reflection and discussions, I have reconsidered my decision and chosen to continue contributing to the organization.</p>
+
+    <p>I remain committed to my responsibilities and growth within the company and sincerely appreciate the opportunity to continue being a part of the team.</p>
+    <p>Please consider this update in the employee records and halt any further offboarding actions if already initiated.</p>
+
+    <p>Thank you for your cooperation.</p>
+
+    <br>
+    <p>Warm regards,<br>
+    {user.first_name}</p>
+    """
+
+    # Primary recipient
+    recipient_email = "singhroshan968@gmail.com"
+
+    # CC managers if available
+    cc_emails = []
+    if manager:
+        if manager.l2_email:
+            cc_emails.append(manager.l2_email)
+        if manager.l3_email:
+            cc_emails.append(manager.l3_email)
+
+    return verify_oauth2_and_send_email(
+        user=user,
+        subject=subject,
+        body=body,
+        recipient_email=recipient_email,
+        cc_emails=cc_emails
     )

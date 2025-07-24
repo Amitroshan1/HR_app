@@ -257,7 +257,7 @@ def E_homepage():
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
     data =get_user_working_summary(current_user.id, datetime.now().year, datetime.now().month)
-    print(f"Working summary data: {data}")
+    
 
     if not employee:
         flash("No employee record found for the current user.")

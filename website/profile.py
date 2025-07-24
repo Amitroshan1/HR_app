@@ -313,7 +313,7 @@ def delete_document(doc_id):
 
 def is_near_saved_location(user_lat, user_lon, locations):
     def haversine(lat1, lon1, lat2, lon2):
-        # Earth radius in meters
+        # Earth radius in meters  
         R = 6371000  
         dlat = radians(lat2 - lat1)
         dlon = radians(lon2 - lon1)
@@ -333,7 +333,8 @@ def check_leave():
     leave_data = LeaveApplication.query.filter(
         LeaveApplication.admin_id == current_user.id,
         LeaveApplication.start_date <= today,
-        LeaveApplication.end_date >= today
+        LeaveApplication.end_date >= today,
+        LeaveApplication.status == 'Approved'
     ).all()
 
     for leave in leave_data:
@@ -457,10 +458,10 @@ def punch():
 @login_required
 def submit_wfh():
     form = WorkFromHomeForm()
-    print("Current user:", current_user.id)
+    
 
     if form.validate_on_submit():
-        print("Form submitted successfully")
+        
         wfh_application = WorkFromHomeApplication(
             admin_id=current_user.id,
             start_date=form.start_date.data,
@@ -471,7 +472,7 @@ def submit_wfh():
         )
         db.session.add(wfh_application)
         db.session.commit()
-        print("WFH application submitted:", wfh_application)
+        
 
         try:
             success = send_wfh_approval_email_to_managers(current_user, wfh_application)
@@ -486,7 +487,7 @@ def submit_wfh():
         return redirect(url_for('profile.submit_wfh'))
 
     if request.method == 'POST':
-        print("Form validation failed:", form.errors)
+        flash(f"Form validation failed: {form.errors}", "danger")
 
     user_wfh_applications = WorkFromHomeApplication.query.filter_by(
         admin_id=current_user.id

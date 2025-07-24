@@ -81,7 +81,7 @@ def search_results():
     # Retrieve Admin details based on email
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
     data = [i.id for i in admins]
-    print(data)
+
     return render_template(
         'Accounts/search_result.html', 
         admins=admins, 
@@ -151,68 +151,73 @@ def download_excel_acc():
 @login_required
 def add_payslip(admin_id):
     form = PaySlipForm()
+
+
+
     try:
-        # Fetch the employee details
         employee = Admin.query.get_or_404(admin_id)
-    except Exception as e:
-        flash(f"Error fetching employee details: {e}", 'error')
+    except Exception:
+        flash("Employee details not found.", 'error')
         return redirect(url_for('Accounts.search_results'))
 
-    if form.validate_on_submit():
+    if request.method == 'POST':
+        print("==== INSIDE POST ====")
+        print("Request method:", request.method)
+        print("Form validated?", form.validate_on_submit())
+        print("Form errors:", form.errors)
+        print("Form data:", form.data)
+
+        file = request.files.get('payslip_file')
+        print("Uploaded file object:", file)
+        print("Uploaded file name:", file.filename if file else "No file uploaded")
+
+        file_path = None
+        filename = None
+
         try:
-            file_path = None
-            filename = None
-            # Handle file upload
+            # Handle optional file upload
             if form.payslip_file.data:
                 filename = secure_filename(form.payslip_file.data.filename)
                 file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
                 form.payslip_file.data.save(file_path)
-        except Exception as e:
-            flash(f"Error saving file: {e}", 'error')
-            return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
 
-        try:
-            # Create a new PaySlip entry
+            # Prepare and send email
+            email = employee.email
+            account_email = current_user.email
+            subject = f'Payslip of Month {form.month.data} Uploaded'
+            body = f"""
+            <html>
+            <body>
+                <p>Dear <strong>{employee.first_name}</strong>,</p>
+                <p>Your payslip for <strong>{form.month.data}</strong> is now available.</p>
+                <p>Thanks,<br><strong>Accounts</strong></p>
+            </body>
+            </html>
+            """
+
+
+            # Save to database
             new_payslip = PaySlip(
                 admin_id=employee.id,
                 month=form.month.data,
                 year=form.year.data,
-                file_path=filename  
+                file_path=filename
             )
             db.session.add(new_payslip)
             db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error saving PaySlip to the database: {e}", 'error')
-            return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
-                
-        try:
-            # Send email notifica
-            email = employee.email
-            
-            account_email = current_user.email
-            
-            subject = f'Payslip of Month {form.month.data} Uploaded'
-            body = (
-                f"Dear {employee.first_name},\n\n"
-                f"This mail is to inform you that Payslip for the month {form.month.data} has been generated.\n"
-                f"Please find the Payslip in HRMS.\n\n"
-                f"Thanks,\nAccounts"
-            )
-
-            # Use OAuth2 authentication to send email
-            Company_verify_oauth2_and_send_email(account_email, subject, body, email, cc_emails=None)
-            flash('PaySlip added successfully! Email has been sent.', 'success')
+            Company_verify_oauth2_and_send_email(account_email, subject, body, email)
+            flash('PaySlip added successfully! Email sent.', 'success')
             return redirect(url_for('Accounts.search_results'))
 
         except Exception as e:
-            flash(f"Error sending email: {e}", 'error')
+            db.session.rollback()
+            flash(f"Error occurred: {str(e)}", 'error')
             return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
 
-        
-    
+    # ✅ ALWAYS return something, even if form not submitted
+    return render_template('accounts/add_payslip.html', form=form, employee=employee)
 
-    return render_template('Accounts/add_payslip.html', form=form, employee=employee)
+
 
 
 
@@ -279,7 +284,7 @@ def create_query():
                 return redirect(request.url)
             else:
                 filename = secure_filename(file.filename)
-                print("Successfully got file name:", filename)
+
                 file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                 photo_filename = filename  # ✅ Set it only if file exists
 
@@ -312,6 +317,7 @@ def create_query():
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
+
     if selected_query.status == 'New':
         selected_query.status = 'Open'
         db.session.commit()
@@ -320,30 +326,44 @@ def chat_query(query_id):
     
     signups_data = Signup.query.filter_by(email=current_email).first()
 
-    
+    # First, get the Admin who created the query
+    query_creator = Admin.query.get(selected_query.admin_id)
+
+    # Then, use their email to fetch the Signup record
+    emp_type_of_creator = Signup.query.filter_by(email=query_creator.email).first()
+
+
+
     form = QueryReplyForm()  
     form1 = QueryForm()
     replies = QueryReply.query.filter(QueryReply.query_id == query_id).order_by(QueryReply.created_at.asc()).all()
 
- 
     if form.validate_on_submit():
-        reply_text = form.reply_text.data 
+        reply_text = form.reply_text.data
 
         if reply_text:
+            # Determine if current user is the one who created the query
+            is_creator = emp_type_of_creator.emp_type == signups_data.emp_type
+            print(f"Is creator: {is_creator}")  # Debugging line
+
+            # Set user_type accordingly
+            user_type = "User" if is_creator else "Team"
+
             new_reply = QueryReply(
                 query_id=query_id,
                 admin_id=current_user.id,
-                reply_text=reply_text
+                reply_text=reply_text,
+                user_type=user_type
             )
             db.session.add(new_reply)
 
-             # ✅ Set IST time using pytz
+            # Update the query timestamp
             ist = pytz.timezone('Asia/Kolkata')
             ist_time = datetime.now(ist)
             selected_query.created_at = ist_time
 
             db.session.commit()
-            
+
             return redirect(url_for('Accounts.chat_query', query_id=query_id))
 
     return render_template('Accounts/chat.html', query=selected_query, replies=replies, form=form,form1=form1,signups_data=signups_data)
@@ -378,13 +398,13 @@ def view_emp_type_queries():
 @login_required
 def close_query(query_id):
     query = Query.query.filter_by(id=query_id).first()
-    print(current_user)
+    
     if not query:
         flash('Query not found.', 'error')
         return redirect(url_for('Accounts.create_query'))
-
+    
     replies = QueryReply.query.filter_by(query_id=query_id).all()
-
+    
     # Construct email body
     body_chat = f"Query Title: {query.title}\n"
     body_chat += f"Department: {query.emp_type}\n\n"
@@ -396,23 +416,24 @@ def close_query(query_id):
 
     body_chat += "\nIssue resolved. Closing this query."
 
-    # Split the emp_type string into a list
+   # Split the emp_type string into a list
     departments = query.emp_type.split(', ')
 
-    if len(departments) > 1:
-        # Determine department email and CC
+    if len(departments) >1:
+    # Determine department email and CC
         if 'Human Resource' in departments:
-            department_email = 'skchaugule@saffotech.com'
-            cc = ['chauguleshubham390@gmail.com']
+            department_email = 'hr@saffotech.com'
+            cc =['accounts@saffotech.com']
         else:
-            department_email = 'skchaugule@saffotech.com'
-            cc = ['chauguleshubham390@gmail.com']
+            department_email = 'accounts@saffotech.com'
+            cc = ['hr@saffotech.com']
     else:
         if 'Human Resource' in departments:
-            department_email = 'skchaugule@saffotech.com'
-            cc = None
+            department_email = 'hr@saffotech.com'
+            cc=None
         else:
-            department_email = 'chauguleshubham390@gmail.com'
+            department_email = 'accounts@saffotech.com'
+
 
     subject = f"Query Resolved: {query.title}"
 
@@ -429,7 +450,7 @@ def close_query(query_id):
     return redirect(url_for('Accounts.create_query'))
 
 
-
+    
 
 
 

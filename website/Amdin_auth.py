@@ -22,7 +22,7 @@ def admin_sign_up():
             circle = form.circle.data
             password = form.password.data
             confirm_password = form.confirm_password.data
-            print(password, confirm_password)
+            
             # Check if the email or employee ID already exists in the database
             if Signup.query.filter_by(email=email).first():
                 flash('Email is already registered!', category='error')

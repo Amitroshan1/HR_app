@@ -13,7 +13,7 @@ class ManagerContactForm(FlaskForm):
                                        ('Gurugram-Rabbit','Gurugram-Rabbit'),('Pune', 'Pune'), 
                                        ('Jaipur', 'Jaipur'),('Jaipur-Rabbit', 'Jaipur-Rabbit'), ('Greater Noida', 'Greater Noida'), 
                                         ('Mumbai', 'Mumbai'),('G.Noida-Rabbit','G.Noida-Rabbit'),
-                                        ('Mumbai-Bonita','Mumbai-Bonita'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
+                                        ('Mumbai-Bonita','Mumbai-Bonita'),('Mumbai-Victory','Mumbai-Victory'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
                                         ('Ahmedabad', 'Ahmedabad'), 
                                        ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
                                        ('Punjab-Loyal', 'Punjab-Loyal'), ('Ahmedabad', 'Ahmedabad'),

@@ -2,7 +2,7 @@
 {% block title %}Add PaySlip{% endblock %}
 {% block content %}
 <div class="container mt-5">
-    {% with errors = get_flashed_messages(category_filter=["error","success"]) %}
+    {% with errors = get_flashed_messages(with_categories=true) %}
     {% if errors %}
         <div class="alert alert-danger">
             <ul>
@@ -29,7 +29,8 @@
             {{ form.payslip_file.label }} 
             {{ form.payslip_file(class="form-control-file") }}
         </div>
-        <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+        {{ form.submit(class="btn btn-primary") }}
+
         <a href="{{ url_for('Accounts.search_results') }}" class="btn btn-primary">Back to Results</a>
     </form>
 </div>
