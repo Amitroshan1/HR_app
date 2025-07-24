@@ -64,7 +64,7 @@ ul {
     position: absolute;
     top: -5px;
     right: -10px;
-    background-color: red;
+    background-color: #FF4500;
     color: white;
     padding: 4px 7px;
     border-radius: 50%;
@@ -977,3 +977,460 @@ button[type="button"], .btn {
     .ms-button:active {
         background-color: #aff522;
     }
+
+
+
+
+
+
+
+
+/* --- Policy Structure Container --- */
+
+.policy-heading{
+    text-align: center;
+}
+
+.policy-subheading{
+    text-align: center;
+}
+
+#policy-container {
+    height: 200px;
+    width: 550px;
+    /* background-color: #5F9EA0; */
+    position: absolute;
+    margin-left: 150px;
+    margin-top: 70px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+/* Main Div Styling */
+.div-class {
+    height: 150px;
+    width: 170px;
+    padding: 20px;
+    text-align: center;
+    line-height: 25px;
+    font-size: 25px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid black;
+}
+
+/* Background Colors */
+#div1 {
+    background-color: #DCDCDC;
+    color:black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/static/photo/Service Policy.png');
+    background-size:cover;
+    background-color: rgba(255, 255, 255, 0.9);
+    background-blend-mode: lighten;
+}
+
+#div2 {
+    background-color: #DCDCDC;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/static/photo/Leave Policy.png');
+    background-size:cover;
+    background-color: rgba(255, 255, 255, 0.9);
+    background-blend-mode: lighten;
+
+}
+
+#div3 {
+    background-color: #1E90FF;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    color: black;
+    align-items: center;
+    background-image: url('/static/photo/International.jpeg');
+    background-size:cover;
+    background-color: rgba(255, 255, 255, 0.7);
+    background-blend-mode: lighten;
+}
+
+/* Hover effect */
+.div-class:hover {
+    height: 160px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
+}
+
+/* Click (active) effect */
+.div-class:active {
+    background-color: #2e2e2e !important;
+    color: white;
+}
+
+/* Submenu container */
+.policy-submenu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+}
+
+/* Show submenu when hovering Travel Policy */
+#div3:hover .policy-submenu {
+    display: block;
+}
+
+
+
+
+/* Submenu Items */
+.tarv-class {
+    height: 50px;
+    width: 170px;
+    text-align: center;
+    line-height: 50px;
+    margin-top: 5px;
+    background-color: #87CEFA;
+    font-size: 14px;
+    font-weight: 500;
+    color: black;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.tarv-class:hover {
+    transform: scale(1.05);
+    background-color: #5ca8d8;
+    color: white;
+}
+
+/* International travel specific style */
+.tarv-link:last-child .tarv-class {
+    background-color:#FFC0CB;
+    color: black;
+}
+
+/* Remove default link styles */
+.policy-link,
+.tarv-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Shrink div1 and div2 when hovering over div3 */
+#div3:hover ~ .policy-link .div-class {
+    transform: scale(0.5);
+    transition: transform 0.3s ease;
+}
+
+
+
+
+
+
+
+
+
+
+---service-policy---
+.service-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 20px;
+}
+
+.service-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.service-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.service-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.service-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.service-policy-section {
+    margin-bottom: 35px;
+}
+
+.service-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.service-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .service-policy-title {
+        font-size: 26px;
+    }
+
+    .service-policy-heading {
+        font-size: 20px;
+    }
+
+    .service-policy-text {
+        font-size: 15px;
+    }
+
+    .service-policy-container {
+        padding: 20px;
+    }
+}
+
+
+
+
+---domestic---
+
+.domestic-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 20px;
+}
+
+.domestic-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.domestic-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.domestic-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.domestic-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.domestic-policy-section {
+    margin-bottom: 35px;
+}
+
+.domestic-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.domestic-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .domestic-policy-title {
+        font-size: 26px;
+    }
+
+    .domestic-policy-heading {
+        font-size: 20px;
+    }
+
+    .domestic-policy-text {
+        font-size: 15px;
+    }
+
+    .domestic-policy-container {
+        padding: 20px;
+    }
+}
+
+
+---International---
+
+.international-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 20px;
+}
+
+.international-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.international-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.international-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.international-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.international-policy-section {
+    margin-bottom: 35px;
+}
+
+.international-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.international-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .international-policy-title {
+        font-size: 26px;
+    }
+
+    .international-policy-heading {
+        font-size: 20px;
+    }
+
+    .international-policy-text {
+        font-size: 15px;
+    }
+
+    .international-policy-container {
+        padding: 20px;
+    }
+}
+
+/* -- leave-policy--- */
+
+
+.leave-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 2px;
+    border-radius: 10px;
+}
+
+.leave-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.leave-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.leave-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.leave-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.leave-policy-section {
+    margin-bottom: 35px;
+}
+
+.leave-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.leave-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .leave-policy-title {
+        font-size: 26px;
+    }
+
+    .leave-policy-heading {
+        font-size: 20px;
+    }
+
+    .leave-policy-text {
+        font-size: 15px;
+    }
+
+    .leave-policy-container {
+        padding: 20px;
+    }
+}

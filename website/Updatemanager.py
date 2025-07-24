@@ -15,6 +15,8 @@ from flask_login import current_user, login_required
 from .models.signup import Signup
 from .models.attendance import LeaveApplication,WorkFromHomeApplication
 from .models.expense import ExpenseClaimHeader,ExpenseLineItem
+from .common import verify_oauth2_and_send_email
+
 
 manager_bp = Blueprint('manager_bp', __name__)
 
@@ -70,6 +72,7 @@ def claim_expense():
         try:
             # Save header
             header = ExpenseClaimHeader(
+                admin_id=current_user.id,
                 employee_name=form.employee_name.data,
                 designation=form.designation.data,
                 emp_id=form.emp_id.data,
@@ -214,8 +217,9 @@ def manager_access():
         signup_data = signup_data,
         leave_apps=leave_apps,
         leave_another = leave_another
-
     )
+
+
 @manager_bp.route('wfh_approval', methods=['GET', 'POST'])
 def wfh_approval():
     current_email = current_user.email
@@ -248,36 +252,62 @@ def wfh_approval():
         WorkFromHomeApplication.status!='Pending',
     ).all()
 
-
-
-
     return render_template('Manager/wfh_approval.html',admin_data=admin_data,wfh_data=wfh_data,wfh_another=wfh_another)
-
-
 @manager_bp.route('/claim_approval', methods=['GET', 'POST'])
 def claim_approval():
-    claims = ExpenseClaimHeader.query.order_by(
-        ExpenseClaimHeader.travel_from_date.desc()
+    current_email = current_user.email
+
+    # Fetch manager-related user types and circles
+    manager_data = ManagerContact.query.with_entities(
+        ManagerContact.user_type, ManagerContact.circle_name
+    ).filter(
+        (ManagerContact.l1_email == current_email) |
+        (ManagerContact.l2_email == current_email) |
+        (ManagerContact.l3_email == current_email)
     ).all()
+
+    # Extract distinct user types and circles
+    user_types = {m.user_type for m in manager_data}
+    circle_names = {m.circle_name for m in manager_data}
+
+    # Get all HR emails based on user_type and circle
+    email_list = Signup.query.with_entities(Signup.email).filter(
+        Signup.emp_type.in_(user_types),
+        Signup.circle.in_(circle_names)
+    ).all()
+    emails = [email for (email,) in email_list]
+
+    # Get matching admin IDs
+    admin_ids = []
+    if emails:
+        admin_ids = Admin.query.with_entities(Admin.id).filter(Admin.email.in_(emails)).all()
+        admin_ids = [admin_id for (admin_id,) in admin_ids]
+
+    # Fetch only claims for those admins
+    claims = []
+    if admin_ids:
+        claims = ExpenseClaimHeader.query.filter(
+            ExpenseClaimHeader.admin_id.in_(admin_ids)
+        ).order_by(
+            ExpenseClaimHeader.travel_from_date.desc()
+        ).all()
+
     return render_template('Manager/manager_claims.html', claim_data=claims)
+
 
 
 @manager_bp.route('/view_items/<int:claim_id>', methods=['GET', 'POST'])
 def view_items(claim_id):
-    print(f"view claims: {claim_id}")
     claim = ExpenseClaimHeader.query.get_or_404(claim_id)
-    print(claim.id)
 
-
-    # Filter items in one go
     items = ExpenseLineItem.query.filter_by(claim_id=claim_id).all()
-    for i in items:
-        print(f" view3 item: {i.claim_id}")
 
     # Split pending and non-pending items
     pending_items = [item for item in items if item.status == "Pending"]
 
     not_pending_items = [item for item in items if item.status != "Pending"]
+
+
 
     return render_template(
         'Manager/view_items.html',
@@ -285,6 +315,93 @@ def view_items(claim_id):
         claim=claim,
         not_pending_items=not_pending_items
     )
+
+@manager_bp.route('/send_claim_email/<int:claim_id>', methods=['GET', 'POST'])
+def send_claim_email(claim_id):
+    claim = ExpenseClaimHeader.query.get_or_404(claim_id)
+    items = ExpenseLineItem.query.filter_by(claim_id=claim_id).all()
+
+    subject = f"Expense Claim Submitted by {claim.employee_name}"
+
+    # Reusable inline styles
+    table_style = "border-collapse: collapse; width: 100%; font-size: 14px;"
+    th_style = "background-color: #f2f2f2; text-align: left;"
+    td_style = "padding: 6px; border: 1px solid #ccc;"
+
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; color: #333;">
+        <p>Hi,</p>
+        <p>An expense claim has been submitted. Below are the details:</p>
+
+        <h4>Claim Summary:</h4>
+        <table style="{table_style}">
+            <tr><td style="{td_style}"><strong>Employee ID:</strong></td><td style="{td_style}">{claim.emp_id}</td></tr>
+            <tr><td style="{td_style}"><strong>Employee Name:</strong></td><td style="{td_style}">{claim.employee_name}</td></tr>
+            <tr><td style="{td_style}"><strong>Designation:</strong></td><td style="{td_style}">{claim.designation}</td></tr>
+            <tr><td style="{td_style}"><strong>Project Name:</strong></td><td style="{td_style}">{claim.project_name}</td></tr>
+            <tr><td style="{td_style}"><strong>Location:</strong></td><td style="{td_style}">{claim.country_state}</td></tr>
+            <tr><td style="{td_style}"><strong>Travel Dates:</strong></td><td style="{td_style}">{claim.travel_from_date} to {claim.travel_to_date}</td></tr>
+        </table>
+
+        <h4 style="margin-top: 20px;">Expense Line Items:</h4>
+        <table style="{table_style}">
+            <thead>
+                <tr style="{th_style}">
+                    <th style="{td_style}">Date</th>
+                    <th style="{td_style}">Description</th>
+                    <th style="{td_style}">Amount</th>
+                    <th style="{td_style}">Currency</th>
+                    <th style="{td_style}">Attachment</th>
+                    <th style="{td_style}">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    for item in items:
+        file_link = (
+            f'<a href="{url_for("static", filename="uploads/" + item.Attach_file, _external=True)}" '
+            f'target="_blank" style="color: #007bff;">Download File</a>'
+            if item.Attach_file else "No attachment"
+        )
+        body += f"""
+            <tr>
+                <td style="{td_style}">{item.date}</td>
+                <td style="{td_style}">{item.purpose}</td>
+                <td style="{td_style}">{item.amount}</td>
+                <td style="{td_style}">{item.currency}</td>
+                <td style="{td_style}">{file_link}</td>
+                <td style="{td_style}">{item.status}</td>
+            </tr>
+        """
+
+    body += f"""
+            </tbody>
+        </table>
+
+        <p style="margin-top: 20px;">Click below to review the claim:</p>
+        <p>
+            <a href="https://solviotec.com/"
+               style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+               Login to HRMS
+            </a>
+        </p>
+
+        <p>Thanks & Regards,<br>HRMS System</p>
+    </body>
+    </html>
+    """
+
+    # Recipient emails
+    to_email = "chauguleshubham390@gmail.com"
+    cc_emails = ["examattend87@gmail.com"]
+
+    # Send email
+    verify_oauth2_and_send_email(current_user, subject, body, to_email, cc_emails)
+
+    flash('Email sent successfully!', 'success')
+    return redirect(url_for('manager_bp.view_items', claim_id=claim_id))
+
 
 
 @manager_bp.route('/accept_item/<int:item_id>', methods=['GET', 'POST'])
@@ -307,3 +424,78 @@ def reject(item_id):
     item.status = "Rejected"
     db.session.commit()
     return redirect(url_for('manager_bp.view_items', claim_id=item.claim_id))
+
+
+@manager_bp.context_processor
+def inject_badge_counts():
+    count_new_wfhs = 0
+    count_new_leaves = 0
+    claim_item_counts = {}
+
+    if current_user.is_authenticated:
+        current_email = current_user.email
+
+        manager_data = ManagerContact.query.filter(
+            (ManagerContact.l1_email == current_email) |
+            (ManagerContact.l2_email == current_email) |
+            (ManagerContact.l3_email == current_email)
+        ).all()
+
+        if manager_data:
+            emp_types = {m.user_type for m in manager_data}
+            circles = {m.circle_name for m in manager_data}
+
+            emails = [e[0] for e in db.session.query(Signup.email).filter(
+                Signup.emp_type.in_(emp_types),
+                Signup.circle.in_(circles)
+            ).all()]
+
+            admin_ids = [a[0] for a in db.session.query(Admin.id).filter(
+                Admin.email.in_(emails)
+            ).all()]
+
+            if admin_ids:
+                # WFH count
+                count_new_wfhs = WorkFromHomeApplication.query.filter(
+                    WorkFromHomeApplication.admin_id.in_(admin_ids),
+                    WorkFromHomeApplication.status == 'Pending'
+                ).count()
+
+                # Leave count
+                count_new_leaves = LeaveApplication.query.filter(
+                    LeaveApplication.admin_id.in_(admin_ids),
+                    LeaveApplication.status == 'Pending'
+                ).count()
+
+                # Get all headers
+                headers = ExpenseClaimHeader.query.filter(
+                    ExpenseClaimHeader.admin_id.in_(admin_ids)
+                ).all()
+
+                header_ids = [h.id for h in headers]
+
+                # Get all pending items grouped by claim_id
+                from sqlalchemy import func
+                pending_items = db.session.query(
+                    ExpenseLineItem.claim_id,
+                    func.count(ExpenseLineItem.id)
+                ).filter(
+                    ExpenseLineItem.claim_id.in_(header_ids),
+                    ExpenseLineItem.status == 'Pending'
+                ).group_by(ExpenseLineItem.claim_id).all()
+
+                # Build dictionary: {claim_id: pending_count}
+                claim_item_counts = {claim_id: count for claim_id, count in pending_items}
+
+                has_pending_items = bool(count_new_wfhs > 0 or claim_item_counts)
+                print(has_pending_items)
+
+    return dict(
+        count_new_wfhs=count_new_wfhs,
+        count_new_leaves=count_new_leaves,
+        claim_item_counts=claim_item_counts,
+        has_pending_items=bool(count_new_wfhs > 0 or claim_item_counts)
+    )
+
+
+

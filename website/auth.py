@@ -366,3 +366,18 @@ def change_password():
 
     return render_template('profile/change_password.html', form=form)
 
+@auth.app_context_processor
+def inject_badge_counts():
+    try:
+        count_new_claims = ExpenseLineItem.query.filter_by(status='New').count()
+        count_new_wfhs = WorkFromHome.query.filter_by(status='New').count()
+    except Exception as e:
+        # Fallback to 0 if DB is not ready or error occurs
+        current_app.logger.warning(f"Badge count injection failed: {e}")
+        count_new_claims = 0
+        count_new_wfhs = 0
+
+    return dict(
+        count_new_claims=count_new_claims,
+        count_new_wfhs=count_new_wfhs
+    )

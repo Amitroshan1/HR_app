@@ -694,7 +694,6 @@ def apply_leave():
             </body>
             </html>
             """
-
         verify_oauth2_and_send_email(emp, subject, body, department_email, cc_emails)
         flash('Your leave application has been submitted & Mail Sent for approval.', 'success')
         return redirect(url_for('profile.apply_leave'))

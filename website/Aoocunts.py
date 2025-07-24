@@ -267,7 +267,7 @@ def download_payslip(payslip_id):
 @login_required
 def create_query():
     form = QueryForm()
-    photo_filename = None  # ✅ Initialize this at the top
+    photo_filename = None
 
     if form.validate_on_submit():
         if form.photo.data:
@@ -312,7 +312,6 @@ def create_query():
 def chat_query(query_id):
     
     selected_query = Query.query.get_or_404(query_id)
-    print(f" Success full got the photo name : {selected_query.photo}")
     if selected_query.status == 'New':
         selected_query.status = 'Open'
         db.session.commit()
@@ -370,25 +369,22 @@ def view_emp_type_queries():
     
     for query in queries_for_emp_type:
         admin_details = Admin.query.filter_by(id=query.admin_id).first()
-        query.admin_details = admin_details  
+        query.admin_details = admin_details
 
     return render_template('Accounts/view_emp_type_queries.html', queries=queries_for_emp_type,emp=emp)
-
-
-
 
 
 @Accounts.route('/delete_query/<int:query_id>', methods=['GET'])
 @login_required
 def close_query(query_id):
     query = Query.query.filter_by(id=query_id).first()
-    
+    print(current_user)
     if not query:
         flash('Query not found.', 'error')
         return redirect(url_for('Accounts.create_query'))
-    
+
     replies = QueryReply.query.filter_by(query_id=query_id).all()
-    
+
     # Construct email body
     body_chat = f"Query Title: {query.title}\n"
     body_chat += f"Department: {query.emp_type}\n\n"
@@ -400,24 +396,23 @@ def close_query(query_id):
 
     body_chat += "\nIssue resolved. Closing this query."
 
-   # Split the emp_type string into a list
+    # Split the emp_type string into a list
     departments = query.emp_type.split(', ')
 
-    if len(departments) >1:
-    # Determine department email and CC
+    if len(departments) > 1:
+        # Determine department email and CC
         if 'Human Resource' in departments:
-            department_email = 'hr@saffotech.com'
-            cc =['accounts@saffotech.com']
+            department_email = 'skchaugule@saffotech.com'
+            cc = ['chauguleshubham390@gmail.com']
         else:
-            department_email = 'accounts@saffotech.com'
-            cc = ['hr@saffotech.com']
+            department_email = 'skchaugule@saffotech.com'
+            cc = ['chauguleshubham390@gmail.com']
     else:
         if 'Human Resource' in departments:
-            department_email = 'hr@saffotech.com'
-            cc=None
+            department_email = 'skchaugule@saffotech.com'
+            cc = None
         else:
-            department_email = 'accounts@saffotech.com'
-
+            department_email = 'chauguleshubham390@gmail.com'
 
     subject = f"Query Resolved: {query.title}"
 
@@ -434,8 +429,44 @@ def close_query(query_id):
     return redirect(url_for('Accounts.create_query'))
 
 
-    
 
 
 
-# attendance_circle_emp_type_6june25.excel
+
+
+
+@Accounts.route('/policy_structure', methods=['GET', 'POST'])
+@login_required
+def policy_structure():
+    user_email = current_user.email
+    print(user_email)
+    signup_data  = Signup.query.filter_by(email=user_email).first()
+    return render_template('policy/policy_structure.html',signup_data=signup_data)
+
+@Accounts.route('/service_policy', methods=['GET', 'POST'])
+@login_required
+def service_policy():
+    return render_template('policy/service_policy.html')
+
+@Accounts.route('/leave_policy', methods=['GET', 'POST'])
+@login_required
+def leave_policy():
+    return render_template('policy/leave_policy.html')
+
+
+@Accounts.route('/travel_policy', methods=['GET', 'POST'])
+@login_required
+def travel_policy():
+    return render_template('policy/travel_policy.html')
+
+@Accounts.route('/domestic_travel', methods=['GET', 'POST'])
+@login_required
+def domestic_travel():
+    return render_template('policy/domestic_travel.html')
+
+@Accounts.route('/international_travel', methods=['GET', 'POST'])
+@login_required
+def international_travel():
+    return render_template('policy/international_travel.html')
+
+
