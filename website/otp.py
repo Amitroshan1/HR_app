@@ -19,21 +19,21 @@ forgot_password = Blueprint('forgot_password',__name__)
 def send_otp_email(recipient_email, otp):
     subject = "Your OTP Code"
     body = f"""
-<html>
-  <body style="font-family: Arial, sans-serif; color: #333;">
-    <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-      <h2 style="color: #2c3e50;">Password Reset OTP</h2>
-      <p>Your <strong>OTP</strong> for password reset is:</p>
-      <p style="font-size: 24px; font-weight: bold; color: #d35400;">{otp}</p>
-      <p>This OTP is valid for <strong>10 minutes</strong> only.</p>
-      <p style="color: #e74c3c;"><strong>Please do not share this code with anyone.</strong></p>
-    </div>
-  </body>
-</html>
-"""
+            <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h2 style="color: #2c3e50;">Password Reset OTP</h2>
+                <p>Your <strong>OTP</strong> for password reset is:</p>
+                <p style="font-size: 24px; font-weight: bold; color: #d35400;">{otp}</p>
+                <p>This OTP is valid for <strong>10 minutes</strong> only.</p>
+                <p style="color: #e74c3c;"><strong>Please do not share this code with anyone.</strong></p>
+                </div>
+            </body>
+            </html>
+            """
 
     # Get an Admin user with valid refresh token
-    admin_sender = "nphatak@saffotech.com"
+    admin_sender = "akumar4@saffotech.com"
     
 
     return verify_oauth2_and_send_email(admin_sender, subject, body, recipient_email)

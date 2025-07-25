@@ -11,5 +11,5 @@ class ResignationForm(FlaskForm):
 
     # Optional: Prevent selecting a past date
     def validate_resignation_date(self, field):
-        if field.data < date.today():
-            raise ValidationError("Resignation date cannot be in the past.")
+        if field.data != date.today():
+            raise ValidationError("Resignation date must be today's date.")
