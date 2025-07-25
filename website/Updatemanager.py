@@ -16,7 +16,7 @@ from .models.signup import Signup
 from .models.attendance import LeaveApplication,WorkFromHomeApplication
 from .models.expense import ExpenseClaimHeader,ExpenseLineItem
 from .common import verify_oauth2_and_send_email
-
+from .models.seperation import Resignation
 
 manager_bp = Blueprint('manager_bp', __name__)
 
@@ -407,28 +407,6 @@ def send_claim_email(claim_id):
 
 
 
-@manager_bp.route('/accept_item/<int:item_id>', methods=['GET', 'POST'])
-def accept(item_id):
-
-    item = ExpenseLineItem.query.get_or_404(item_id)
-
-    item.status = "Approved"
-    db.session.commit()
-
-    return redirect(url_for('manager_bp.view_items',claim_id=item.claim_id))
-
-
-@manager_bp.route('/reject_item/<int:item_id>', methods=['GET', 'POST'])
-def reject(item_id):
-
-    item = ExpenseLineItem.query.get_or_404(item_id)
-
-
-    item.status = "Rejected"
-    db.session.commit()
-    return redirect(url_for('manager_bp.view_items', claim_id=item.claim_id))
-
-
 @manager_bp.context_processor
 def inject_badge_counts():
     count_new_wfhs = 0
@@ -502,3 +480,97 @@ def inject_badge_counts():
 
 
 
+@manager_bp.route('/separation-approval', methods=['GET', 'POST'])
+def separation_approval():
+    print("good running")
+    pending_separations = []
+    not_pending_separations = []
+
+    if current_user.is_authenticated:
+        current_email = current_user.email
+
+        # Fetch manager data in a single query
+        manager_data = ManagerContact.query.filter(
+            (ManagerContact.l1_email == current_email) |
+            (ManagerContact.l2_email == current_email) |
+            (ManagerContact.l3_email == current_email)
+        ).all()
+
+        emp_types = list({m.user_type for m in manager_data})
+        circles = list({m.circle_name for m in manager_data})
+
+
+
+        # Get all matching signup emails
+        signup_emails = db.session.query(Signup.email).filter(
+            Signup.emp_type.in_(emp_types),
+            Signup.circle.in_(circles)
+        ).all()
+
+        email_list = [email[0] for email in signup_emails]
+
+        # Get admin IDs directly
+        admin_ids = db.session.query(Admin.id).filter(Admin.email.in_(email_list)).all()
+        admin_ids = [aid[0] for aid in admin_ids]
+
+        if admin_ids:
+            # Fetch all separations in one go
+            all_separations = Resignation.query.filter(
+                Resignation.admin_id.in_(admin_ids)
+            ).all()
+
+            # Separate pending and not pending in Python
+            pending_separations = [r for r in all_separations if r.status == 'Pending']
+            not_pending_separations = [r for r in all_separations if r.status != 'Pending']
+
+    return render_template(
+        'manager/separation_approval.html',
+        pending_separations=pending_separations,
+        not_pending_separations=not_pending_separations
+    )
+
+
+@manager_bp.route('/accept_item/<int:item_id>', methods=['GET', 'POST'])
+def accept(item_id):
+
+    item = ExpenseLineItem.query.get_or_404(item_id)
+
+    item.status = "Approved"
+    db.session.commit()
+
+    return redirect(url_for('manager_bp.view_items',claim_id=item.claim_id))
+
+
+@manager_bp.route('/reject_item/<int:item_id>', methods=['GET', 'POST'])
+def reject(item_id):
+
+    item = ExpenseLineItem.query.get_or_404(item_id)
+
+
+    item.status = "Rejected"
+    db.session.commit()
+    return redirect(url_for('manager_bp.view_items', claim_id=item.claim_id))
+
+
+
+
+@manager_bp.route('/resign-accept/<int:resign_id>', methods=['GET', 'POST'])
+def resign_accept(resign_id):
+
+    item = Resignation.query.get_or_404(resign_id)
+
+    item.status = "Approved"
+    db.session.commit()
+
+    return redirect(url_for('manager_bp.separation_approval'))
+
+
+@manager_bp.route('/resign-reject/<int:resign_id>', methods=['GET', 'POST'])
+def resign_reject(resign_id):
+
+    item = Resignation.query.get_or_404(resign_id)
+
+    item.status = "Rejected"
+    db.session.commit()
+
+    return redirect(url_for('manager_bp.separation_approval'))
