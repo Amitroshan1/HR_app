@@ -7,6 +7,8 @@ from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import send_resignation_email,send_rollback_resignation_email
 from .models.manager_model import ManagerContact
+from datetime import date, timedelta    
+
 
 offboard = Blueprint('offboard', __name__)
 
@@ -21,7 +23,7 @@ def apply_resignation():
         circle_name=signup_date.circle,
         user_type=signup_date.emp_type
     ).first()
-
+    today = date.today().isoformat()
     reg_data = Resignation.query.filter_by(admin_id=current_user.id).first()
 
     if reg_data:
@@ -33,7 +35,8 @@ def apply_resignation():
             user=user,
             signup_date=signup_date,
             reg_data=reg_data,
-            manager=manager
+            manager=manager,
+            today=today
         )
 
     if form.validate_on_submit():
@@ -56,14 +59,15 @@ def apply_resignation():
         except Exception:
             flash("Unable to submit resignation. Please check your internet connection or contact IT support.", "error")
 
-
+    
     return render_template(
         'offboard/seperation.html',
         form=form,
         user=user,
         signup_date=signup_date,
         reg_data=None,
-        manager=manager
+        manager=manager,
+        today=today
     )
 
 
