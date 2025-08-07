@@ -1,0 +1,61 @@
+{% extends "Manager/manager_base.html" %}
+
+{% block content %}
+<h2 style="text-align: center">Resignations For Approval</h2>
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Resignation_Date</th>
+            <th>Reason</th>
+            <th>Applied On</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sep in pending_separations %}
+        <tr>
+            <td>{{sep.admin.first_name}}</td>
+            <td>{{sep.resignation_date}}</td>
+            <td>{{sep.reason}}</td>
+            <td>{{sep.applied_on}}</td>
+            <td>{{sep.status}}</td>
+            <td>
+                <a href="{{ url_for('manager_bp.resign_reject', resign_id=sep.id) }}" class="resign-reject">Reject</a>
+
+                <a href="{{ url_for('manager_bp.resign_accept', resign_id=sep.id) }}" class="resign-accept">Accept</a>
+            </td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2 style="text-align: center">Resignations Status</h2>
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Resignation_Date</th>
+            <th>Reason</th>
+            <th>Applied On</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sep in not_pending_separations %}
+        <tr>
+            <td>{{sep.admin.first_name}}</td>
+            <td>{{sep.resignation_date}}</td>
+            <td>{{sep.reason}}</td>
+            <td>{{sep.applied_on}}</td>
+            <td>{{sep.status}}</td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

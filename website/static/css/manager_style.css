@@ -1,3 +1,5 @@
+.resign-reject,
+.resign-accept,
 .button-reject,
 .button-accept,
 .claim-button,
@@ -35,6 +37,26 @@
 
 .claim-reject-bt{
     background-color: #ff4d4d !important;
+}
+
+
+.resign-reject{
+    background-color: #ff4d4d !important;
+}
+
+.resign-accept{
+    background-color: #4CAF50 !important;
+}
+
+.resign-reject:hover {
+    background-color: #cc0000 !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+.resign-accept:hover {
+    background-color: #2e8b57 !important;
+    transform: scale(1.05);
+    text-decoration: none !important;
 }
 
 
