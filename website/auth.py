@@ -23,6 +23,9 @@ from .utility import get_user_working_summary
 from .models.expense import ExpenseLineItem
 from .models.attendance import WorkFromHomeApplication
 from .forms.attendance import PunchForm
+from .utility import get_user_working_summary,get_remaining_resignation_days
+from .models.seperation import Resignation
+
 
 
 
@@ -211,12 +214,11 @@ def select_role():
 
         # Get the current user's email ID
         user_email = user.email  # Assuming the user model has an email attribute
-        print(f"User email: {user_email}")  # Debugging print statement
+
         # Query the admin/signup record based on the user's email
         admin = Signup.query.filter_by(
             email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
-        print(f"Admin record: {admin.first_name}")  # Debugging print statement
-        print(f"Selected role: {selected_role} {admin.emp_type}")  # Debugging print statement
+
         if admin:
             # Check if the Emp_type matches the selected role
             if admin.emp_type == selected_role:
@@ -244,6 +246,11 @@ def select_role():
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
+    current_id = current_user.id
+    resign_data = Resignation.query.filter_by(admin_id = current_id).first()
+    days,message = get_remaining_resignation_days(resign_data.resignation_date)
+
+
     emails_data = [
         email
         for manager in ManagerContact.query.all()
@@ -323,6 +330,8 @@ def E_homepage():
                            emp_type=emp_type, count_new_queries=count_new_queries,
                            emp=emp,
                            form=form)  # Pass emp_type to the template
+                           emp_type=emp_type, count_new_queries=count_new_queries,
+                           days=days,message=message)  # Pass emp_type to the template
 
 
 @auth.route('/logout')

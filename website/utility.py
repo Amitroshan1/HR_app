@@ -93,3 +93,23 @@ def punch_time(user_id):
     return {
         "Todays work time": "0h 0m"
     }
+
+
+
+def get_remaining_resignation_days(resignation_date, notice_period_days=90):
+    if not resignation_date:
+        return None, None  # No resignation date provided
+
+    today = date.today()
+    last_working_day = resignation_date + timedelta(days=notice_period_days)
+
+    if resignation_date <= today <= last_working_day:
+        days = (last_working_day - today).days
+        message = f"{days} day(s) remaining in notice period."
+        return days, message
+    elif today > last_working_day:
+        return 0, "Notice period has ended."
+    elif today < resignation_date:
+        return None, "Notice period has not started yet."
+
+    return None, None

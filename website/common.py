@@ -1,7 +1,15 @@
+import os
+import uuid
+from calendar import monthrange
+from datetime import datetime
+
 from flask import flash, current_app,url_for
 from flask_mail import Message,Mail
 import requests
 from flask_login import current_user
+from werkzeug.utils import secure_filename
+
+from . import db
 from .auth import refresh_access_token
 from .models.Admin_models import Admin
 from geopy.distance import geodesic
@@ -9,7 +17,7 @@ from .models.manager_model import ManagerContact  # adjust path if needed
 from .models.expense import ExpenseClaimHeader  # adjust path if needed
   # wherever you defined this
 from .models.signup import Signup  # adjust path if needed
-
+from .models.seperation import Noc_Upload
 
 
 def verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails=None):
@@ -427,3 +435,109 @@ def send_rollback_resignation_email(user, manager=None):
         recipient_email=recipient_email,
         cc_emails=cc_emails
     )
+
+
+
+
+
+def send_noc_email(user, selected_departments, noc_date, manager_emails, resignation):
+    department_emails = {
+        "Human Resource": ["chauguleshubham390@gmail.com"],   # Fill real HR email
+        "Accounts": ["singhroshan9688@gmail.com"],   # Fill real Accounts email
+        "IT Department": ["singhroshan968@gmail.com"]   # Replace with real IT email
+    }
+
+    resignation_info = ""
+    if resignation:
+        resignation_info = f"""
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial; font-size: 14px;">
+            <tr>
+                <th style="background-color: #f2f2f2; text-align: left;">Resigned On</th>
+                <td>{resignation.resignation_date}</td>
+            </tr>
+            <tr>
+                <th style="background-color: #f2f2f2; text-align: left;">Reason</th>
+                <td>{resignation.reason}</td>
+            </tr>
+        </table>
+        """
+
+    subject = f"NOC Request Submitted by {user.first_name}"
+
+    body = f"""
+    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+        <p>Dear Team,</p>
+
+        <p>The employee <strong>{user.first_name}</strong> has submitted a NOC request on 
+        <strong>{noc_date}</strong>.</p>
+
+        {resignation_info}
+
+        <p>We request you to review this NOC request promptly, provide your approval, and submit the duly signed copy on HRMS.</p>
+
+        <p>Thank you,<br>
+        HRMS System</p>
+    </div>
+    """
+
+    to_email = department_emails["Human Resource"][0]
+
+    cc_emails = []
+    for dept in selected_departments:
+        if dept == "Manager":
+            cc_emails.extend(manager_emails)
+        elif dept != "Human Resource" and dept in department_emails:
+            cc_emails.extend(department_emails[dept])
+
+    return verify_oauth2_and_send_email(
+        user=user,
+        subject=subject,
+        body=body,
+        recipient_email=to_email,
+        cc_emails=cc_emails
+    )
+
+def noc_store(admin_id, file, uploader_email):
+    uploader = Signup.query.filter_by(email=uploader_email).first()
+    if not uploader:
+        return False, "Uploader not found"
+
+    # Get original filename and extension
+    original_filename = secure_filename(file.filename)
+    file_ext = os.path.splitext(original_filename)[1]  # e.g. ".pdf"
+
+    # Generate a unique filename using UUID or timestamp
+    unique_filename = f"{uuid.uuid4().hex}{file_ext}"  # random unique id
+    # OR: unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{original_filename}"
+
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+
+    try:
+        file.save(file_path)
+
+        new_upload = Noc_Upload(
+            admin_id=admin_id,
+            file_path=unique_filename,  # store unique filename
+            emp_type_uploader=uploader.emp_type
+        )
+        db.session.add(new_upload)
+        db.session.commit()
+        return True, "NOC uploaded successfully"
+    except Exception as e:
+        db.session.rollback()
+        return False, str(e)
+
+
+
+def get_date_range_from_month(selected_month):
+    """
+    Convert 'YYYY-MM' to (start_date, end_date)
+    """
+    try:
+        year, month = map(int, selected_month.split('-'))
+        start_date = datetime(year, month, 1)
+        end_day = monthrange(year, month)[1]
+        end_date = datetime(year, month, end_day)
+        return start_date, end_date
+    except:
+        return None, None

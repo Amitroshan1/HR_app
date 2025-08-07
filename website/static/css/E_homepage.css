@@ -488,6 +488,7 @@ h3 {
 /* Ensuring the container width and margin is appropriate */
 
 .container {
+    position: relative;
     width: 90%;
     padding: 20px;
     margin: auto;
@@ -1532,4 +1533,22 @@ button[type="button"], .btn {
     .leave-policy-container {
         padding: 20px;
     }
+}
+
+
+.resign-div {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  /* top: 0; */
+}
+
+.resign-ended-text {
+  color: red;
+  font-weight: bold;
+}
+
+.resign-days-left {
+  color: red;
+  font-weight: bold;
 }

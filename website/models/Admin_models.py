@@ -40,6 +40,8 @@ class Admin(db.Model, UserMixin):
     work_from_home_applications = db.relationship('WorkFromHomeApplication', back_populates='admin', cascade='all, delete-orphan')
     resignations = db.relationship('Resignation', back_populates='admin', lazy='dynamic', cascade="all, delete-orphan")
     expense_claim_header = db.relationship('ExpenseClaimHeader', back_populates='admin', cascade='all, delete-orphan')
+    noc_emp = db.relationship('Noc',back_populates='admin', cascade='all, delete-orphan')
+    noc_upload = db.relationship('Noc_Upload',back_populates='admin', cascade='all, delete-orphan')
     # sessions = db.relationship('Session', back_populates='admin', cascade="all, delete-orphan")
 
 

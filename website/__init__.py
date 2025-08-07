@@ -286,36 +286,36 @@ def create_app():
     csrf.init_app(app)
 
     
-    # ⬇️ Add this block immediately after
-    from flask_wtf.csrf import CSRFError
-    from flask import redirect, url_for, flash, session
-
-    @app.errorhandler(CSRFError)
-    def handle_csrf_error(e):
-        session.clear()
-        flash('Your session has expired. Please log in again.', 'warning')
-        return redirect(url_for('auth.login'))  # make sure this route exists
-    
- 
-
-    from requests.exceptions import RequestException
-    
-
-    @app.errorhandler(RequestException)
-    @app.errorhandler(NewConnectionError)
-    def handle_network_errors(e):
-        session.clear()
-        flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
-        return redirect(url_for('auth.login'))  # or your actual login route
-
-
-    scheduler.init_app(app)
-    Session.init_app(app)
-
-    @app.errorhandler(413)
-    def too_large(e):
-        flash("Upload failed: File size exceeds limit.", "warning")
-        return redirect(request.url)
+    # # ⬇️ Add this block immediately after
+    # from flask_wtf.csrf import CSRFError
+    # from flask import redirect, url_for, flash, session
+    #
+    # @app.errorhandler(CSRFError)
+    # def handle_csrf_error(e):
+    #     session.clear()
+    #     flash('Your session has expired. Please log in again.', 'warning')
+    #     return redirect(url_for('auth.login'))  # make sure this route exists
+    #
+    #
+    #
+    # from requests.exceptions import RequestException
+    #
+    #
+    # @app.errorhandler(RequestException)
+    # @app.errorhandler(NewConnectionError)
+    # def handle_network_errors(e):
+    #     session.clear()
+    #     flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
+    #     return redirect(url_for('auth.login'))  # or your actual login route
+    #
+    #
+    # scheduler.init_app(app)
+    # Session.init_app(app)
+    #
+    # @app.errorhandler(413)
+    # def too_large(e):
+    #     flash("Upload failed: File size exceeds limit.", "warning")
+    #     return redirect(request.url)
 
 
 
