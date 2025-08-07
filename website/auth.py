@@ -19,6 +19,10 @@ from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
 from .models.manager_model import ManagerContact
+from .utility import get_user_working_summary
+from .models.expense import ExpenseLineItem
+from .models.attendance import WorkFromHomeApplication
+from .forms.attendance import PunchForm
 from .utility import get_user_working_summary,get_remaining_resignation_days
 from .models.seperation import Resignation
 
@@ -279,6 +283,9 @@ def E_homepage():
     # Get DOJ from Signup model
     DOJ = emp.doj if emp else None
 
+
+    form = PunchForm()
+
     # Get today's punch-in and punch-out time
     today = date.today()
     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
@@ -320,6 +327,9 @@ def E_homepage():
                            data=data,  # Pass the working summary data
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
+                           emp_type=emp_type, count_new_queries=count_new_queries,
+                           emp=emp,
+                           form=form)  # Pass emp_type to the template
                            emp_type=emp_type, count_new_queries=count_new_queries,
                            days=days,message=message)  # Pass emp_type to the template
 
@@ -375,7 +385,7 @@ def change_password():
 def inject_badge_counts():
     try:
         count_new_claims = ExpenseLineItem.query.filter_by(status='New').count()
-        count_new_wfhs = WorkFromHome.query.filter_by(status='New').count()
+        count_new_wfhs = WorkFromHomeApplication.query.filter_by(status='New').count()
     except Exception as e:
         # Fallback to 0 if DB is not ready or error occurs
         current_app.logger.warning(f"Badge count injection failed: {e}")

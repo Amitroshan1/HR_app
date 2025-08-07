@@ -358,6 +358,10 @@ def check_wfh():
 
 
 
+
+
+
+
 @profile.route('/punch', methods=['GET', 'POST'])
 @login_required
 def punch():
@@ -780,8 +784,7 @@ def reject_wfh(wfh_id):
 
 
 
-
-
+ 
 
 
 
