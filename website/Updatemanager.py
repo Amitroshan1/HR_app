@@ -1,22 +1,22 @@
-from pickletools import read_stringnl_noescape
-
-from flask import Blueprint, render_template, request, flash, redirect, url_for,current_app
-
-from .models.Admin_models import Admin
-from .models.manager_model import ManagerContact
-from .models.expense import ExpenseClaimHeader, ExpenseLineItem
-from .forms.expense_form import ExpenseClaimForm
-from .forms.manager import ManagerContactForm  
-from website import db
 import os
-from werkzeug.utils import secure_filename
-from .common import send_claim_submission_email
+
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 from flask_login import current_user, login_required
-from .models.signup import Signup
-from .models.attendance import LeaveApplication,WorkFromHomeApplication
-from .models.expense import ExpenseClaimHeader,ExpenseLineItem
+from flask_wtf.csrf import generate_csrf
+from werkzeug.utils import secure_filename
+
+from . import db
+from .common import send_claim_submission_email, get_date_range_from_month
 from .common import verify_oauth2_and_send_email
-from .models.seperation import Resignation
+from .forms.expense_form import ExpenseClaimForm
+from .forms.manager import ManagerContactForm
+from .forms.seperation import NocUpload
+from .models.Admin_models import Admin
+from .models.attendance import LeaveApplication, WorkFromHomeApplication
+from .models.expense import ExpenseClaimHeader, ExpenseLineItem
+from .models.manager_model import ManagerContact
+from .models.seperation import Resignation, Noc, Noc_Upload
+from .models.signup import Signup
 
 manager_bp = Blueprint('manager_bp', __name__)
 
@@ -172,56 +172,72 @@ def reject_line_item(item_id):
             <p>Failed to reject item: {str(e)}</p>
         """
 
-
 @manager_bp.route('/manager_access', methods=['GET', 'POST'])
 @login_required
 def manager_access():
+    csrf_token = generate_csrf()
     current_email = current_user.email
 
-    # Get all departments the manager is handling
+    # 🔍 Step 1: Get departments handled by manager
     manager_data = ManagerContact.query.filter(
         (ManagerContact.l1_email == current_email) |
         (ManagerContact.l2_email == current_email) |
         (ManagerContact.l3_email == current_email)
     ).all()
 
-    # Collect user types and circles (may contain duplicates, so use set if needed)
     users_type_list = [m.user_type for m in manager_data]
     circle_name_list = [m.circle_name for m in manager_data]
 
-    # Get all HRs based on user_type and circle
+
+    # 🔍 Step 2: Get HRs based on type + circle
     signup_data = Signup.query.filter(
         Signup.emp_type.in_(users_type_list),
         Signup.circle.in_(circle_name_list)
     ).all()
 
-    # Extract email list
     email_list = [i.email for i in signup_data]
-
-    # Get matching Admins
     data_admin = Admin.query.filter(Admin.email.in_(email_list)).all()
     admin_ids = [a.id for a in data_admin]
 
-    # Get Leave Applications
-    leave_apps = LeaveApplication.query.filter(LeaveApplication.admin_id.in_(admin_ids),LeaveApplication.status=='Pending').all()
-    leave_data = [i for i in leave_apps]
-
-    # for get not pending data means approved and rejected
-    leave_another = LeaveApplication.query.filter(LeaveApplication.admin_id.in_(admin_ids),LeaveApplication.status!='Pending').all()
 
 
+    # 🗓️ Step 3: Get month from form and generate date range
+    selected_month = request.form.get('selected_month')
+    start_date, end_date = get_date_range_from_month(selected_month)
+
+    # 🔍 Step 4: Filter pending leaves
+    # 🔍 Step 4: Filter pending leaves
+    leave_apps = LeaveApplication.query.filter(
+        LeaveApplication.admin_id.in_(admin_ids),
+        LeaveApplication.status == 'Pending'
+    ).all()
+
+
+    if start_date and end_date:
+        leave_another = LeaveApplication.query.filter(
+            LeaveApplication.admin_id.in_(admin_ids),
+            LeaveApplication.status != 'Pending',
+            LeaveApplication.start_date.between(start_date, end_date)
+        ).all()
+    else:
+        leave_another = []
+
+
+    # ✅ Final Render
     return render_template(
         'Manager/manager.html',
         users_type_list=users_type_list,
         circle_name_list=circle_name_list,
-        signup_data = signup_data,
+        signup_data=signup_data,
         leave_apps=leave_apps,
-        leave_another = leave_another
+        leave_another=leave_another,
+        selected_month=selected_month
     )
 
 
 @manager_bp.route('wfh_approval', methods=['GET', 'POST'])
 def wfh_approval():
+    csrf_token = generate_csrf()
     current_email = current_user.email
     manager_data = ManagerContact.query.filter(
         (ManagerContact.l1_email == current_email) |
@@ -242,17 +258,28 @@ def wfh_approval():
     admin_data = Admin.query.filter(Admin.email.in_(sing_emails)).all()
     admin_ids = [admin.id for admin in admin_data]
 
+
+    selected_month = request.form.get('selected_month')
+    print(f"Got the selected month: {selected_month}")
+    start_date, end_date = get_date_range_from_month(selected_month)
+    print(f"Got the start date: {start_date} and end date: {end_date}")
+
     wfh_data = WorkFromHomeApplication.query.filter(
         WorkFromHomeApplication.admin_id.in_(admin_ids),
-        WorkFromHomeApplication.status=='Pending',
-    ).all()
+        WorkFromHomeApplication.status == 'Pending').all()
 
-    wfh_another = WorkFromHomeApplication.query.filter(
+
+    if start_date and end_date:
+        wfh_another = WorkFromHomeApplication.query.filter(
         WorkFromHomeApplication.admin_id.in_(admin_ids),
         WorkFromHomeApplication.status!='Pending',
-    ).all()
+        WorkFromHomeApplication.start_date.between(start_date, end_date)).all()
+    else:
+        wfh_another = []
 
     return render_template('Manager/wfh_approval.html',admin_data=admin_data,wfh_data=wfh_data,wfh_another=wfh_another)
+
+
 @manager_bp.route('/claim_approval', methods=['GET', 'POST'])
 def claim_approval():
     current_email = current_user.email
@@ -574,3 +601,84 @@ def resign_reject(resign_id):
     db.session.commit()
 
     return redirect(url_for('manager_bp.separation_approval'))
+
+
+
+@manager_bp.route('/noc_approval', methods=['GET', 'POST'])
+def noc_approval():
+    current_email = current_user.email
+    manager_data = ManagerContact.query.filter(
+        (ManagerContact.l1_email == current_email) |
+        (ManagerContact.l2_email == current_email) |
+        (ManagerContact.l3_email == current_email)
+    ).all()
+    print(f"manager_data: {manager_data}")
+
+    emp_types = list({m.user_type for m in manager_data})
+    circles = list({m.circle_name for m in manager_data})
+    print(f"circles: {circles}")
+    print(f"emp_types: {emp_types}")
+
+    # Get all matching signup emails
+    signup_emails = Signup.query.filter(Signup.emp_type.in_(emp_types),Signup.circle.in_(circles)).all()
+
+    email_list = [email.email for email in signup_emails]
+    print(f"signup_emails: {email_list}")
+    # Get admin IDs directly
+    admin_ids = db.session.query(Admin.id).filter(Admin.email.in_(email_list)).all()
+    admin_ids = [aid[0] for aid in admin_ids]
+    print(admin_ids)
+    noc_data = Noc.query.filter(Noc.admin_id.in_(admin_ids)).all()
+    for i in noc_data:
+        print(f"got date: {i.noc_date}")
+
+    return render_template('Manager/noc_approval.html', admin_ids=admin_ids, noc_data=noc_data)
+
+
+@manager_bp.route('/noc_upload/<int:admin_id>', methods=['GET', 'POST'])
+def noc_upload(admin_id):
+    form = NocUpload()
+
+    try:
+        employee = Admin.query.get_or_404(admin_id)
+    except Exception:
+        flash("Employee details not found.", 'error')
+        return redirect(url_for('manager_bp.noc_approval'))
+
+    uploader_data = Signup.query.filter_by(email=current_user.email).first()
+
+
+
+    if request.method == 'POST':
+        print(f"reuqest method: {request.method}")
+        print(f"form validated: {form.validate_on_submit()}")
+        print(f"form data: {form.data}")
+
+    file_path = None
+    filename = None
+
+    try:
+        # Handle optional file upload
+        if form.noc_file.data:
+            filename = secure_filename(form.noc_file.data.filename)
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            form.noc_file.data.save(file_path)
+
+            # Save to database
+            new_payslip = Noc_Upload(
+                admin_id=employee.id,
+                file_path=filename,
+                emp_type_uploader = uploader_data.emp_type
+            )
+            db.session.add(new_payslip)
+            db.session.commit()
+            return redirect(url_for('manager_bp.noc_upload'))
+
+    except Exception as e:
+        flash(f"Error occurred: {str(e)}", 'error')
+        return redirect(url_for('manager_bp.noc_approval'))
+
+
+
+    return render_template('Manager/noc_upload.html', admin_id=admin_id,form=form)
+

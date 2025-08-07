@@ -1,0 +1,33 @@
+{% extends "HumanResource/hr_base.html" %}
+{% block title %}NOC INFORMATION{% endblock %}
+{% block content %}
+
+<h2 style="text-align: center">NOC INFORMATION</h2>
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>NOC Date</th>
+            <th>Upload NOC</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for noc in noc_data %}
+        <tr>
+            <td>{{noc.admin.first_name}}</td>
+            <td>{{noc.noc_date}}</td>
+            <td><form action="{{ url_for('offboard.hr_noc') }}" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="admin_id" value="{{ noc.admin_id }}">
+    <input type="file" name="noc_file" required>
+    <button type="submit">Upload</button>
+</form>
+
+            </td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -654,3 +654,117 @@ button.btn-primary:hover {
         padding: 8px;
     }
 }
+
+
+
+
+
+.table_details form {
+    display: flex;
+    gap: 6px;              /* reduce space between elements */
+    justify-content: center;
+    align-items: center;
+    margin: 0;             /* remove extra margin */
+    padding: 0;            /* remove extra padding */
+}
+
+.table_details form input[type="file"] {
+    padding: 2px 4px;      /* reduce padding inside file input */
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.table_details form button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 4px 10px;     /* smaller button */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.table_details form button:hover {
+    background-color: #45a049;
+}
+
+--- filter out month for leave ---
+.manager-form-wrapper {
+    display: flex !important;
+    justify-content: center !important; /* Horizontal center */
+    align-items: center; /* Vertical center if needed */
+    width: 100%;
+    border-radius: 8px !important;
+    margin: 70px !important;
+}
+
+.manager-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    max-width: 300px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 30px;
+}
+
+.manager-form label {
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+    flex: 1 1 100%;
+    text-align: center;
+}
+
+.manager-form input[type="month"] {
+    padding: 5px 8px;
+    font-size: 14px;
+    flex: 1 1 auto;
+    min-width: 160px;
+    max-width: 260px;
+}
+
+.manager-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    flex: 0 0 auto;
+    min-width: 80px;
+}
+
+.manager-form button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive tweak for smaller screens */
+@media (max-width: 480px) {
+    .manager-form {
+        max-width: 100%;
+        margin: 10px;
+    }
+
+    .manager-form label {
+        text-align: left;
+        flex: 1 1 100%;
+    }
+}
+
+/* 🔥 HIGHLIGHT: moved this block BELOW .manager-form so it overrides it */
+form {
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 10px;
+    background: rgb(237, 247, 250);
+    padding: 20px;
+    border-radius: 8px;  /* This will now apply */
+    margin: 70px;        /* This will now apply */
+}
+

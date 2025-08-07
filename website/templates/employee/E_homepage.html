@@ -4,10 +4,21 @@
 
 
 <div class="container">
+    
+<!--        resination days count here -->
+        <div class="resign-div">
+            {% if days == 0 %}
+          <p class="resign-ended-text">Resignation period ended: Days {{days}}</p>
+        {% elif days is not none %}
+          <p><strong>Resignation Days Left:</strong> <span class="resign-days-left">{{ days }}</span></p>
+        {% endif %}
+        </div>
 
     <div class="punch-container">
+
         {% if employee %}
         <h2>Welcome, {{ employee.name }}..</h2>
+
         <div class="attendance-summary">
 
             <strong>PL:-</strong> {{ data.privilege_leave_balance }}

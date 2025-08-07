@@ -5,11 +5,10 @@ from flask_wtf.file import FileAllowed
 
 class QueryForm(FlaskForm):
 
-    emp_type = SelectMultipleField('Department',  
+    emp_type = SelectMultipleField('Department',
                             choices=[
                                      ('Human Resource','Human Resource'),
-                                     ('Accounts','Accounts'),
-                                       ('IT Department', 'IT Department')],
+                                     ('Accounts','Accounts')],
 
                               validators=[DataRequired()])
     title = StringField('Title', validators=[DataRequired()])

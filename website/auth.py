@@ -19,9 +19,8 @@ from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
 from .models.manager_model import ManagerContact
-from .utility import get_user_working_summary
-
-
+from .utility import get_user_working_summary,get_remaining_resignation_days
+from .models.seperation import Resignation
 
 
 
@@ -243,6 +242,11 @@ def select_role():
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
+    current_id = current_user.id
+    resign_data = Resignation.query.filter_by(admin_id = current_id).first()
+    days,message = get_remaining_resignation_days(resign_data.resignation_date)
+
+
     emails_data = [
         email
         for manager in ManagerContact.query.all()
@@ -316,7 +320,8 @@ def E_homepage():
                            data=data,  # Pass the working summary data
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
-                           emp_type=emp_type, count_new_queries=count_new_queries)  # Pass emp_type to the template
+                           emp_type=emp_type, count_new_queries=count_new_queries,
+                           days=days,message=message)  # Pass emp_type to the template
 
 
 @auth.route('/logout')
