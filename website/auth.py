@@ -20,9 +20,9 @@ from datetime import datetime
 import requests
 from .models.manager_model import ManagerContact
 from .utility import get_user_working_summary
-
-
-
+from .models.expense import ExpenseLineItem
+from .models.attendance import WorkFromHomeApplication
+from .forms.attendance import PunchForm
 
 
 
@@ -211,11 +211,12 @@ def select_role():
 
         # Get the current user's email ID
         user_email = user.email  # Assuming the user model has an email attribute
-
+        print(f"User email: {user_email}")  # Debugging print statement
         # Query the admin/signup record based on the user's email
         admin = Signup.query.filter_by(
             email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
-
+        print(f"Admin record: {admin.first_name}")  # Debugging print statement
+        print(f"Selected role: {selected_role} {admin.emp_type}")  # Debugging print statement
         if admin:
             # Check if the Emp_type matches the selected role
             if admin.emp_type == selected_role:
@@ -275,6 +276,9 @@ def E_homepage():
     # Get DOJ from Signup model
     DOJ = emp.doj if emp else None
 
+
+    form = PunchForm()
+
     # Get today's punch-in and punch-out time
     today = date.today()
     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
@@ -316,7 +320,9 @@ def E_homepage():
                            data=data,  # Pass the working summary data
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
-                           emp_type=emp_type, count_new_queries=count_new_queries)  # Pass emp_type to the template
+                           emp_type=emp_type, count_new_queries=count_new_queries,
+                           emp=emp,
+                           form=form)  # Pass emp_type to the template
 
 
 @auth.route('/logout')
@@ -370,7 +376,7 @@ def change_password():
 def inject_badge_counts():
     try:
         count_new_claims = ExpenseLineItem.query.filter_by(status='New').count()
-        count_new_wfhs = WorkFromHome.query.filter_by(status='New').count()
+        count_new_wfhs = WorkFromHomeApplication.query.filter_by(status='New').count()
     except Exception as e:
         # Fallback to 0 if DB is not ready or error occurs
         current_app.logger.warning(f"Badge count injection failed: {e}")

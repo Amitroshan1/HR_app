@@ -2,125 +2,125 @@
 {% block title %}Employee_Homepage{% endblock %}
 {% block content %}
 
-
-<div class="container">
-
-    <div class="punch-container">
+<div class="containerhome">
+    <div class="punch-containerhome">
         {% if employee %}
-        <h2>Welcome, {{ employee.name }}..</h2>
-        <div class="attendance-summary">
-
-            <strong>PL:-</strong> {{ data.privilege_leave_balance }}
-            <strong>CL:</strong> {{ data.casual_leave_balance }}
-            <strong>Working Days:</strong> {{ data.present_days }}
+        <div class="intro">
+            <p class="titles">Welcome, {{ employee.name |  title }}</p>
+            <p class="email">Email: {{ employee.email }}</p>
+            <p class="designation">{{ employee.designation | upper }}</p>
+            <!-- <p class="doj">D.O.J: {{ DOJ.strftime('%Y-%m-%d') if DOJ else 'N/A' }}</p> -->
         </div>
-        <h3>({{ employee.designation | upper}})</h3>
 
-
-        {% else %}
-        <p>Please Update Employee Details</p>
-        {% endif %}
-
-
-        {% if employee %}
-        <div class="punch-times">
-            <p><strong>Punch Inn:</strong> {{ punch_in_time if punch_in_time else 'None' }}</p>
-            <p><strong>Punch Out:</strong> {{ punch_out_time if punch_out_time else 'None' }}</p>
-        </div>
-        {% else %}
-        <p>Update Employee Details for punch time</p>
-        {% endif %}
-
-
-
-    </div>
-
-    {% if show_notification %}
-    <div class="notification">
-        <a href="{{ url_for('Accounts.view_emp_type_queries') }}" class="btn">
-            View Queries
-            {% if count_new_queries > 0 %}
-            <span class="badge">{{ count_new_queries }}</span>
+        <div class="imagePhoto">
+            {% if employee.photo_filename %}
+            <img src="{{ url_for('static', filename='uploads/' ~ employee.photo_filename) }}" alt="Employee Image"
+                class="img-thumbnail">
+            {% else %}
+            <p class="no-photo">No photo available</p>
             {% endif %}
-        </a>
-    </div>
-    {% endif %}
-
-
-    {% if employee %}
-    <div class="container-image text-center">
-        {% if employee.photo_filename %}
-        <img src="{{ url_for('static', filename='uploads/' ~ employee.photo_filename) }}" alt="Employee Image"
-            class="img-thumbnail">
+        </div>
         {% else %}
-        <p>No photo available</p>
+        <p class="no-data">No employee data found. Update your profile.</p>
         {% endif %}
     </div>
-    <div class="row mt-4">
-        <div class="col-md-6">
+</div>
 
-            <p><strong>Name:</strong> {{ employee.name }}</p>
-            <p><strong>Email:</strong> {{ employee.email }}</p>
-            <p><strong>Date of Joining:</strong> {{ DOJ.strftime('%Y-%m-%d') if DOJ else 'N/A' }}</p>
 
+<div class="cards-containerintro">
+    <!-- Left Card: Employee Intro -->
+    <div class="cardintro-card1">
+        <div class="sub_intro">
+            <p class="Namemp">Name: {{ employee.name }}</p>
+            <p class="emp-id">EMP_ID: {{ employee.emp_id }}</p>
+            <p class="contacts">Mobile:{{ emp.mobile }}</p>
+            <p class="doj">D.O.J: {{ emp.doj }}</p>
             {% if manager_contact %}
-            {% if manager_contact.l1_name %}
-            <p><strong>Head Manager (L1):</strong> {{ manager_contact.l1_name }}</p>
+            <p class="manager">Manager: {{ manager_contact.l2_name if manager_contact.l2_name else 'N/A' }}</p>
+            <p class="lead">Lead: {{ manager_contact.l3_name if manager_contact.l3_name else 'N/A' }}</p>
             {% else %}
-
-            <p><strong>Reporting Manager(L2):</strong> {{ manager_contact.l2_name }}</p>
-
-
+            <p class="manager">Manager: N/A</p>
+            <p class="lead">Lead: N/A</p>
             {% endif %}
-            {% else %}
-            <p>No manager contact information available.</p>
-            {% endif %}
-            <!-- Add other fields as needed -->
-        </div>
-        <div class="col-md-6">
-
-            <p><strong>Employee ID:</strong> {{ employee.emp_id }}</p>
-            <p><strong>Emergency Contact:</strong> {{ employee.emergency_mobile }}</p>
-            <p><strong>Blood Group:</strong> {{ employee.blood_group }}</p>
-            <p><strong>Reporting Lead (L3):</strong> {{ manager_contact.l3_name }}</p>
-
 
         </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
+    <!-- Right Card: Manager, Punch Time, Attendance -->
+    <div class="cardinfo-card2">
 
-        </div>
-    </div>
-    {% else %}
-    <p>No employee data found.</p>
-    {% endif %}
-</div>
-
-<!-- News Feed -->
-<div class="news-feed-container-fixed" a>
-    <h2 class="centered-heading">News Feed</h2>
-    <marquee class="marquee-scroll" behavior="scroll" direction="up" scrollamount="3" onmouseover="this.stop();"
-        onmouseout="this.start();">
-        {% for news_feed in news_feeds %}
-        <div class="news-feed-item">
-            <a href="{{ url_for('hr.view_news_feed', news_feed_id=news_feed.id) }}">
-                {{ news_feed.title }}
-            </a>
-            {% if news_feed.is_new() %}
-            <span class="new-label">New</span>
+        <div class="punchtime">
+            {% if show_notification %}
+            <div class="notification-inside-card">
+                <a href="{{ url_for('Accounts.view_emp_type_queries') }}" class="btn-query-inside">
+                    View Queries
+                    {% if count_new_queries > 0 %}
+                    <span class="badge-inside">{{ count_new_queries }}</span>
+                    {% endif %}
+                </a>
+            </div>
             {% endif %}
+
+            <form method="POST" action="{{ url_for('profile.punch') }}" id="punch-form">
+                {{ form.hidden_tag() }}
+
+                <div class="form-group text-center">
+                    <!-- Punch In -->
+                    {% if punch_in_time %}
+                    <p class="puchintop"><strong>Punch In:</strong> {{ punch_in_time }}</p>
+                    {% else %}
+                    {{ form.punch_in(class_='btn btn-primary') }}
+                    {% endif %}
+
+                    <!-- Punch Out -->
+                    {% if punch_out_time %}
+                    <p class="punchoutbot"><strong>Punch Out:</strong> {{ punch_out_time }}</p>
+                    {% else %}
+                    {{ form.punch_out(class_='btn btn-secondary') }}
+                    {% endif %}
+                </div>
+            </form>
+
+
+
+            <div class="attendance-summaryhome">
+                <div class="attendance-summaryhome-top">
+                    <strong>Privilage Leave:</strong> {{ data.privilege_leave_balance }}
+                </div>
+                <div class="attendance-summaryhome-bottom">
+                    <strong>Casual Leave:</strong> {{ data.casual_leave_balance }}
+                </div>
+                <div class="attendance-summaryhome-bottom">
+                    <strong>Working Days:</strong> {{ data.present_days }}
+                </div>
+            </div>
         </div>
-        {% else %}
-        <div class="news-feed-item">
-            <em>No news to display.</em>
-        </div>
-        {% endfor %}
-    </marquee>
+
+    </div>
+
+    <!-- News Feed -->
+    <div class="news-feed-container-fixedhome" a>
+        <h2 class="centered-heading">News Feed</h2>
+        <marquee class="marquee-scroll" behavior="scroll" direction="up" scrollamount="3" onmouseover="this.stop();"
+            onmouseout="this.start();">
+            {% for news_feed in news_feeds %}
+            <div class="news-feed-item">
+                <a href="{{ url_for('hr.view_news_feed', news_feed_id=news_feed.id) }}">
+                    {{ news_feed.title }}
+                </a>
+                {% if news_feed.is_new() %}
+                <span class="new-label">New</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="news-feed-item">
+                <em>No news to display.</em>
+            </div>
+            {% endfor %}
+        </marquee>
+    </div>
+
 </div>
-
-
 
 
 
