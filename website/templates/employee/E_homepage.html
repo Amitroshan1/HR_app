@@ -31,16 +31,16 @@
     <!-- Left Card: Employee Intro -->
     <div class="cardintro-card1">
         <div class="sub_intro">
-            <p class="Namemp">Name: {{ employee.name }}</p>
-            <p class="emp-id">EMP_ID: {{ employee.emp_id }}</p>
-            <p class="contacts">Mobile:{{ emp.mobile }}</p>
-            <p class="doj">D.O.J: {{ emp.doj }}</p>
+            <p class="Namemp"><strong>Name:</strong> {{ employee.name }}</p>
+            <p class="emp-id"><strong>EMP_ID:</strong> {{ employee.emp_id }}</p>
+            <p class="contacts"><strong>Mobile:</strong>{{ emp.mobile }}</p>
+            <p class="doj"><strong>D.O.J:</strong> {{ emp.doj }}</p>
             {% if manager_contact %}
-            <p class="manager">Manager: {{ manager_contact.l2_name if manager_contact.l2_name else 'N/A' }}</p>
-            <p class="lead">Lead: {{ manager_contact.l3_name if manager_contact.l3_name else 'N/A' }}</p>
+            <p class="manager"><strong>Manager:</strong> {{ manager_contact.l2_name if manager_contact.l2_name else 'N/A' }}</p>
+            <p class="lead"><strong>Lead:</strong> {{ manager_contact.l3_name if manager_contact.l3_name else 'N/A' }}</p>
             {% else %}
-            <p class="manager">Manager: N/A</p>
-            <p class="lead">Lead: N/A</p>
+            <p class="manager"><strong>Manager:</strong> N/A</p>
+            <p class="lead"><strong>Lead:</strong> N/A</p>
             {% endif %}
 
         </div>
@@ -61,7 +61,7 @@
             </div>
             {% endif %}
 
-            <form method="POST" action="{{ url_for('profile.punch') }}" id="punch-form">
+            <form  class="puchclass" method="POST" action="{{ url_for('profile.punch') }}" id="punch-form">
                 {{ form.hidden_tag() }}
 
                 <div class="form-group text-center">

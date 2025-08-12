@@ -1,14 +1,10 @@
-from.models.attendance import Punch
+from.models.attendance import Punch,LeaveBalance
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .models.attendance import LeaveBalance
 from calendar import monthrange
-from .forms.search_from import PunchManuallyForm
-from flask import render_template, flash, redirect, url_for
 from . import db
-from datetime import date, timedelta, time
-
-from datetime import date,datetime
+from datetime import date,timedelta,datetime
+from datetime import date, timedelta,datetime
 
 
 
@@ -76,7 +72,7 @@ def punch_time(user_id):
     punch = Punch.query.filter_by(admin_id=user_id, punch_date=today).first()
 
     if punch and punch.punch_in and punch.punch_out:
-        # Combine today's date with punch times to create datetime objects
+        # Calculate time difference
         in_time = datetime.combine(today, punch.punch_in)
         out_time = datetime.combine(today, punch.punch_out)
 

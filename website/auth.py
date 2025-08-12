@@ -10,7 +10,6 @@ from .models.news_feed import NewsFeed
 from .models.emp_detail_models import Asset
 from .models.query import Query
 from .models.signup import Signup
-from werkzeug.security import check_password_hash, generate_password_hash
 from . import db, login_manager
 from .forms.manager import ChangePasswordForm
 import os
@@ -337,8 +336,8 @@ def E_homepage():
                            queries_for_emp_type=queries_for_emp_type,
                            emp_type=emp_type, count_new_queries=count_new_queries,
                            emp=emp,
-                           form=form,
-                           days=days,
+                           form=form,  # Pass emp_type to the template
+                           days=days,  # Pass emp_type to the template
                            resign_data=resign_data,
                            punch_in_time_count=punch_in_time_count_str)
 
