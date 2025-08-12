@@ -282,6 +282,7 @@ def wfh_approval():
 
 @manager_bp.route('/claim_approval', methods=['GET', 'POST'])
 def claim_approval():
+    csrf_token = generate_csrf()
     current_email = current_user.email
 
     # Fetch manager-related user types and circles
@@ -310,14 +311,21 @@ def claim_approval():
         admin_ids = Admin.query.with_entities(Admin.id).filter(Admin.email.in_(emails)).all()
         admin_ids = [admin_id for (admin_id,) in admin_ids]
 
-    # Fetch only claims for those admins
-    claims = []
-    if admin_ids:
-        claims = ExpenseClaimHeader.query.filter(
-            ExpenseClaimHeader.admin_id.in_(admin_ids)
-        ).order_by(
-            ExpenseClaimHeader.travel_from_date.desc()
-        ).all()
+        selected_month = request.form.get('selected_month')
+        if selected_month:
+            start_date, end_date = get_date_range_from_month(selected_month)
+
+        claims = []
+        if admin_ids:
+            claims = (
+                ExpenseClaimHeader.query
+                .filter(
+                    ExpenseClaimHeader.admin_id.in_(admin_ids),
+                    ExpenseClaimHeader.travel_from_date.between(start_date, end_date)
+                )
+                .order_by(ExpenseClaimHeader.travel_from_date.desc())
+                .all()
+            )
 
     return render_template('Manager/manager_claims.html', claim_data=claims)
 

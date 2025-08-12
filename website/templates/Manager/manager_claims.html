@@ -4,6 +4,29 @@
 {% block content %}
 
 <h2> Claim Details </h2>
+
+<div style="display:flex; justify-content:center; width:100%; margin:4px 0px -10px;">
+  <form method="POST" action="{{ url_for('manager_bp.claim_approval') }}"
+        style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 12px; background-color:#f9f9f9; border:1px solid #ccc; border-radius:6px; max-width:300px; width:100%; box-sizing:border-box; margin:30px;">
+
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label for="selected_month"
+           style="font-weight:bold; font-size:14px; white-space:nowrap; flex:1 1 100%; text-align:center;">
+      Filter By Month:
+    </label>
+
+    <input type="month" name="selected_month" id="selected_month" value="{{ selected_month }}"
+           style="padding:5px 8px; font-size:14px; flex:1 1 auto; min-width:160px; max-width:260px;">
+
+    <button type="submit"
+            style="background-color:#007bff; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:14px; flex:0 0 auto; min-width:80px;"
+            onmouseover="this.style.backgroundColor='#0056b3'"
+            onmouseout="this.style.backgroundColor='#007bff'">
+      Apply
+    </button>
+  </form>
+</div>
 <table class="table_details table-striped" style="width: 80%; text-align: center;">
     <thead>
     <tr>

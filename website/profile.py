@@ -17,7 +17,7 @@ from .models.prev_com import PreviousCompany
 from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location,WorkFromHomeApplication
 from .forms.attendance import PunchForm,LeaveForm,LocationForm,WorkFromHomeForm
 from .models.manager_model import ManagerContact
-from .common import verify_oauth2_and_send_email
+from .common import verify_oauth2_and_send_email, store_today_work
 from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
@@ -427,22 +427,35 @@ def punch():
                 db.session.commit()
                 flash('Punched in successfully!', 'warning')
 
-        elif form.punch_out.data:
-            if check_leave():
-                flash("You are not allowed to punch on this day because you are on leave", "danger")
-                return redirect(request.url)
-            elif not check_wfh():
-                flash("WFM Mode access is restricted until your request is approved.", "danger")
-                return redirect(request.url)
-            if not punch or not punch.punch_in:
-                flash('You need to punch in first!', 'danger')
-            else:
-                punch.punch_out = datetime.now().time()
-                db.session.commit()
-                        # ✅ Get punch-in time before flashing
-                punch_in_time = punch_time(current_user.id)
-                flash(f'Punch out time updated successfully!.. {punch_in_time}', 'success')
 
+        elif form.punch_out.data:
+
+            if check_leave():
+
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+
+                return redirect(request.url)
+
+            elif not check_wfh():
+
+                flash("WFM Mode access is restricted until your request is approved.", "danger")
+
+                return redirect(request.url)
+
+            if not punch or not punch.punch_in:
+
+                flash('You need to punch in first!', 'danger')
+
+            else:
+
+                # Set punch-out time
+
+                punch.punch_out = datetime.now().time()
+                store_today_work(punch)
+
+                db.session.commit()
+
+                flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
 
     return render_template(
         'profile/punch.html',

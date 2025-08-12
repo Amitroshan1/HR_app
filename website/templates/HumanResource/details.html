@@ -280,6 +280,7 @@
                 <th>Date</th>
                 <th>Punch In</th>
                 <th>Punch Out</th>
+                <th>Work Duration</th>
                 <th>Work from Home</th>
             </tr>
         </thead>
@@ -293,6 +294,7 @@
                 {% else %}
                     <td class="{% if not detail.punch_in %}missing{% endif %}">{{ detail.punch_in }}</td>
                     <td class="{% if not detail.punch_out %}missing{% endif %}">{{ detail.punch_out }}</td>
+                    <td class="{% if not detail.today_work %}missing{% endif %}">{{ detail.today_work }}</td>
                 {% endif %}
 
                 <td>{{ detail.is_wfh }}</td>
@@ -302,6 +304,7 @@
             <tr style="font-weight: bold;">
                 <td></td>
                 <td colspan="2">Total Present Days (Including Half Days): {{ dict_data['attendance'] }}</td>
+                <td></td>
                 <td>Work From Home Days: {{ dict_data['work from home'] }}</td>
             </tr>
         </tbody>

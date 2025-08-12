@@ -1,7 +1,7 @@
 import os
 import uuid
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
 from flask import flash, current_app,url_for
 from flask_mail import Message,Mail
@@ -13,6 +13,8 @@ from . import db
 from .auth import refresh_access_token
 from .models.Admin_models import Admin
 from geopy.distance import geodesic
+
+from .models.attendance import Punch
 from .models.manager_model import ManagerContact  # adjust path if needed
 from .models.expense import ExpenseClaimHeader  # adjust path if needed
   # wherever you defined this
@@ -442,9 +444,9 @@ def send_rollback_resignation_email(user, manager=None):
 
 def send_noc_email(user, selected_departments, noc_date, manager_emails, resignation):
     department_emails = {
-        "Human Resource": ["chauguleshubham390@gmail.com"],   # Fill real HR email
-        "Accounts": ["singhroshan9688@gmail.com"],   # Fill real Accounts email
-        "IT Department": ["singhroshan968@gmail.com"]   # Replace with real IT email
+        "Human Resource": ["chauguleshubham390@gmail.com"],
+        "Accounts": ["singhroshan9688@gmail.com"],
+        "IT Department": ["englishwithoxy@gmail.com"]
     }
 
     resignation_info = ""
@@ -541,3 +543,34 @@ def get_date_range_from_month(selected_month):
         return start_date, end_date
     except:
         return None, None
+
+
+
+def punch_in_time_count():
+
+    today = date.today()
+    punch = Punch.query.filter_by(
+        admin_id=current_user.id,
+        punch_date=today
+    ).first()
+
+    if punch and punch.punch_in:
+        return datetime.combine(punch.punch_date, punch.punch_in)
+    return None
+
+
+def store_today_work(punch):
+
+    if punch.punch_in and not punch.today_work:
+        punch_in_datetime = datetime.combine(punch.punch_date, punch.punch_in)
+        now = datetime.now()
+        work_duration = now - punch_in_datetime  # timedelta
+
+        total_seconds = int(work_duration.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        punch.today_work = datetime.strptime(
+            f"{hours:02}:{minutes:02}:{seconds:02}", "%H:%M:%S"
+        ).time()

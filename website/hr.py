@@ -193,7 +193,8 @@ def display_details():
                 'punch_in': '',
                 'punch_out': '',
                 'is_wfh': '',
-                'on_leave': False
+                'on_leave': False,
+                'today_work': ''
             } for day in range(1, num_days + 1)
         ]
 
@@ -203,6 +204,7 @@ def display_details():
                     detail['punch_in'] = punch.punch_in.strftime('%H:%M:%S') if punch.punch_in else ''
                     detail['punch_out'] = punch.punch_out.strftime('%H:%M:%S') if punch.punch_out else ''
                     detail['is_wfh'] = 'Yes' if punch.is_wfh else ''
+                    detail['today_work'] = punch.today_work.strftime('%H:%M:%S') if punch.today_work else ''
 
         # Mark leave days in details
         for leave in leaves:
@@ -296,7 +298,6 @@ def display_details():
 
     return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime,dict_data=dict_data)
 
-
 @hr.route('/download-attendance-excel')
 def download_attendance_excel():
     details_json = session.get('attendance_details')
@@ -306,31 +307,44 @@ def download_attendance_excel():
     year = session.get('selected_year')
 
     if not details_json:
-        return "No attendance data to export.",400
+        return "No attendance data to export.", 400
+
+    # Convert JSON data to Python objects
     details = json.loads(details_json)
     summary = json.loads(summary_json)
 
+    # Fetch employee info (once, not inside the loop)
+    admin_data = Admin.query.filter_by(id=user_id).first()
+    if not admin_data:
+        return "Employee not found.", 404
+
+    signups_data = Signup.query.filter_by(email=admin_data.email).first()
+    if not signups_data:
+        return "Signup record not found.", 404
+
+    employee_name = signups_data.first_name
+    circle = signups_data.circle
+    emp_type = signups_data.emp_type
+    # month_str = f"{month_name[month]} {year}"  # Optional
+
+    # Process details (convert boolean leave to 'Yes'/'')
     for d in details:
         d['on_leave'] = 'Yes' if d['on_leave'] else ''
-        admin_data = Admin.query.filter_by(id=user_id).first()
-        signups_data = Signup.query.filter_by(email=admin_data.email).first()
-        employee_name = signups_data.first_name
-        circle = signups_data.circle
-        emp_type = signups_data.emp_type
-        # month_str = f"{month_name[month]} {year}"
 
-
+    # Create DataFrame
     df = pd.DataFrame(details)
     df.rename(columns={
         'punch_date': 'Date',
         'punch_in': 'Punch In',
         'punch_out': 'Punch Out',
+        'today_work': 'Work Duration',
         'is_wfh': 'Work From Home',
         'on_leave': 'On Leave'
     }, inplace=True)
+
     # Add summary row
     df.loc[len(df.index)] = [
-        '', f'Total = {summary["attendance"]}', '', f'Total = {summary["work from home"]}', ''
+        '', f'Total = {summary["attendance"]}', '', '', f'Total = {summary["work from home"]}', ''
     ]
 
     # Write to Excel
@@ -342,7 +356,7 @@ def download_attendance_excel():
         worksheet = writer.sheets['Attendance']
         bold_font = Font(bold=True)
 
-        # Info headers with bold labels
+        # Info headers
         worksheet.cell(row=1, column=1, value='Employee Name: ').font = bold_font
         worksheet.cell(row=1, column=2, value=employee_name)
 
@@ -351,9 +365,6 @@ def download_attendance_excel():
 
         worksheet.cell(row=3, column=1, value='Circle: ').font = bold_font
         worksheet.cell(row=3, column=2, value=circle)
-        #
-        # worksheet.cell(row=4, column=1, value='Month')
-        # worksheet.cell(row=4, column=2, value=month_str)
 
     output.seek(0)
     return send_file(

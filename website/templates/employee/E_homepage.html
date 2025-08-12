@@ -84,6 +84,34 @@
 
 
             <div class="attendance-summaryhome">
+                {% if punch_in_time_count and not punch_out_time %}
+    <div class="attendance-summaryhome-top">
+        <strong>Work Duration:</strong>
+        <span id="timer">00:00:00</span>
+    </div>
+
+    <script>
+        function startTimer(startTime) {
+            const start = new Date(startTime).getTime();
+
+            setInterval(function() {
+                const now = new Date().getTime();
+                let diff = Math.floor((now - start) / 1000);
+
+                let hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+                let minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                let seconds = String(diff % 60).padStart(2, '0');
+
+                document.getElementById('timer').textContent = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        }
+        startTimer("{{ punch_in_time_count }}");
+    </script>
+{% endif %}
+
+
+
+
                 <div class="attendance-summaryhome-top">
                     <strong>Privilage Leave:</strong> {{ data.privilege_leave_balance }}
                 </div>
@@ -93,6 +121,11 @@
                 <div class="attendance-summaryhome-bottom">
                     <strong>Working Days:</strong> {{ data.present_days }}
                 </div>
+                {% if resign_data %}
+                <div class="attendance-summaryhome-bottom">
+                    <strong>Resignation Days Left: {{days}}</strong>
+                </div>
+                {% endif %}
             </div>
         </div>
 

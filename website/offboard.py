@@ -99,6 +99,9 @@ def rollback_resignation():
         flash("Unable to rollback resignation. Please check your internet connection or contact IT support.", "error")
 
     return redirect(url_for('offboard.apply_resignation'))
+
+
+# --noc-route--
 @offboard.route('/apply_noc', methods=['GET', 'POST'])
 @login_required
 def apply_noc():

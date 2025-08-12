@@ -6,8 +6,7 @@ from calendar import monthrange
 from .forms.search_from import PunchManuallyForm
 from flask import render_template, flash, redirect, url_for
 from . import db
-from datetime import date, timedelta
-
+from datetime import date, timedelta, time
 
 from datetime import date,datetime
 
@@ -69,30 +68,39 @@ def get_user_working_summary(user_id, year, month):
     }
 
 
-
 def punch_time(user_id):
     """
-    Get today's punch in, punch out, and total worked time.
+    Get today's punch in, punch out, and total worked time as a `time` object.
     """
     today = date.today()
     punch = Punch.query.filter_by(admin_id=user_id, punch_date=today).first()
 
     if punch and punch.punch_in and punch.punch_out:
-        # Calculate time difference
+        # Combine today's date with punch times to create datetime objects
         in_time = datetime.combine(today, punch.punch_in)
         out_time = datetime.combine(today, punch.punch_out)
+
+        # Calculate the duration worked
         worked_duration = out_time - in_time
 
-        # Convert to hours and minutes
-        total_minutes = int(worked_duration.total_seconds() // 60)
-        hours = total_minutes // 60
-        minutes = total_minutes % 60
 
-        return f"Todays work time :  {hours}h {minutes}m"
+        # Convert duration to total seconds
+        total_seconds = int(worked_duration.total_seconds())
 
-    return {
-        "Todays work time": "0h 0m"
-    }
+        # Convert to hours, minutes, seconds
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        # Convert to a time object (HH:MM:SS)
+        worked_time = time(hour=hours, minute=minutes, second=seconds)
+        punch.today_work = worked_time
+        db.session.commit()
+
+        return worked_time  # return as a `time` object (you can directly store it in DB)
+
+    # If no punch or incomplete, return 00:00:00
+    return time(0, 0, 0)
 
 
 
@@ -102,11 +110,11 @@ def get_remaining_resignation_days(resignation_date, notice_period_days=90):
 
     today = date.today()
     last_working_day = resignation_date + timedelta(days=notice_period_days)
+    print(last_working_day)
 
     if resignation_date <= today <= last_working_day:
         days = (last_working_day - today).days
-        message = f"{days} day(s) remaining in notice period."
-        return days, message
+        return days
     elif today > last_working_day:
         return 0, "Notice period has ended."
     elif today < resignation_date:

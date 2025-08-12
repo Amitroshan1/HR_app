@@ -37,10 +37,10 @@
             <span>{{ punch.punch_out if punch else 'Not Punched Out' }}</span>
         </div>
     </form>
-
     <br>
 
     <h2 class="centered-heading">Calendar</h2>
+
     <form method="GET" action="{{ url_for('profile.punch') }}" class="mb-4">
         <div class="form-group-cal">
             <label for="month">Select Month:</label>
@@ -69,6 +69,33 @@
     <div class="container-details mt-5">
         <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
         </h3>
+
+        <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; font-family: Arial, sans-serif;">
+    <!-- Green Indicator -->
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 18px; height: 18px; background-color: #4CAF50; border-radius: 3px; display: inline-block;"></span>
+        <span>Present (Punch In/Out Done)</span>
+    </div>
+
+    <!-- Yellow Indicator -->
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 18px; height: 18px; background-color: #FFC107; border-radius: 3px; display: inline-block;"></span>
+        <span>Pending (No Punch Out)</span>
+    </div>
+
+<!--          Red Indicator half day/9 hours -->
+     <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 18px; height: 18px; background-color: #FF0000; border-radius: 3px; display: inline-block;"></span>
+        <span>Half-Day / less than 9 hours </span>
+    </div>
+
+<!--            Blue Indicator for leave -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 18px; height: 18px; background-color: 	#4169E1; border-radius: 3px; display: inline-block;"></span>
+        <span>Leave </span>
+    </div>
+</div>
+
         <table class="table table-bordered">
             <thead>
                 <tr>

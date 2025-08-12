@@ -25,6 +25,7 @@ from .models.attendance import WorkFromHomeApplication
 from .forms.attendance import PunchForm
 from .utility import get_user_working_summary,get_remaining_resignation_days
 from .models.seperation import Resignation
+from .common import punch_in_time_count
 
 
 
@@ -248,7 +249,11 @@ def select_role():
 def E_homepage():
     current_id = current_user.id
     resign_data = Resignation.query.filter_by(admin_id = current_id).first()
-    days,message = get_remaining_resignation_days(resign_data.resignation_date)
+    if resign_data:
+        days = get_remaining_resignation_days(resign_data.resignation_date)
+    else:
+        days = None
+
 
 
     emails_data = [
@@ -315,6 +320,9 @@ def E_homepage():
     # Determine if there are any notifications for the current emp_type
     show_notification = bool(queries_for_emp_type)
 
+    punch_in_count = punch_in_time_count()
+    punch_in_time_count_str = punch_in_count.isoformat() if punch_in_count else None
+
     # Pass necessary data to the template
     return render_template("employee/E_homepage.html",
                            employee=employee,
@@ -329,9 +337,10 @@ def E_homepage():
                            queries_for_emp_type=queries_for_emp_type,
                            emp_type=emp_type, count_new_queries=count_new_queries,
                            emp=emp,
-                           form=form)  # Pass emp_type to the template
-                           emp_type=emp_type, count_new_queries=count_new_queries,
-                           days=days,message=message)  # Pass emp_type to the template
+                           form=form,
+                           days=days,
+                           resign_data=resign_data,
+                           punch_in_time_count=punch_in_time_count_str)
 
 
 @auth.route('/logout')
