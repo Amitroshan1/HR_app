@@ -1,15 +1,9 @@
-from.models.attendance import Punch
+from.models.attendance import Punch,LeaveBalance
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .models.attendance import LeaveBalance
 from calendar import monthrange
-from .forms.search_from import PunchManuallyForm
-from flask import render_template, flash, redirect, url_for
 from . import db
-from datetime import date, timedelta
-
-
-from datetime import date,datetime
+from datetime import date,timedelta,datetime
 
 
 
@@ -70,7 +64,7 @@ def get_user_working_summary(user_id, year, month):
 
 
 
-def punch_time(user_id):
+def  punch_time(user_id):
     """
     Get today's punch in, punch out, and total worked time.
     """

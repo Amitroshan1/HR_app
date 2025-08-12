@@ -10,7 +10,6 @@ from .models.news_feed import NewsFeed
 from .models.emp_detail_models import Asset
 from .models.query import Query
 from .models.signup import Signup
-from werkzeug.security import check_password_hash, generate_password_hash
 from . import db, login_manager
 from .forms.manager import ChangePasswordForm
 import os
@@ -248,7 +247,11 @@ def select_role():
 def E_homepage():
     current_id = current_user.id
     resign_data = Resignation.query.filter_by(admin_id = current_id).first()
-    days,message = get_remaining_resignation_days(resign_data.resignation_date)
+    if resign_data :
+        days,message = get_remaining_resignation_days(resign_data.resignation_date)
+    else:
+        days = None
+        message = None
 
 
     emails_data = [
@@ -329,8 +332,8 @@ def E_homepage():
                            queries_for_emp_type=queries_for_emp_type,
                            emp_type=emp_type, count_new_queries=count_new_queries,
                            emp=emp,
-                           form=form)  # Pass emp_type to the template
-                           emp_type=emp_type, count_new_queries=count_new_queries,
+                           form=form,  # Pass emp_type to the template
+
                            days=days,message=message)  # Pass emp_type to the template
 
 

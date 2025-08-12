@@ -13,76 +13,80 @@
 {% endwith %}
 
 
-<h2 class="centered-heading">Submit Resignation</h2>
-<p>
-    I, <strong>{{ user.first_name }}</strong>, with the registered Email ID: <strong>{{ user.email }}</strong>, hereby
-    formally submit my resignation and express my intention to separate from this organization.
-</p>
-<h3 class="centered-heading">Date of Joining: {{ signup_date.doj }}</h3>
+<div class="container">
 
-<form method="POST" id="separation-form" class="custom-resignation-form">
-    {{ form.csrf_token }}
-    {{ form.hidden_tag() }}
+    <h2 class="centered-heading">Submit Resignation</h2>
+    <p>
+        I, <strong>{{ user.first_name }}</strong>, with the registered Email ID: <strong>{{ user.email }}</strong>,
+        hereby
+        formally submit my resignation and express my intention to separate from this organization.
+    </p>
+    <h3 class="centered-heading">Date of Joining: {{ signup_date.doj }}</h3>
 
-    <div class="resignation-field">
-        <label for="resignation_date">{{ form.resignation_date.label }}</label>
-        {{ form.resignation_date(class="form-control resignation-input", id="resignation_date", min=today, max=today) }}
-        {% for error in form.resignation_date.errors %}
-        <span class="resignation-error">{{ error }}</span>
-        {% endfor %}
-    </div>
+    <form method="POST" id="separation-form" class="custom-resignation-form">
+        {{ form.csrf_token }}
+        {{ form.hidden_tag() }}
 
-    <div class="resignation-field">
-        <label for="reason">{{ form.reason.label }}</label>
-        {{ form.reason(class="form-control resignation-textarea", rows=5, id="reason") }}
-        {% for error in form.reason.errors %}
-        <span class="resignation-error">{{ error }}</span>
-        {% endfor %}
-    </div>
+        <div class="resignation-field">
+            <label for="resignation_date">{{ form.resignation_date.label }}</label>
+            {{ form.resignation_date(class="form-control resignation-input", id="resignation_date", min=today,
+            max=today) }}
+            {% for error in form.resignation_date.errors %}
+            <span class="resignation-error">{{ error }}</span>
+            {% endfor %}
+        </div>
 
-    <div class="resignation-submit">
-        {{ form.submit(class="btn btn-danger mt-3 resignation-submit-btn", onclick="return confirm('Are you sure you
-        want to resign? Please think carefully before proceeding.');") }}
-    </div>
+        <div class="resignation-field">
+            <label for="reason">{{ form.reason.label }}</label>
+            {{ form.reason(class="form-control resignation-textarea", rows=5, id="reason") }}
+            {% for error in form.reason.errors %}
+            <span class="resignation-error">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="resignation-submit">
+            {{ form.submit(class="btn btn-danger mt-3 resignation-submit-btn", onclick="return confirm('Are you sure you
+            want to resign? Please think carefully before proceeding.');") }}
+        </div>
 
 
-</form>
+    </form>
 
-{% if reg_data %}
-<hr>
-<h3 class="centered-heading mt-4">Submitted Resignation Details</h3>
-<table class="table table-bordered mt-3">
-    <tr>
-        <th>Employee Name</th>
-        <td>{{ user.first_name }}</td>
-    </tr>
+    {% if reg_data %}
+    <hr>
+    <h3 class="centered-heading mt-4">Submitted Resignation Details</h3>
+    <table class="table table-bordered mt-3">
+        <tr>
+            <th>Employee Name</th>
+            <td>{{ user.first_name }}</td>
+        </tr>
 
-    <tr>
-        <th>Resignation Date</th>
-        <td>{{ reg_data.resignation_date.strftime('%d-%b-%Y') }}</td>
-    </tr>
-    <tr>
-        <th>Reason</th>
-        <td>{{ reg_data.reason.replace('\n', '<br>') | safe }}</td>
-    </tr>
-    <tr>
-        <th>Status</th>
-        <td>{{ reg_data.status }}</td>
-    </tr>
+        <tr>
+            <th>Resignation Date</th>
+            <td>{{ reg_data.resignation_date.strftime('%d-%b-%Y') }}</td>
+        </tr>
+        <tr>
+            <th>Reason</th>
+            <td>{{ reg_data.reason.replace('\n', '<br>') | safe }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>{{ reg_data.status }}</td>
+        </tr>
 
-    <tr>
-        <th>Rollback Separation</th>
-        <td>
-            <a href="{{ url_for('offboard.rollback_resignation') }}" class="btn btn-danger"
-                onclick="return confirm('Are you sure you want to rollback your resignation? This action cannot be undone.');">
-                Rollback
-            </a>
-        </td>
-    </tr>
+        <tr>
+            <th>Rollback Separation</th>
+            <td>
+                <a href="{{ url_for('offboard.rollback_resignation') }}" class="btn btn-danger"
+                    onclick="return confirm('Are you sure you want to rollback your resignation? This action cannot be undone.');">
+                    Rollback
+                </a>
+            </td>
+        </tr>
 
-    </tr>
+        </tr>
 
-</table>
-{% endif %}
-
+    </table>
+    {% endif %}
+</div>
 {% endblock %}
