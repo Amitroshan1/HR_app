@@ -1,8 +1,8 @@
 from flask import render_template,flash, redirect,Blueprint, session,url_for, current_app,send_from_directory,request
 from flask_login import login_required
-
+from datetime import datetime, timedelta
 from website.forms.Emp_details import Employee_Details
-from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm
+from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm,PunchManuallyForm
 from .models.Admin_models import Admin
 from . import db
 from .models.emp_detail_models import Employee,Asset
@@ -23,6 +23,13 @@ import os
 from .common import asset_email,update_asset_email
 from .forms.signup_form import SignUpForm
 from .forms.Emp_details import Employee_Details
+import json
+import pandas as pd
+from flask import send_file,session
+import io
+from openpyxl.styles import Font
+# from .utility import hr_manual_punch
+
 
 
 hr=Blueprint('hr',__name__)
@@ -112,6 +119,7 @@ def search_results():
 @login_required
 def view_details():
     form = DetailForm()
+    punch_form = PunchManuallyForm
     form.user.choices = [(admin.id, admin.first_name) for admin in Admin.query.all()] 
 
     if form.validate_on_submit():
@@ -140,8 +148,9 @@ def display_details():
         return redirect(url_for('hr.view_details'))
 
     admin = Admin.query.get(user_id)
-    
+    dict_data = None
     details = None
+    dict_data=None
 
     if form.validate_on_submit():
         month = int(form.month.data)
@@ -155,43 +164,217 @@ def display_details():
     elif detail_type == 'Previous_company':
         details = PreviousCompany.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Employee Details':
-        
+
         details = Employee.query.filter_by(admin_id=user_id).all()
-        
+
     elif detail_type == 'Education':
         details = Education.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Attendance':
         num_days = calendar.monthrange(year, month)[1]
+
+        # Get all punches for the selected month
+        punches = Punch.query.filter(
+            Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
+            Punch.admin_id == user_id
+        ).all()
+
+        # Get all approved leaves overlapping with this month
+        leaves = LeaveApplication.query.filter(
+            LeaveApplication.admin_id == user_id,
+            LeaveApplication.status == 'Approved',
+            LeaveApplication.start_date <= f'{year}-{month:02d}-{num_days}',
+            LeaveApplication.end_date >= f'{year}-{month:02d}-01'
+        ).all()
+
+        # Prepare attendance structure with a flag for leave
         details = [
             {
                 'punch_date': f'{year}-{month:02d}-{day:02d}',
                 'punch_in': '',
                 'punch_out': '',
-                'is_wfh': ''  # Default value
+                'is_wfh': '',
+                'on_leave': False,
+                'today_work': ''
             } for day in range(1, num_days + 1)
         ]
-
-        punches = Punch.query.filter(
-            Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}')
-        ).filter_by(admin_id=user_id).all()
 
         for punch in punches:
             for detail in details:
                 if detail['punch_date'] == punch.punch_date.strftime('%Y-%m-%d'):
-                    detail['punch_in'] = punch.punch_in
-                    detail['punch_out'] = punch.punch_out
+                    detail['punch_in'] = punch.punch_in.strftime('%H:%M:%S') if punch.punch_in else ''
+                    detail['punch_out'] = punch.punch_out.strftime('%H:%M:%S') if punch.punch_out else ''
                     detail['is_wfh'] = 'Yes' if punch.is_wfh else ''
+                    detail['today_work'] = punch.today_work.strftime('%H:%M:%S') if punch.today_work else ''
+
+        # Mark leave days in details
+        for leave in leaves:
+            current_date = leave.start_date
+            while current_date <= leave.end_date:
+                date_str = current_date.strftime('%Y-%m-%d')
+                for detail in details:
+                    if detail['punch_date'] == date_str:
+                        detail['on_leave'] = True
+                current_date += timedelta(days=1)
+
+            # Calculate the data of month
+        
+        calcu_data = 0
+        calcu_hdata = 0
+        for pdata in punches:
+            if pdata.punch_date:
+                if pdata.punch_in and pdata.punch_out:
+                    calcu_data += 1
+                elif pdata.punch_in and not pdata.punch_out:
+                    calcu_data += 0.5
+            if pdata.is_wfh:
+                calcu_hdata += 1
+        
+        dict_data = {
+            "attendance": calcu_data,
+            "work from home": calcu_hdata
+        }
+        
+        session["attendance_details"] = json.dumps(details)
+        session["attendance_summary"] = json.dumps(dict_data)
+        session['selected_month'] = month
+        session['selected_year'] = year
+
+    elif detail_type == 'Punch In-Out':
+        punch_form = PunchManuallyForm()
+        selected_date = None
+        punch = None
+
+        if request.method == 'POST':
+            if punch_form.validate_on_submit():
+                selected_date = punch_form.date.data
+
+                # Always fetch punch record for selected date
+                punch = Punch.query.filter_by(admin_id=user_id, punch_date=selected_date).first()
+
+                if punch_form.submit.data:
+                    # Search button clicked
+                    if punch:
+                        flash("Existing punch record found. You can modify.", "info")
+                        punch_form.punch_in.data = punch.punch_in
+                        punch_form.punch_out.data = punch.punch_out
+                    else:
+                        flash("No record found. You can enter punch in-out manually.", "warning")
+                        punch_form.punch_in.data = None
+                        punch_form.punch_out.data = None
+
+                elif punch_form.punch_submit.data:
+                    # Save button clicked
+                    punch_in_time = punch_form.punch_in.data
+                    punch_out_time = punch_form.punch_out.data
+
+                    if not punch:
+                        new_punch = Punch(
+                            admin_id=user_id,
+                            punch_date=selected_date,
+                            punch_in=punch_in_time,
+                            punch_out=punch_out_time
+                        )
+                        db.session.add(new_punch)
+                        flash("Punch In and Out saved.",  "success")
+                    else:
+                        punch.punch_in = punch_in_time
+                        punch.punch_out = punch_out_time
+                        flash("Punch In-Out updated successfully.", "success")
+
+                    db.session.commit()
+            else:
+                flash(f"Form not valid: {punch_form.errors}", "danger")
+
+        details = punch_form
 
     elif detail_type == 'Document':
         details = UploadDoc.query.filter_by(admin_id=user_id).all()
     elif detail_type == 'Leave Details':
-        details = LeaveApplication.query.filter_by(admin_id=user_id).all()   
-    
+        details = LeaveApplication.query.filter_by(admin_id=user_id).all()
+
 
     if admin is None:
         return redirect(url_for('hr.view_details'))
 
-    return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime)
+    return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime,dict_data=dict_data)
+
+@hr.route('/download-attendance-excel')
+def download_attendance_excel():
+    details_json = session.get('attendance_details')
+    summary_json = session.get('attendance_summary')
+    user_id = session.get('viewing_user_id')
+    month = session.get('selected_month')
+    year = session.get('selected_year')
+
+    if not details_json:
+        return "No attendance data to export.", 400
+
+    # Convert JSON data to Python objects
+    details = json.loads(details_json)
+    summary = json.loads(summary_json)
+
+    # Fetch employee info (once, not inside the loop)
+    admin_data = Admin.query.filter_by(id=user_id).first()
+    if not admin_data:
+        return "Employee not found.", 404
+
+    signups_data = Signup.query.filter_by(email=admin_data.email).first()
+    if not signups_data:
+        return "Signup record not found.", 404
+
+    employee_name = signups_data.first_name
+    circle = signups_data.circle
+    emp_type = signups_data.emp_type
+    # month_str = f"{month_name[month]} {year}"  # Optional
+
+    # Process details (convert boolean leave to 'Yes'/'')
+    for d in details:
+        d['on_leave'] = 'Yes' if d['on_leave'] else ''
+
+    # Create DataFrame
+    df = pd.DataFrame(details)
+    df.rename(columns={
+        'punch_date': 'Date',
+        'punch_in': 'Punch In',
+        'punch_out': 'Punch Out',
+        'today_work': 'Work Duration',
+        'is_wfh': 'Work From Home',
+        'on_leave': 'On Leave'
+    }, inplace=True)
+
+    # Add summary row
+    df.loc[len(df.index)] = [
+        '', f'Total = {summary["attendance"]}', '', '', f'Total = {summary["work from home"]}', ''
+    ]
+
+    # Write to Excel
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        start_row = 5  # Leave space for info rows (row 1–4)
+        df.to_excel(writer, index=False, sheet_name='Attendance', startrow=start_row)
+
+        worksheet = writer.sheets['Attendance']
+        bold_font = Font(bold=True)
+
+        # Info headers
+        worksheet.cell(row=1, column=1, value='Employee Name: ').font = bold_font
+        worksheet.cell(row=1, column=2, value=employee_name)
+
+        worksheet.cell(row=2, column=1, value='Employee Type: ').font = bold_font
+        worksheet.cell(row=2, column=2, value=emp_type)
+
+        worksheet.cell(row=3, column=1, value='Circle: ').font = bold_font
+        worksheet.cell(row=3, column=2, value=circle)
+
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='attendance_report.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+
 
 
 
@@ -265,7 +448,7 @@ def leave_balance(employee_id):
             
             if form.personal_leave_balance.data is not None:
                 leave_balance.privilege_leave_balance = form.personal_leave_balance.data
-                print(form.personal_leave_balance.data)
+                
 
             if form.casual_leave_balance.data is not None:
                 leave_balance.casual_leave_balance = form.casual_leave_balance.data
@@ -518,15 +701,15 @@ def edit_signup(email):
 @hr.route('/delete_signup/<string:email>', methods=['POST'])
 @login_required
 def delete_signup(email):
-    print(f"[DEBUG] Request to delete: {email}")
+    
     employee = Signup.query.filter_by(email=email).first()
     if not employee:
-        print("[DEBUG] No employee found.")
+        
         flash('Employee not found.', 'error')
         return redirect(url_for('hr.update_signup'))
 
     db.session.delete(employee)
     db.session.commit()
-    print("[DEBUG] Deleted successfully.")
+    
     flash(f'Employee {email} deleted successfully.', 'success')
     return redirect(url_for('hr.update_signup'))

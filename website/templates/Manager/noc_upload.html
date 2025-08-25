@@ -1,0 +1,27 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}NOC Upload{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    {% with errors = get_flashed_messages(with_categories=true) %}
+    {% if errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {%- for msg in errors %}
+                <h3>{{ msg }}</h3>
+                {% endfor -%}
+            </ul>
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <h3 class="centered-heading">Add PaySlip for</h3>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.noc_file.label }}
+            {{ form.noc_file(class="form-control-file") }}
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+</div>
+{% endblock %}

@@ -13,9 +13,7 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    <div id="loading-msg" class="alert alert-info text-center">
-        Fetching your location, please wait...
-    </div>
+
     <form method="POST" action="{{ url_for('profile.punch') }}">
         {{ form.hidden_tag() }}
 
@@ -26,6 +24,9 @@
         <!-- Work from Home checkbox -->
         <div class="form-group text-center">
             <label><input type="checkbox" name="wfh" id="wfh"> Work From Home</label>
+            <a href="{{ url_for('profile.submit_wfh') }}" class="ms-button">
+                Apply for WFH
+            </a>
         </div>
 
         <div class="form-group text-center">
@@ -36,10 +37,10 @@
             <span>{{ punch.punch_out if punch else 'Not Punched Out' }}</span>
         </div>
     </form>
-
     <br>
 
     <h2 class="centered-heading">Calendar</h2>
+
     <form method="GET" action="{{ url_for('profile.punch') }}" class="mb-4">
         <div class="form-group-cal">
             <label for="month">Select Month:</label>
@@ -68,6 +69,38 @@
     <div class="container-details mt-5">
         <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
         </h3>
+
+        <div
+            style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; font-family: Arial, sans-serif;">
+            <!-- Green Indicator -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: #4CAF50; border-radius: 3px; display: inline-block;"></span>
+                <span>Present (Punch In/Out Done)</span>
+            </div>
+
+            <!-- Yellow Indicator -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: hsl(0, 100%, 51%); border-radius: 3px; display: inline-block;"></span>
+                <span>Pending (No Punch Out)</span>
+            </div>
+
+            <!--          Red Indicator half day/9 hours -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: #fffb00; border-radius: 3px; display: inline-block;"></span>
+                <span>Half-Day / less than 9 hours </span>
+            </div>
+
+            <!--            Blue Indicator for leave -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: 	#f5935b; border-radius: 3px; display: inline-block;"></span>
+                <span>Leave </span>
+            </div>
+        </div>
+
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -86,15 +119,36 @@
                 <tr>
                     {% for day in week %}
                     {% set punch = punch_data.get(day) %}
-                    <td
-                        class="{% if day.month != selected_month %}bg-light{% elif punch %}{% if punch.is_holiday %}bg-white{% elif punch.punch_in and punch.punch_out %}bg-success text-white{% else %}bg-warning{% endif %}{% else %}bg-white{% endif %}">
+                    {% set is_leave_day = leave_days and (day in leave_days) %}
+                    <td class="
+            {% if day.month != selected_month %}
+                bg-light
+            {% elif is_leave_day %}
+                custom-blue text-white  {# Leave day #}
+            {% elif punch %}
+                {% if punch.is_holiday %}
+                    bg-white
+                {% elif punch.punch_in and punch.punch_out %}
+                    {% if is_full_day %}
+                        bg-success text-white  {# Full day #}
+                    {% else %}
+                        custom-red text-white  {# Present but not full day #}
+                    {% endif %}
+                {% else %}
+                    bg-warning  {# Absent #}
+                {% endif %}
+            {% else %}
+                bg-white
+            {% endif %}
+        ">
                         {{ day.day }} <br>
-                        <small>{{ day.strftime('%A') }}</small> <!-- Show the actual day name -->
+                        <small>{{ day.strftime('%A') }}</small>
                     </td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
+
         </table>
     </div>
 </div>
@@ -102,51 +156,38 @@
 
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const latInput = document.getElementById('lat');
-    const lonInput = document.getElementById('lon');
-    const form = document.querySelector('form');
-    const wfh = document.getElementById('wfh');
-    const loadingMsg = document.getElementById('loading-msg');
+    document.addEventListener('DOMContentLoaded', function () {
+        const latInput = document.getElementById('lat');
+        const lonInput = document.getElementById('lon');
+        const form = document.querySelector('form');
 
-    function checkLocationReady() {
-        const lat = localStorage.getItem('lat');
-        const lon = localStorage.getItem('lon');
-        const ready = localStorage.getItem('location_ready') === 'true';
+        let locationReady = false;
 
-        if (ready && lat && lon) {
-            latInput.value = lat;
-            lonInput.value = lon;
-            if (loadingMsg) loadingMsg.style.display = 'none';
+        // Try to get the user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    latInput.value = position.coords.latitude;
+                    lonInput.value = position.coords.longitude;
+                    locationReady = true;
+                },
+                function (error) {
+                    alert("Please enable location access to punch in/out.");
+                }
+            );
         } else {
-            if (loadingMsg) loadingMsg.style.display = 'block';
+            alert("Geolocation is not supported by your browser.");
         }
 
-        return ready;
-    }
-
-    // Show/hide loading message
-    const isReady = checkLocationReady();
-
-    // Retry every second until location is ready
-    if (!isReady) {
-        const interval = setInterval(() => {
-            if (checkLocationReady()) {
-                clearInterval(interval);
+        // Prevent form submission until location is ready
+        form.addEventListener('submit', function (e) {
+            if (!locationReady && !document.getElementById('wfh').checked) {
+                e.preventDefault();
+                alert("Getting your location... Please wait a moment and try again.");
             }
-        }, 1000);
-    }
-
-    // Prevent submission if not ready
-    form.addEventListener('submit', function (e) {
-        if (!checkLocationReady() && !wfh.checked) {
-            e.preventDefault();
-            alert("Location is still loading. Please wait a moment or enable location.");
-        }
+        });
     });
-});
 </script>
-
 
 
 {% endblock %}

@@ -64,7 +64,7 @@ ul {
     position: absolute;
     top: -5px;
     right: -10px;
-    background-color: red;
+    background-color: #FF4500;
     color: white;
     padding: 4px 7px;
     border-radius: 50%;
@@ -198,7 +198,7 @@ a {
     padding: .75rem;
     color: var(--white-color);
     border-radius: .5rem;
-    margin-bottom: 1rem;
+    margin-bottom: .01rem;
     transition: .3s;
     cursor: pointer;
 }
@@ -488,7 +488,8 @@ h3 {
 /* Ensuring the container width and margin is appropriate */
 
 .container {
-    width: 90%;
+    position: relative;
+    width: 65%;
     padding: 20px;
     margin: auto;
     overflow: visible;
@@ -629,7 +630,7 @@ h3 {
 }
 
 .bg-warning {
-    background-color: #ffc107 !important;
+    background-color: hsl(0, 100%, 51%) !important;
     /* Yellow for missed punch out */
 }
 
@@ -646,6 +647,16 @@ h3 {
 .text-white {
     color: white !important;
     /* Ensure text is white on success */
+}
+
+.custom-red {
+    background-color: #fffb00 !important;
+    color: black !important;
+}
+
+.custom-blue {
+    background-color: #f5935b !important;
+    color: white !important;
 }
 
 /* Styles for Form Elements */
@@ -855,4 +866,699 @@ h3 {
 
 .asset-table tr:hover {
     background-color: #eaeaea;
+}
+
+
+
+
+/* claim_expense.css */
+
+
+.container_claim {
+    max-width: 1200px;
+    margin: 40px auto;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+.row_claim{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.col_claim, .col_claim2, .col_claim3, .col_claim5 {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 200px;
+}
+
+.col_claim5 {
+    max-width: 80px;
+}
+
+.col_claimbutton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+.form_claim {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 100%;
+    background-color: #f9f9f9;
+}
+
+button[type="button"], .btn {
+    margin:10px;
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btnsubmit {
+    background-color: #007bff;
+    color: white;
+}
+
+.btnsubmit:hover {
+    background-color: #0056b3;
+}
+
+.btnadd{
+    background-color: #0e86ef;
+    color: white;
+}
+
+.btnadd:hover {
+    background-color: #5a6268;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #b52b39;
+}
+
+.expense-item {
+    background-color: #f0f4f8;
+    padding: 15px;
+    border: 1px solid #d3dce6;
+    border-radius: 8px;
+}
+
+.ms-button {
+        display: inline-block;
+        background-color: #16893a;
+        /* Microsoft blue */
+        color: #ffffff;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 10px 20px;
+        margin-left: 40px;
+        border: none;
+        border-radius: 10px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .ms-button:hover {
+        background-color: #3c7a08;
+    }
+
+    .ms-button:active {
+        background-color: #aff522;
+    }
+
+
+    /* Main form container */
+#separation-form.custom-resignation-form {
+    max-width: 600px;
+    margin: 15px auto;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Headings inside the form page (assumes outside form) */
+.centered-heading {
+    text-align: center;
+    color: #333;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+/* Alert box for errors */
+.resignation-alert {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #ffe6e6;
+    color: #a94442;
+    border: 1px solid #f5c2c7;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+/* Form fields wrapper */
+
+
+/* Label styles */
+.resignation-field label {
+    display: block;
+    font-weight: 600;
+    color: #444;
+}
+
+/* Input and textarea styles */
+.resignation-input,
+.resignation-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    transition: border-color 0.3s ease;
+}
+
+.resignation-input:focus,
+.resignation-textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+/* Error text */
+.resignation-error {
+    color: red;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Submit button */
+.resignation-submit-btn {
+    background-color: #007bff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.resignation-submit-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    #separation-form.custom-resignation-form {
+        padding: 20px;
+        margin: 20px;
+    }
+
+    .resignation-submit-btn {
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+
+
+
+
+
+
+
+
+/* --- Policy Structure Container --- */
+
+.policy-heading{
+    text-align: center;
+}
+
+.policy-subheading{
+    text-align: center;
+}
+
+#policy-container {
+    height: 200px;
+    width: 550px;
+    /* background-color: #5F9EA0; */
+    position: absolute;
+    margin-left: 150px;
+    margin-top: 70px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+/* Main Div Styling */
+.div-class {
+    height: 150px;
+    width: 170px;
+    padding: 20px;
+    text-align: center;
+    line-height: 25px;
+    font-size: 25px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid black;
+}
+
+/* Background Colors */
+#div1 {
+    background-color: #DCDCDC;
+    color:black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/static/photo/Service Policy.png');
+    background-size:cover;
+    background-color: rgba(255, 255, 255, 0.9);
+    background-blend-mode: lighten;
+}
+
+#div2 {
+    background-color: #DCDCDC;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/static/photo/Leave Policy.png');
+    background-size:cover;
+    background-color: rgba(255, 255, 255, 0.9);
+    background-blend-mode: lighten;
+
+}
+
+#div3 {
+    background-color: #1E90FF;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    color: black;
+    align-items: center;
+    background-image: url('/static/photo/International.jpeg');
+    background-size:cover;
+    background-color: rgba(255, 255, 255, 0.7);
+    background-blend-mode: lighten;
+}
+
+/* Hover effect */
+.div-class:hover {
+    height: 160px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
+}
+
+/* Click (active) effect */
+.div-class:active {
+    background-color: #2e2e2e !important;
+    color: white;
+}
+
+/* Submenu container */
+.policy-submenu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+}
+
+/* Show submenu when hovering Travel Policy */
+#div3:hover .policy-submenu {
+    display: block;
+}
+
+
+
+
+/* Submenu Items */
+.tarv-class {
+    height: 50px;
+    width: 170px;
+    text-align: center;
+    line-height: 50px;
+    margin-top: 5px;
+    background-color: #87CEFA;
+    font-size: 14px;
+    font-weight: 500;
+    color: black;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.tarv-class:hover {
+    transform: scale(1.05);
+    background-color: #5ca8d8;
+    color: white;
+}
+
+/* International travel specific style */
+.tarv-link:last-child .tarv-class {
+    background-color:#FFC0CB;
+    color: black;
+}
+
+/* Remove default link styles */
+.policy-link,
+.tarv-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Shrink div1 and div2 when hovering over div3 */
+#div3:hover ~ .policy-link .div-class {
+    transform: scale(0.5);
+    transition: transform 0.3s ease;
+}
+
+
+
+
+
+
+
+
+
+
+---service-policy---
+.service-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 20px;
+}
+
+.service-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.service-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.service-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.service-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.service-policy-section {
+    margin-bottom: 35px;
+}
+
+.service-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.service-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .service-policy-title {
+        font-size: 26px;
+    }
+
+    .service-policy-heading {
+        font-size: 20px;
+    }
+
+    .service-policy-text {
+        font-size: 15px;
+    }
+
+    .service-policy-container {
+        padding: 20px;
+    }
+}
+
+
+
+
+---domestic---
+
+.domestic-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 20px;
+}
+
+.domestic-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.domestic-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.domestic-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.domestic-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.domestic-policy-section {
+    margin-bottom: 35px;
+}
+
+.domestic-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.domestic-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .domestic-policy-title {
+        font-size: 26px;
+    }
+
+    .domestic-policy-heading {
+        font-size: 20px;
+    }
+
+    .domestic-policy-text {
+        font-size: 15px;
+    }
+
+    .domestic-policy-container {
+        padding: 20px;
+    }
+}
+
+
+---International---
+
+.international-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 40px 20px;
+}
+
+.international-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.international-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.international-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.international-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.international-policy-section {
+    margin-bottom: 35px;
+}
+
+.international-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.international-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .international-policy-title {
+        font-size: 26px;
+    }
+
+    .international-policy-heading {
+        font-size: 20px;
+    }
+
+    .international-policy-text {
+        font-size: 15px;
+    }
+
+    .international-policy-container {
+        padding: 20px;
+    }
+}
+
+/* -- leave-policy--- */
+
+
+.leave-policy-wrapper {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    padding: 2px;
+    border-radius: 10px;
+}
+
+.leave-policy-container {
+    max-width: 950px;
+    margin: auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.leave-policy-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.leave-policy-title {
+    font-size: 32px;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.leave-policy-subtitle {
+    font-size: 16px;
+    color: #555;
+}
+
+.leave-policy-section {
+    margin-bottom: 35px;
+}
+
+.leave-policy-heading {
+    font-size: 24px;
+    color: #34495e;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+}
+
+.leave-policy-text {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .leave-policy-title {
+        font-size: 26px;
+    }
+
+    .leave-policy-heading {
+        font-size: 20px;
+    }
+
+    .leave-policy-text {
+        font-size: 15px;
+    }
+
+    .leave-policy-container {
+        padding: 20px;
+    }
+}
+
+
+.resign-div {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  /* top: 0; */
+}
+
+.resign-ended-text {
+  color: red;
+  font-weight: bold;
+}
+
+.resign-days-left {
+  color: red;
+  font-weight: bold;
 }

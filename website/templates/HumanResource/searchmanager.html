@@ -1,0 +1,42 @@
+{% extends "HumanResource/hr_base.html" %}
+{% block title %}Manager_Search_Form{% endblock %}
+{% block content %}
+
+<div class="container">
+    {% with errors = get_flashed_messages(category_filter=["error","success"]) %}
+    {% if errors %}
+        <div class="alert-danger">
+            <ul>
+                {%- for msg in errors %}
+                {{ msg }}
+                {% endfor -%}
+            </ul>
+        </div>
+    {% endif %}
+    {% endwith %}
+    
+    <h2 class="centered-heading">Search Employees</h2>
+    <form method="POST" action="{{ url_for('manager_bp.search') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label for="circle">Circle</label>
+            {{ form.circle(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label for="emp_type">Employee Type</label>
+            {{ form.emp_type(class="form-control") }}
+        </div>
+
+        <!-- 👇 New input for optional email/emp_id -->
+        <div class="form-group">
+            <label for="identifier">Employee Email / ID (optional)</label>
+            {{ form.identifier(class="form-control", placeholder="Enter email or employee ID (leave blank for all)") }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+    </form>
+</div>
+
+{% endblock %}

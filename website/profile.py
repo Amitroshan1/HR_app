@@ -14,17 +14,16 @@ from .models.education import Education,UploadDoc
 from .forms.family_details import Family_details
 from .forms.previous_company import Previous_company
 from .models.prev_com import PreviousCompany
-from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location
-from .forms.attendance import PunchForm,LeaveForm,LocationForm
+from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location,WorkFromHomeApplication
+from .forms.attendance import PunchForm,LeaveForm,LocationForm,WorkFromHomeForm
 from .models.manager_model import ManagerContact
-from .common import verify_oauth2_and_send_email
+from .common import verify_oauth2_and_send_email, store_today_work
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location
+from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
+from datetime import timedelta
+from .utility import punch_time
 from sqlalchemy.exc import SQLAlchemyError
-
-
-
 
 profile=Blueprint('profile',__name__)
 
@@ -43,72 +42,78 @@ def empl_det():
     form = Employee_Details(obj=employee)
 
     if form.validate_on_submit():
-        # Check if a file is uploaded
-        if form.Photo.data:
-            # Get the file size
-            file = form.Photo.data
-            file_size = file.content_length  # Get the file size in bytes
+        try:
+            # Check if a file is uploaded
+            if form.Photo.data:
+                file = form.Photo.data
+                file_size = file.content_length
 
-            # Check if file size exceeds 100 KB (102400 bytes)
-            if file_size > 102400:  # 100 KB
-                flash('File size exceeds 100 KB. Please upload a smaller file.', 'warning')
-            else:
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                # Continue processing...
-                if employee:
-                    form.populate_obj(employee)
-                    employee.photo_filename = filename
-                    db.session.commit()
-                    flash('Employee details updated successfully!', 'success')
+                # Validate file size
+                if file_size and file_size > 10240000:  # 100 KB
+                    flash('File size exceeds 100 KB. Please upload a smaller file.', 'warning')
                 else:
-                    new_employee = Employee(
-                        admin_id=current_user.id,
-                        photo_filename=filename,
-                        name=form.name.data,
-                        email=form.email.data,
-                        father_name=form.father_name.data,
-                        mother_name=form.mother_name.data,
-                        marital_status=form.marital_status.data,
-                        spouse_name=form.spouse_name.data,
-                        dob=form.dob.data,
-                        emp_id=form.emp_id.data,
-                        designation=form.designation.data,
-                        mobile=form.mobile.data,
-                        gender=form.gender.data,
-                        emergency_mobile=form.emergency_mobile.data,
-                        caste=form.caste.data,
-                        nationality=form.nationality.data,
-                        language=form.language.data,
-                        religion=form.religion.data,
-                        blood_group=form.blood_group.data,
-                        permanent_address_line1=form.permanent_address_line1.data,
-                        permanent_address_line2=form.permanent_address_line2.data,
-                        permanent_address_line3=form.permanent_address_line3.data,
-                        permanent_pincode=form.permanent_pincode.data,
-                        permanent_district=form.permanent_district.data,
-                        permanent_state=form.permanent_state.data,
-                        present_address_line1=form.present_address_line1.data,
-                        present_address_line2=form.present_address_line2.data,
-                        present_address_line3=form.present_address_line3.data,
-                        present_pincode=form.present_pincode.data,
-                        present_district=form.present_district.data,
-                        present_state=form.present_state.data
-                    )
-                    
+                    filename = secure_filename(file.filename)
+                    upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
+                    # Save file safely
                     try:
+                        file.save(upload_path)
+                    except PermissionError:
+                        flash('Permission denied: Cannot save uploaded Photo. Please rename the photo.', 'danger')
+                        return redirect(url_for('profile.empl_det'))
+                    except Exception as e:
+                        flash(f'Unexpected error saving file: {str(e)}', 'danger')
+                        return redirect(url_for('profile.empl_det'))
+
+                    # Save or update employee data
+                    if employee:
+                        form.populate_obj(employee)
+                        employee.photo_filename = filename
+                        db.session.commit()
+                        flash('Employee details updated successfully!', 'success')
+                    else:
+                        new_employee = Employee(
+                            admin_id=current_user.id,
+                            photo_filename=filename,
+                            name=form.name.data,
+                            email=form.email.data,
+                            father_name=form.father_name.data,
+                            mother_name=form.mother_name.data,
+                            marital_status=form.marital_status.data,
+                            spouse_name=form.spouse_name.data,
+                            dob=form.dob.data,
+                            emp_id=form.emp_id.data,
+                            designation=form.designation.data,
+                            mobile=form.mobile.data,
+                            gender=form.gender.data,
+                            emergency_mobile=form.emergency_mobile.data,
+                            caste=form.caste.data,
+                            nationality=form.nationality.data,
+                            language=form.language.data,
+                            religion=form.religion.data,
+                            blood_group=form.blood_group.data,
+                            permanent_address_line1=form.permanent_address_line1.data,
+                            permanent_address_line2=form.permanent_address_line2.data,
+                            permanent_address_line3=form.permanent_address_line3.data,
+                            permanent_pincode=form.permanent_pincode.data,
+                            permanent_district=form.permanent_district.data,
+                            permanent_state=form.permanent_state.data,
+                            present_address_line1=form.present_address_line1.data,
+                            present_address_line2=form.present_address_line2.data,
+                            present_address_line3=form.present_address_line3.data,
+                            present_pincode=form.present_pincode.data,
+                            present_district=form.present_district.data,
+                            present_state=form.present_state.data
+                        )
                         db.session.add(new_employee)
                         db.session.commit()
                         flash('Employee details saved successfully!', 'success')
-                    except SQLAlchemyError as e:
-                        db.session.rollback()
-                        flash('An error occurred while saving employee details.', 'danger')
-                        print(f"Database Error: {e}")
+            else:
+                flash('No photo was uploaded. Please upload a photo.', 'warning')
 
-        else:
-            # Handle case where no file was uploaded
-            flash('No photo was uploaded. Please upload a photo.', 'warning')
+        except Exception as e:
+            # Catch-all error handler for anything unexpected
+            flash(f"Something went wrong: {str(e)}", 'danger')
 
         return redirect(url_for('profile.empl_det'))
 
@@ -159,15 +164,8 @@ def family_details():
             
         )
         
-        
-        try:
-            db.session.add(new_family_member)
-            db.session.commit()
-            flash('Employee details saved successfully!', 'success')
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('An error occurred while saving employee details.', 'danger')
-            print(f"Database Error: {e}")
+        db.session.add(new_family_member)
+        db.session.commit()
         
         flash('Family member details saved successfully!', 'success')
         return redirect(url_for('profile.fam_det'))
@@ -198,14 +196,9 @@ def previous_company():
             pf_num=form.pf_num.data,
             address=form.address.data
         )
-        try:
-            db.session.add(new_company)
-            db.session.commit()
-            flash('Previous company details saved successfully!', 'success')
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('An error occurred while saving previous company details.', 'danger')
-            
+        db.session.add(new_company)
+        db.session.commit()
+        flash('Previous company details saved successfully!', 'success')
         return redirect(url_for('profile.previous_company'))
 
     previous_companies = PreviousCompany.query.filter_by(admin_id=current_user.id).all()
@@ -237,13 +230,8 @@ def education():
             marks=form.marks.data,
             doc_file=filename
         )
-        try:
-            db.session.add(new_education)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('An error occurred while saving education details.', 'danger')
-
+        db.session.add(new_education)
+        db.session.commit()
         flash('Education details added successfully!', 'success')
         return redirect(url_for('profile.education'))
 
@@ -260,12 +248,9 @@ def delete_education(education_id):
     if education.admin_id != current_user.id:
         flash('You do not have permission to delete this item.', 'danger')
         return redirect(url_for('profile.education'))
-    try:
-        db.session.delete(education)
-        db.session.commit()
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        flash('An error occurred while deleting education details.', 'danger')
+    
+    db.session.delete(education)
+    db.session.commit()
     flash('Education detail deleted successfully!', 'success')
     return redirect(url_for('profile.education'))
 
@@ -293,14 +278,8 @@ def upload_docs():
             issue_date=form.issue_date.data,
             doc_file=filename
         )
-        try:
-            db.session.add(new_upload_doc)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('An error occurred while uploading the document.', 'danger')
-            
-            return redirect(url_for('profile.upload_docs'))
+        db.session.add(new_upload_doc)
+        db.session.commit()
         flash('Document uploaded successfully!', 'success')
         return redirect(url_for('profile.upload_docs'))
 
@@ -323,13 +302,9 @@ def delete_document(doc_id):
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.doc_file)
         if os.path.exists(file_path):
             os.remove(file_path)
-    try:
-        db.session.delete(document)
-        db.session.commit()
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        flash('An error occurred while deleting the document.', 'danger')
-        return redirect(url_for('profile.upload_docs'))
+    
+    db.session.delete(document)
+    db.session.commit()
     flash('Document deleted successfully!', 'success')
     return redirect(url_for('profile.upload_docs'))
 
@@ -338,7 +313,7 @@ def delete_document(doc_id):
 
 def is_near_saved_location(user_lat, user_lon, locations):
     def haversine(lat1, lon1, lat2, lon2):
-        # Earth radius in meters
+        # Earth radius in meters  
         R = 6371000  
         dlat = radians(lat2 - lat1)
         dlon = radians(lon2 - lon1)
@@ -353,6 +328,38 @@ def is_near_saved_location(user_lat, user_lon, locations):
     return False
 
 
+def check_leave():
+    today = date.today()
+    leave_data = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == current_user.id,
+        LeaveApplication.start_date <= today,
+        LeaveApplication.end_date >= today,
+        LeaveApplication.status == 'Approved'
+    ).all()
+
+    for leave in leave_data:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if current_date == today:
+                return True  # User is on leave
+            current_date += timedelta(days=1)
+
+    return False  # Not on leave
+
+def check_wfh():
+    today = date.today()
+    approved = WorkFromHomeApplication.query.filter(
+        WorkFromHomeApplication.admin_id == current_user.id,
+        WorkFromHomeApplication.start_date <= today,
+        WorkFromHomeApplication.end_date >= today,
+        WorkFromHomeApplication.status == 'Approved'
+    ).first()
+    return True if approved else False
+
+
+
+
+
 
 
 @profile.route('/punch', methods=['GET', 'POST'])
@@ -365,6 +372,7 @@ def punch():
     selected_month = request.args.get('month', today.month, type=int)
     selected_year = request.args.get('year', today.year, type=int)
 
+    
     calendar.setfirstweekday(calendar.MONDAY)
     first_day = date(selected_year, selected_month, 1)
     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
@@ -380,10 +388,10 @@ def punch():
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
-        print(lat, lon, is_wfh)
+        # print(lat, lon, is_wfh)
         # Load all saved locations from the DB
         locations = Location.query.all()
-        print(locations)
+        # print(locations)
         # Check if the user is near any saved location
         is_near_location = False
         if lat is not None and lon is not None:
@@ -394,7 +402,13 @@ def punch():
             return redirect(url_for('profile.punch'))
 
         if form.punch_in.data:
-            if punch and punch.punch_in:
+            if check_leave():
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+                return redirect(request.url)  # Stop further execution
+            elif not check_wfh():
+                flash("WFM Mode access is restricted until your request is approved.", "danger")
+                return redirect(request.url)
+            elif punch and punch.punch_in:
                 flash('Already punched in today!', 'danger')
             else:
                 if not punch:
@@ -409,22 +423,71 @@ def punch():
                 punch.is_wfh = is_wfh
                 punch.lat = lat
                 punch.lon = lon
-                try:
-                    db.session.add(punch)
-                    db.session.commit()
-                    flash('Punched in successfully!', 'warning')
-                except SQLAlchemyError as e:
-                    db.session.rollback()
-                    flash('An error occurred while punching in.', 'danger')
-                    return redirect(url_for('profile.punch'))
+
+                db.session.add(punch)
+                db.session.commit()
+                flash('Punched in successfully!', 'warning')
+
 
         elif form.punch_out.data:
+
+            if check_leave():
+
+                flash("You are not allowed to punch on this day because you are on leave", "danger")
+
+                return redirect(request.url)
+
+            elif not check_wfh():
+
+                flash("WFM Mode access is restricted until your request is approved.", "danger")
+
+                return redirect(request.url)
+
             if not punch or not punch.punch_in:
+
                 flash('You need to punch in first!', 'danger')
+
             else:
+
+                # Set punch-out time
+
                 punch.punch_out = datetime.now().time()
+                store_today_work(punch)
+
                 db.session.commit()
-                flash('Punch out time updated successfully!', 'success')
+
+                flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
+
+    
+    # Suppose punch.total_work is datetime.time (HH:MM:SS)
+    if punch and punch.today_work:
+        total_work_time = punch.today_work
+        total_work_td = timedelta(
+            hours=total_work_time.hour,
+            minutes=total_work_time.minute,
+            seconds=total_work_time.second
+        )
+
+        is_full_day = total_work_td >= timedelta(hours=8, minutes=15)  # 8 hours and 30 minutes
+    else:
+        is_full_day = False
+
+
+    
+    leave_records = LeaveApplication.query.filter(
+            LeaveApplication.admin_id == current_user.id,
+            LeaveApplication.start_date <= date(selected_year, selected_month, 31),
+            LeaveApplication.end_date >= date(selected_year, selected_month, 1),
+            LeaveApplication.status == 'Approved'
+        ).all()
+
+    # Collect all leave days
+    leave_days = set()
+    for leave in leave_records:
+        current_day = leave.start_date
+        while current_day <= leave.end_date:
+            leave_days.add(current_day)
+            current_day += timedelta(days=1)
 
     return render_template(
         'profile/punch.html',
@@ -434,13 +497,62 @@ def punch():
         today=today,
         selected_month=selected_month,
         selected_year=selected_year,
-        calendar=calendar
+        calendar=calendar,
+        is_full_day=is_full_day,
+        leave_days=leave_days
     )
 
 
 
+  # adjust the import path if needed
 
-@profile.route('/manage-locations', methods=['GET', 'POST'])
+@profile.route('/submit-wfh', methods=['GET', 'POST'])
+@login_required
+def submit_wfh():
+    form = WorkFromHomeForm()
+    
+
+    if form.validate_on_submit():
+        
+        wfh_application = WorkFromHomeApplication(
+            admin_id=current_user.id,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            reason=form.reason.data,
+            status='Pending',
+            created_at=datetime.now()
+        )
+        db.session.add(wfh_application)
+        db.session.commit()
+        
+
+        try:
+            success = send_wfh_approval_email_to_managers(current_user, wfh_application)
+            if success:
+                flash('WFH request submitted and email sent for approval.', 'success')
+            else:
+                flash('WFH submitted, but failed to send approval email.', 'warning')
+        except Exception as e:
+            app.logger.error(f"Email send failed: {e}")
+            flash('WFH submitted, but error occurred while sending approval email.', 'danger')
+
+        return redirect(url_for('profile.submit_wfh'))
+
+    if request.method == 'POST':
+        flash(f"Form validation failed: {form.errors}", "danger")
+
+    user_wfh_applications = WorkFromHomeApplication.query.filter_by(
+        admin_id=current_user.id
+    ).order_by(WorkFromHomeApplication.created_at.desc()).all()
+
+    return render_template(
+        'profile/submit_wfh.html',
+        form=form,
+        wfh_applications=user_wfh_applications
+    )
+
+
+@profile.route('/manage-location', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
     form = LocationForm()
@@ -453,14 +565,8 @@ def manage_locations():
             longitude=form.longitude.data,
             radius=form.radius.data
         )
-        try:
-            db.session.add(new_loc)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('An error occurred while adding the location.', 'danger')
-            print(f"Database Error: {e}")
-            return redirect(url_for('profile.manage_locations'))
+        db.session.add(new_loc)
+        db.session.commit()
         flash('Location added successfully!', 'success')
         return redirect(url_for('profile.manage_locations'))
 
@@ -475,7 +581,6 @@ def delete_location(location_id):
     db.session.commit()
     flash('Location deleted successfully!', 'warning')
     return redirect(url_for('profile.manage_locations'))
-
 
 
 @profile.route('/apply-leave', methods=['GET', 'POST'])
@@ -500,6 +605,10 @@ def apply_leave():
     leave_balance = LeaveBalance.query.filter_by(signup_id=employee.id).first()
     form = LeaveForm()
 
+
+    deducted_days = 0.0  # This will store how much was actually cut from balances
+    extra_leave = 0.0
+
     if form.validate_on_submit():
         start_date = form.start_date.data
         end_date = form.end_date.data
@@ -507,23 +616,59 @@ def apply_leave():
         leave_days = (end_date - start_date).days + 1
         reason = form.reason.data
 
-        extra_leave = 0  # Variable to track extra leave days
+     # Variable to track extra leave days
 
-        # Validate leave balances
-        if leave_type == 'Casual Leave' and leave_days > leave_balance.casual_leave_balance:
-            flash('You do not have enough Casual Leave balance.', 'danger')
-            return redirect(url_for('profile.apply_leave'))
 
+         # Still useful for alerts or UI
+
+        # Privilege Leave
         if leave_type == 'Privilege Leave':
             if leave_days > leave_balance.privilege_leave_balance:
-                extra_leave = leave_days - leave_balance.privilege_leave_balance
-                leave_balance.privilege_leave_balance = 0  # Set remaining balance to 0
+                extra_leave = leave_days - float(leave_balance.privilege_leave_balance)
+                deducted_days = leave_days - extra_leave
+                leave_balance.privilege_leave_balance = 0
             else:
-                leave_balance.privilege_leave_balance -= leave_days  # Deduct normally
+                deducted_days = leave_days
+                leave_balance.privilege_leave_balance -= leave_days
 
-        # Deduct Casual Leave balance if applicable
-        if leave_type == 'Casual Leave':
+        # Casual Leave
+        elif leave_type == 'Casual Leave':
+            if leave_days > 2:
+                flash('You cannot apply for more than 2 days of Casual Leave.', 'warning')
+                return redirect(url_for('profile.apply_leave'))
+
+            if leave_days > leave_balance.casual_leave_balance:
+                flash('You do not have enough Casual Leave balance for the requested days. Please apply under Privilege Leave instead.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+
+            deducted_days = leave_days
             leave_balance.casual_leave_balance -= leave_days
+
+        # Half Day Leave
+        elif leave_type == "Half Day Leave":
+            if leave_days > 1:
+                flash('Half Day Leave can only be applied for one day.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+
+            if leave_balance.casual_leave_balance >= 0.5:
+                deducted_days = 0.5
+                leave_balance.casual_leave_balance -= 0.5
+            elif leave_balance.privilege_leave_balance >= 0.5:
+                deducted_days = 0.5
+                leave_balance.privilege_leave_balance -= 0.5
+                flash('0.5 day deducted from Privilege Leave due to insufficient Casual Leave.', 'info')
+            else:
+                extra_leave = 0.5
+                flash(f'Not enough Privilege Leave either. {extra_leave} day marked as Extra Leave.', 'warning')
+
+
+                if leave_type == "Compensatory Leave":
+                    if leave_days > 3:
+                        flash('Compensatory Leave can only be applied for Two days.', 'danger')
+                        return redirect(url_for('profile.apply_leave'))
+
+                    flash('Please ask Lead/manager for Approve Compensatory Leave.', 'danger')
+
 
         # Save leave application
         leave_application = LeaveApplication(
@@ -532,83 +677,162 @@ def apply_leave():
             reason=reason,
             start_date=start_date,
             end_date=end_date,
-            status='Pending'
-        )
-        try:
-            db.session.add(leave_application)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('An error occurred while submitting the leave application.', 'danger')
-            
-            return redirect(url_for('profile.apply_leave'))
+            status='Pending',
+            deducted_days=deducted_days        )
+        db.session.add(leave_application)
+        db.session.commit()
 
         # Email notification
-        manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle, user_type=employee.emp_type).first()
-        department_email = 'hr@saffotech.com'
-        cc_emails = ['accounts@saffotech.com']
+        manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle,
+                                                         user_type=employee.emp_type).first()
+        department_email = 'singhroshan968@gmail.com'
+        cc_emails = ['singhroshan9688@gmail.com']
         if manager_contact:
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 
         subject = f"New Leave Application: {leave_type}"
-        body = (
-                "Hi\n\n"
-                "Greetings!\n"
-                "Dear Sir/Madam,\n\n"
-                "Please find the details of the leave application below:\n\n"
-                f"Leave application submitted by {employee.first_name}.\n"
-                f"Leave Type: {leave_type}\n\n"
-                f"Reason: {reason}\n\n"
-                f"Start Date: {start_date}\n"
-                f"End Date: {end_date}\n"
-                f"Total Days: {leave_days}\n"
-                f"Privilege Leave Balance After Deduction: {leave_balance.privilege_leave_balance}\n\n")
+        body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <p>Hi,</p>
+                <p>Greetings!</p>
+                <p>Dear Sir/Madam,</p>
 
-        # If extra leave is required, include it in the email
+                <p>Please find the details of the leave application below:</p>
+
+                <table style="border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.2;">
+                <tr>
+                    <td style="padding: 4px 2px; margin: 0;"><strong>Employee Name:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{employee.first_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Leave Type:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_type}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Reason:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{reason}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Start Date:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{start_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>End Date:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{end_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Total Days:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_days}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 4px 8px; margin: 0;"><strong>Privilege Leave Balance After Deduction:</strong></td>
+                    <td style="padding: 4px 8px; margin: 0;">{leave_balance.privilege_leave_balance}</td>
+                </tr>
+                </table>
+            """
+
         if extra_leave > 0:
-            body += f"⚠️ Extra Leave Days Required: {extra_leave} (Not covered by Privilege Leave)\n"
-            
+                body += f"""
+                <p style="color: red;"><strong>⚠️ Extra Leave Days taken :</strong> {extra_leave} (Not covered by Privilege Leave)</p>
+                """
 
-        body += f"Click here to approve: {url_for('profile.approve_leave', leave_id=leave_application.id, _external=True)}\n\n"
-        body += "Thanks $ Regards\n"
-        body += f"{employee.first_name}\n"
-        verify_oauth2_and_send_email(emp,subject, body, department_email, cc_emails)
-        flash('Your leave application has been submitted.', 'success')
+        body += f"""
+                <p>
+                <a href="https://solviotec.com/" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Login to HRMS to Approve</a>
+                </p>
+
+                <p>Thanks & Regards,<br>
+                {employee.first_name}</p>
+            </body>
+            </html>
+            """
+        verify_oauth2_and_send_email(emp, subject, body, department_email, cc_emails)
+        flash('Your leave application has been submitted & Mail Sent for approval.', 'success')
         return redirect(url_for('profile.apply_leave'))
 
     user_leaves = LeaveApplication.query.filter_by(admin_id=emp.id).all()
-    return render_template('profile/apply_leave.html', form=form, leave_balance=leave_balance, user_leaves=user_leaves)
 
-
-
-
+    return render_template('profile/apply_leave.html', form=form,
+                            leave_balance=leave_balance,
+                            deducted_days=deducted_days,
+                            user_leaves=user_leaves)
 
 
 @profile.route('/approve-leave/<int:leave_id>', methods=['GET'])
 def approve_leave(leave_id):
     leave_application = LeaveApplication.query.get_or_404(leave_id)
-
-    
     leave_application.status = 'Approved'
+    db.session.commit()
+    flash('Leave application has been approved.', 'success')
+    return redirect(url_for('manager_bp.manager_access'))
+
+
+@profile.route('/reject-leave/<int:leave_id>', methods=['GET'])
+def reject_leave(leave_id):
     try:
+        leave_app_data = LeaveApplication.query.get_or_404(leave_id)
+
+        # Avoid double rejection
+        if leave_app_data.status == 'Rejected':
+            flash("This leave application has already been rejected.", 'warning')
+            return redirect(url_for('manager_bp.manager_access'))
+
+        # Get Admin and Signup info
+        admin = Admin.query.get(leave_app_data.admin_id)
+        signup = Signup.query.filter_by(email=admin.email).first()
+        leave_balance = LeaveBalance.query.filter_by(signup_id=signup.id).first()
+
+        # Get deducted days safely
+        deducted_days = leave_app_data.deducted_days or 0.0
+
+        # Restore only what was actually deducted
+        if deducted_days > 0:
+            leave_balance.restore_leave(leave_app_data.leave_type, deducted_days)
+
+        # Update leave status
+        leave_app_data.status = 'Rejected'
         db.session.commit()
-    except SQLAlchemyError as e:
+
+        flash('❌ Leave application has been rejected and leave balance restored.', 'danger')
+
+    except SQLAlchemyError as db_err:
         db.session.rollback()
-        flash('An error occurred while approving the leave application.', 'danger')
-        print(f"Database Error: {e}")
-        return redirect(url_for('profile.apply_leave'))
+        flash(f"Database error: {str(db_err)}", 'danger')
+    except Exception as e:
+        flash(f"Unexpected error: {str(e)}", 'danger')
 
-    
-    return """
-        <h1>Leave application has been approved.</h1>
-        <p>Thank you for approving the leave application. The status has been updated successfully.</p>
-    """
+    return redirect(url_for('manager_bp.manager_access'))
 
 
-  
-    
 
 
+
+
+@profile.route('/approve-wfh/<int:wfh_id>', methods=['GET'])
+def approve_wfh(wfh_id):
+    wfh_app_data = WorkFromHomeApplication.query.get_or_404(wfh_id)
+    wfh_app_data.status = 'Approved'
+    db.session.commit()
+    flash('Work From Home Application has been approved.', 'success')
+    return redirect(url_for('manager_bp.wfh_approval'))
+
+
+
+
+
+@profile.route('/reject-wfh/<int:wfh_id>', methods=['GET'])
+def reject_wfh(wfh_id):
+    wfh_app_data = WorkFromHomeApplication.query.get_or_404(wfh_id)
+    wfh_app_data.status = 'Rejected'
+    db.session.commit()
+    flash('Work From Home Application has been rejected.', 'success')
+    return redirect(url_for('manager_bp.wfh_approval'))
+
+
+
+
+ 
 
 
 

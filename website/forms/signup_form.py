@@ -57,7 +57,7 @@ class SignUpForm(FlaskForm):
                                        ('Gurugram-Rabbit','Gurugram-Rabbit'),('Pune', 'Pune'), 
                                        ('Jaipur', 'Jaipur'),('Jaipur-Rabbit', 'Jaipur-Rabbit'), ('Greater Noida', 'Greater Noida'), 
                                         ('Mumbai', 'Mumbai'),('G.Noida-Rabbit','G.Noida-Rabbit'),
-                                        ('Mumbai-Bonita','Mumbai-Bonita'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
+                                        ('Mumbai-Bonita','Mumbai-Bonita'),('Mumbai-Victory','Mumbai-Victory'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
                                         ('Ahmedabad', 'Ahmedabad'), 
                                        ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),
                                        ('Punjab-Loyal', 'Punjab-Loyal'), ('Ahmedabad', 'Ahmedabad'),
@@ -69,7 +69,6 @@ class SignUpForm(FlaskForm):
                             choices=[('','Select Employee Type'),
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'), 
-                                     ('Testing', 'Testing'),
                                      ('Engineering', 'Engineering'),('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
                                      ('Software Development', 'Software Development'),
@@ -105,7 +104,7 @@ class SignUpForm(FlaskForm):
 
 
 
-from flask_wtf import FlaskForm
+
 from wtforms import SelectField, PasswordField
 from wtforms.validators import DataRequired, Length
 
@@ -114,7 +113,7 @@ class SelectRoleForm(FlaskForm):
                            choices=[('','Select Employee Type'),
                                      ('Human Resource','Human Resource'),
                                      ('Accounts','Accounts'), 
-                                     ('Testing', 'Testing'),
+                                
                                      ('Engineering', 'Engineering'),('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
                                      ('Software Development', 'Software Development'),

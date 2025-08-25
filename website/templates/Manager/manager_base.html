@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../static/css/hr_dash.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manager_style.css') }}">
+    <title>{% block title %}{% endblock %}</title>
+</head>
+
+<body>
+    <header id="header">
+        <div class="logo"><img src="../static/photo/saffo logo.png" alt="None"></div>
+        <nav class="nav-bar" id="navbar">
+            <ul>
+                <li>
+                    <a href="/E_homepage" class="active">Home</a>
+                </li>
+       <li style="position: relative;">
+    <a href="/manager_access" class="active">
+        Leave
+        {% if count_new_leaves and count_new_leaves > 0 %}
+            <span class="leave-badge">{{ count_new_leaves }}</span>
+        {% endif %}
+    </a>
+</li>
+                <li class="dropdown">
+                    <a href="/separation-approval" class="active">Resignations</a>
+                    <div class="dropdown-content">
+                        <a href="/noc_approval">NOC</a>
+                    </div>
+                </li>
+
+
+
+        <li class="dropdown">
+                    <a href="#" class="dropbtn">Approve
+                    {% if has_pending_items %}
+                            <span class="approval-badge"></span>
+                            {% endif %} </a>
+                    <div class="dropdown-content">
+                        <a href="/claim_approval">Claim</a>
+                        <a href="/wfh_approval">Work From Home
+                            {% if count_new_wfhs and count_new_wfhs > 0 %}
+                            <span class="wfh-badge">{{ count_new_wfhs }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                </li>
+
+
+
+            </ul>
+        </nav>
+
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <script src="../static/css/javascript.js"></script>
+</body>
+
+</html>

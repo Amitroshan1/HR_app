@@ -26,5 +26,4 @@ class ManagerContact(db.Model):
 
 
 
-
  

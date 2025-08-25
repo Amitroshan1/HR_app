@@ -3,25 +3,31 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="centered-heading">Add Manager</h1>
+
     {% with errors = get_flashed_messages(category_filter=["error","success"]) %}
     {% if errors %}
-        <div class="alert-danger">
-            <ul>
-                {%- for msg in errors %}
-                    <h3>{{ msg }}</h3>
-                {% endfor -%}
-            </ul>
-        </div>
+    <div class="alert-danger">
+        <ul>
+            {%- for msg in errors %}
+            <h3>{{ msg }}</h3>
+            {% endfor -%}
+        </ul>
+    </div>
     {% endif %}
     {% endwith %}
+
     <form method="POST">
         {{ form.hidden_tag() }}
 
-        <div class="form-group">
-            {{ form.circle_name.label }} {{ form.circle_name(class="form-control") }}
-        </div>
-        <div class="form-group">
-            {{ form.user_type.label }} {{ form.user_type(class="form-control") }}
+        <div class="form-group d-flex align-items-end">
+            <div class="me-2">
+                {{ form.circle_name.label }}
+                {{ form.circle_name(class="form-control") }}
+            </div>
+            <div class="me-2">
+                {{ form.user_type.label }}
+                {{ form.user_type(class="form-control") }}
+            </div>
         </div>
 
         <div class="manager-section mt-4 p-3 border rounded">
@@ -38,7 +44,7 @@
         </div>
 
         <div class="manager-section mt-4 p-3 border rounded">
-            <h3 class="centered-heading">L2 Contact Information *</h3>
+            <h3 class="centered-heading">L2 (Manager) Contact Information *</h3>
             <div class="form-group">
                 {{ form.l2_name.label }} {{ form.l2_name(class="form-control") }}
             </div>
@@ -51,7 +57,7 @@
         </div>
 
         <div class="manager-section mt-4 p-3 border rounded">
-            <h3 class="centered-heading">L3 Contact Information *</h3>
+            <h3 class="centered-heading">L3 (Lead) Contact Information *</h3>
             <div class="form-group">
                 {{ form.l3_name.label }} {{ form.l3_name(class="form-control") }}
             </div>

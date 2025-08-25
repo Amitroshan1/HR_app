@@ -1,0 +1,43 @@
+{% extends "employee/E_homeBase.html" %}
+{% block title %}Policy Structure{% endblock %}
+{% block content %}
+<h1 class="policy-heading">Policies</h1>
+  <h3 class="policy-subheading">
+    Saffo Policies are structured to ensure uniform governance and consistent operational standards.
+    Each rule is designed to support compliance, transparency, and department-wide alignment.
+  </h3>
+
+<div id="policy-container">
+
+    {% if signup_data.circle == 'NHQ' %}
+        <a href="{{ url_for('Accounts.service_policy') }}" class="policy-link">
+            <div id="div1" class="div-class">Service Policy</div>
+        </a>
+    {% endif %}
+
+    {% if signup_data.circle != 'NHQ' %}
+        <a href="{{ url_for('Accounts.leave_policy') }}" class="policy-link">
+            <div id="div2" class="div-class">Leave Policy</div>
+        </a>
+    {% endif %}
+
+    {% if signup_data.circle == 'NHQ' %}
+        <div id="div3" class="div-class" style="display: none;">
+            Travel Policy
+            <div class="policy-submenu">
+                <a href="{{ url_for('Accounts.domestic_travel') }}" class="tarv-link">
+                    <div class="tarv-class">Domestic</div>
+                </a>
+                <a href="{{ url_for('Accounts.international_travel') }}" class="tarv-link">
+                    <div class="tarv-class">International</div>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+
+
+
+
+{% endblock %}

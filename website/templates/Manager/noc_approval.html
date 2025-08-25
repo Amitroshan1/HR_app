@@ -1,0 +1,30 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}NOC Approval{% endblock %}
+
+{% block content %}
+
+<h2> NOC Approvals </h2>
+
+
+<table class="table_details table-striped" style="width: 80%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>NOC_Date</th>
+            <th>Upload NOC</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for noc in noc_data %}
+        <tr>
+            <td>{{noc.admin.first_name}}</td>
+            <td>{{noc.noc_date}}</td>
+            <td>
+                <a href="{{ url_for('manager_bp.noc_upload', admin_id = noc.admin_id) }}">Add NOC</a>
+            </td>
+
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

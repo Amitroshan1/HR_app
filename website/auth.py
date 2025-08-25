@@ -1,31 +1,37 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app,session
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session
 from .models.Admin_models import Admin
 from .models.emp_detail_models import Employee
 from flask_login import login_user, login_required, logout_user, current_user
 from .forms.signup_form import SelectRoleForm
-from datetime import datetime, timedelta,date
+from datetime import datetime, timedelta, date
 from .models.attendance import Punch
 from .models.manager_model import ManagerContact
 from .models.news_feed import NewsFeed
 from .models.emp_detail_models import Asset
 from .models.query import Query
 from .models.signup import Signup
-from werkzeug.security import check_password_hash, generate_password_hash
-from . import db,login_manager
+from . import db, login_manager
 from .forms.manager import ChangePasswordForm
 import os
 import binascii
 from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
+from .models.manager_model import ManagerContact
+from .utility import get_user_working_summary
+from .models.expense import ExpenseLineItem
+from .models.attendance import WorkFromHomeApplication
+from .forms.attendance import PunchForm
+from .utility import get_user_working_summary,get_remaining_resignation_days
+from .models.seperation import Resignation
+from .common import punch_in_time_count
+
 
 
 
 
 
 auth = Blueprint('auth', __name__)
-
-
 
 import logging
 
@@ -37,8 +43,6 @@ ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-
-
 
 
 @auth.app_errorhandler(401)
@@ -113,7 +117,7 @@ def callback():
     oauth_id = user_json["id"]
     email = user_json["mail"] or user_json["userPrincipalName"]
     first_name = user_json.get("givenName", "")
-    
+
     # Check if user exists in the database
     admin = Admin.query.filter_by(oauth_id=oauth_id).first()
 
@@ -175,12 +179,6 @@ def refresh_access_token(admin):
     return admin.oauth_token
 
 
-
-
-
-
-
-
 def get_authenticated_headers(admin):
     """Ensure token is valid before making API requests."""
     if admin.oauth_token_expiry and admin.oauth_token_expiry <= datetime.now():
@@ -196,18 +194,18 @@ def get_authenticated_headers(admin):
     return {"Authorization": f"Bearer {admin.oauth_token}"}
 
 
-
-
-
 @login_manager.user_loader
 def load_admin(admin_id):
     return Admin.query.get(int(admin_id))
 
 
+<<<<<<< HEAD
 
 from flask import current_app
 from sqlalchemy import func
 
+=======
+>>>>>>> 02c329ef809f2a98fbdab9c5026cd1400c19045b
 @auth.route('/select_role', methods=['GET', 'POST'])
 @login_required
 def select_role():
@@ -222,17 +220,25 @@ def select_role():
         current_app.logger.debug(f"[SELECT_ROLE] User Email: {user.email}")
         current_app.logger.debug(f"[SELECT_ROLE] Selected Role: {selected_role}")
 
-        # Case-insensitive email match for robustness
-        admin = Signup.query.filter(func.lower(Signup.email) == user.email.lower()).first()
+
+        # Get the current user's email ID
+        user_email = user.email  # Assuming the user model has an email attribute
+
+        # Query the admin/signup record based on the user's email
+        admin = Signup.query.filter_by(
+            email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
+
 
         if admin:
             current_app.logger.debug(f"[SELECT_ROLE] Signup record found: {admin.first_name}")
             current_app.logger.debug(f"[SELECT_ROLE] Assigned Role: {admin.emp_type}")
 
             if admin.emp_type == selected_role:
-                if admin.check_password(entered_password):
-                    current_app.logger.info(f"[SELECT_ROLE] Login successful for user {user.email} as {selected_role}")
-                    return redirect(url_for('auth.E_homepage'))
+                # If the role matches, check if the password is correct
+                if admin.check_password(entered_password):  # Assuming check_password is defined in the Signup model
+                    # If password matches, redirect to the homepage for that role
+                    return redirect(
+                        url_for('auth.E_homepage'))  # Assuming E_homepage is defined correctly in your auth bluepri
                 else:
                     current_app.logger.warning(f"[SELECT_ROLE] Incorrect password for {user.email}")
                     flash('Incorrect password. Please try again.', category='error')
@@ -254,9 +260,31 @@ def select_role():
 @auth.route('/E_homepage')
 @login_required
 def E_homepage():
+    current_id = current_user.id
+    resign_data = Resignation.query.filter_by(admin_id = current_id).first()
+    if resign_data:
+        days = get_remaining_resignation_days(resign_data.resignation_date)
+    else:
+        days = None
+
+
+
+    emails_data = [
+        email
+        for manager in ManagerContact.query.all()
+        for email in [manager.l1_email, manager.l2_email, manager.l3_email]
+        if email
+    ]
+    flag = False
+    if current_user.email in emails_data:
+        flag = True
+    # print("flag status: ", flag)
+
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
+    data =get_user_working_summary(current_user.id, datetime.now().year, datetime.now().month)
     
+
     if not employee:
         flash("No employee record found for the current user.")
         return render_template("employee/E_homepage.html")
@@ -265,13 +293,16 @@ def E_homepage():
     emp = Signup.query.filter_by(email=employee.email).first()
     if emp is None:
         flash("offical mail is not same in employee details,Plz contact HR.", "danger")
-        return redirect(url_for('auth.logout')) 
+        return redirect(url_for('auth.logout'))
 
-    count_new_queries = Query.query.filter_by(emp_type = emp.emp_type,status = 'New').count()
-    
-    
+
+    count_new_queries = Query.query.filter_by(emp_type=emp.emp_type, status='New').count()
+
     # Get DOJ from Signup model
     DOJ = emp.doj if emp else None
+
+
+    form = PunchForm()
 
     # Get today's punch-in and punch-out time
     today = date.today()
@@ -282,6 +313,7 @@ def E_homepage():
     # Get emp_type and circle from Signup model
     emp_type = emp.emp_type if emp else None
     circle = emp.circle if emp else None
+
 
     # Get manager contact information based on circle and emp_type
     manager_contact = ManagerContact.query.filter_by(circle_name=circle, user_type=emp_type).first()
@@ -300,19 +332,28 @@ def E_homepage():
 
     # Determine if there are any notifications for the current emp_type
     show_notification = bool(queries_for_emp_type)
-    
+
+    punch_in_count = punch_in_time_count()
+    punch_in_time_count_str = punch_in_count.isoformat() if punch_in_count else None
 
     # Pass necessary data to the template
-    return render_template("employee/E_homepage.html", 
-                           employee=employee, 
-                           punch_in_time=punch_in_time, 
+    return render_template("employee/E_homepage.html",
+                           employee=employee,
+                           punch_in_time=punch_in_time,
                            punch_out_time=punch_out_time,
                            manager_contact=manager_contact,
                            news_feeds=news_feeds,
                            DOJ=DOJ,
+                           flag=flag,
+                           data=data,  # Pass the working summary data
                            show_notification=show_notification,
                            queries_for_emp_type=queries_for_emp_type,
-                           emp_type=emp_type,count_new_queries=count_new_queries)  # Pass emp_type to the template
+                           emp_type=emp_type, count_new_queries=count_new_queries,
+                           emp=emp,
+                           form=form,  # Pass emp_type to the template
+                           days=days,  # Pass emp_type to the template
+                           resign_data=resign_data,
+                           punch_in_time_count=punch_in_time_count_str)
 
 
 @auth.route('/logout')
@@ -323,34 +364,28 @@ def logout():
     return redirect(url_for('auth.select_role'))
 
 
-
-
-
 @auth.route('/my_assets', methods=['GET'])
-@login_required  
+@login_required
 def my_assets():
-    
     emp_id = current_user.id
-    
-   
+
     assets = Asset.query.filter_by(admin_id=emp_id).all()
-    
+
     if not assets:
         flash('No assets found for your account.', 'info')
-    
-    return render_template('employee/my_assets.html', assets=assets)
 
+    return render_template('employee/my_assets.html', assets=assets)
 
 
 @auth.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
     form = ChangePasswordForm()
-    
+
     if form.validate_on_submit():
         original_password = form.original_password.data
         new_password = form.new_password.data
-        
+
         admin = Signup.query.filter_by(email=current_user.email).first()
         # Verify original password
         if current_user.email == admin.email:
@@ -366,4 +401,20 @@ def change_password():
         flash('Your password has been updated successfully', 'success')
         return redirect(url_for('auth.change_password'))  # Redirect to profile or wherever you like
 
-    return render_template('profile/change_password.html',form=form)
+    return render_template('profile/change_password.html', form=form)
+
+@auth.app_context_processor
+def inject_badge_counts():
+    try:
+        count_new_claims = ExpenseLineItem.query.filter_by(status='New').count()
+        count_new_wfhs = WorkFromHomeApplication.query.filter_by(status='New').count()
+    except Exception as e:
+        # Fallback to 0 if DB is not ready or error occurs
+        current_app.logger.warning(f"Badge count injection failed: {e}")
+        count_new_claims = 0
+        count_new_wfhs = 0
+
+    return dict(
+        count_new_claims=count_new_claims,
+        count_new_wfhs=count_new_wfhs
+    )

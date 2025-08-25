@@ -1,0 +1,152 @@
+{% extends "employee/E_homeBase.html" %}
+{% block title %} Claim Form {% endblock %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=True) %}
+{% if messages %}
+<ul>
+    {% for category, message in messages %}
+    <li class="{{ category }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+<div class="container_claim">
+    <h2 class="centered-heading">Expense Claim Form</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="row_claim mb-3">
+            <div class="col_claim">{{ form.employee_name.label }} {{ form.employee_name(class="form_claim") }}</div>
+            <div class="col_claim">{{ form.designation.label }} {{ form.designation(class="form_claim") }}</div>
+            <div class="col_claim">{{ form.emp_id.label }} {{ form.emp_id(class="form_claim") }}</div>
+            <div class="col_claim">{{ form.email.label }} {{ form.email(class="form_claim") }}</div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col_claim2">{{ form.project_name.label }} {{ form.project_name(class="form_claim") }}</div>
+            <div class="col_claim2">{{ form.country_state.label }} {{ form.country_state(class="form_claim") }}</div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col_claim2">{{ form.travel_from_date.label }} {{ form.travel_from_date(class="form_claim") }}
+            </div>
+            <div class="col_claim2">{{ form.travel_to_date.label }} {{ form.travel_to_date(class="form_claim") }}</div>
+        </div>
+
+        <h5 class="centered-heading">Expense Details</h5>
+        <div id="expense-items">
+            {% for subform in form.expenses %}
+            <div class="expense-item border rounded p-3 mb-3">
+                <div class="row_claim">
+                    <div class="col_claim5">{{ subform.sr_no.label }} {{ subform.sr_no(class="form_claim") }}</div>
+                    <div class="col_claim3">{{ subform.date.label }} {{ subform.date(class="form_claim") }}</div>
+                    <div class="col_claim">{{ subform.purpose.label }} {{ subform.purpose(class="form_claim") }}</div>
+                    <div class="col_claim3">{{ subform.amount.label }} {{ subform.amount(class="form_claim") }}</div>
+                    <div class="col_claim3">{{ subform.currency.label }} {{ subform.currency(class="form_claim") }}
+                    </div>
+                    <div class="col_claim3">{{ subform.Attach_file.label }} {{ subform.Attach_file(class="form_claim")
+                        }}</div>
+                    <div class="col_claimbutton">
+                        <button type="button" class="btn btn-danger btn-sm remove-btn"
+                            onclick="removeItem(this)">X</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btnsubmit btn-primary">Submit</button>
+        <button type="button" class="btnadd btn-secondary mb-3" onclick="addExpenseItem()">+ Add More</button>
+    </form>
+</div>
+
+
+
+<h3 class="centered-heading">Submitted Claims</h3>
+<div class="table-responsive">
+    <table class="table table-bordered" style="width:100%; background:rgb(255, 255, 255); margin-top:20px;">
+        <thead>
+            <tr style="background-color: #8ff782;">
+                <th>#</th>
+                <th>Country</th>
+                <th>Date</th>
+                <th>Purpose</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for claim, items in claims_with_items %}
+            {% for item in items %}
+            <tr>
+                <td>{{ item.sr_no }}</td>
+                <td>{{ claim.country_state }}</td>
+                <td>{{ item.date }}</td>
+                <td>{{ item.purpose }}</td>
+                <td>{{ item.amount }} {{ item.currency }}</td>
+                <td>{{ item.status }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">No claims submitted yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+
+
+<script>
+    let expenseIndex = parseInt("{{ form.expenses|length|default(0, true) }}");
+
+    function removeItem(button) {
+        button.closest('.expense-item').remove();
+    }
+
+    function addExpenseItem() {
+        const container = document.getElementById('expense-items');
+        const newItem = document.createElement('div');
+        newItem.className = 'expense-item border rounded p-3 mb-3';
+        newItem.innerHTML = `
+            <div class="row_claim">
+                <div class="col_claim5">
+                    <label for="expenses-${expenseIndex}-sr_no">Sr. No.</label>
+                    <input class="form_claim" id="expenses-${expenseIndex}-sr_no" name="expenses-${expenseIndex}-sr_no" type="number">
+                </div>
+                <div class="col_claim3">
+                    <label for="expenses-${expenseIndex}-date">Date</label>
+                    <input class="form_claim" id="expenses-${expenseIndex}-date" name="expenses-${expenseIndex}-date" type="date">
+                </div>
+                <div class="col_claim">
+                    <label for="expenses-${expenseIndex}-purpose">Purpose/Description</label>
+                    <textarea class="form_claim" id="expenses-${expenseIndex}-purpose" name="expenses-${expenseIndex}-purpose"></textarea>
+                </div>
+                <div class="col_claim3">
+                    <label for="expenses-${expenseIndex}-amount">Amount</label>
+                    <input class="form_claim" id="expenses-${expenseIndex}-amount" name="expenses-${expenseIndex}-amount" type="number" step="0.01">
+                </div>
+                <div class="col_claim3">
+                    <label for="expenses-${expenseIndex}-currency">Currency</label>
+                    <select class="form_claim" id="expenses-${expenseIndex}-currency" name="expenses-${expenseIndex}-currency">
+                        <option value="INR">INR</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">Euro</option>
+                    </select>
+                </div>
+                <div class="col_claim3">
+                    <label for="expenses-${expenseIndex}-Attach_file">Attach File</label>
+                    <input class="form_claim" id="expenses-${expenseIndex}-Attach_file" name="expenses-${expenseIndex}-Attach_file" type="file">
+                </div>
+                <div class="col_claimbutton">
+                    <button type="button" class="btn btn-danger btn-sm remove-btn" onclick="removeItem(this)">X</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(newItem);
+        expenseIndex++;
+    }
+</script>
+{% endblock %}

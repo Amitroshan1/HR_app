@@ -16,7 +16,8 @@ import logging
 import os
 from flask_session import Session 
 from dotenv import load_dotenv
-
+from dateutil.relativedelta import relativedelta
+from urllib3.exceptions import NewConnectionError
 
 
 
@@ -38,42 +39,67 @@ Session = Session()
 
 
 class Config:
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=50)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=20)
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target)) 
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
+
+
 def update_leave_balances():
-    """ Updates leave balances for employees every 6 months. """
+    """ Updates leave balances monthly for employees after 6 months of joining. """
     from .models.attendance import LeaveBalance
     from .models.Admin_models import Admin  
     from .models.signup import Signup 
 
     with scheduler.app.app_context():
-        leave_balances = LeaveBalance.query.all() # relationship with Signup
+        leave_balances = LeaveBalance.query.all()
         if not leave_balances:
-            print("No leave balances found in the database.")
             return
 
+        today = datetime.now().date()
+
         for balance in leave_balances:
-            admin = Admin.query.filter_by(id=balance.admin_id).first()
-            signup = Signup.query.filter_by(email=admin.email).first()
-            if admin and signup.Doj:
-                doj = signup.Doj
-                six_months_after_doj = doj + timedelta(days=6*30) 
-                
-                if datetime.now().date() >= six_months_after_doj:
+            signup = Signup.query.filter_by(id=balance.signup_id).first()
+            # print(f"Processing leave balance for signup ID: {balance.signup_id}, Admin ID: {signup.email if signup else 'None'}")
+            admin = Admin.query.filter_by(email=signup.email).first() if signup else None
+            # print(f"Found admin: {admin.email if admin else 'None'} for signup ID: {signup.id if signup else 'None'}")  
+            if not admin:
+                continue  # Skip if admin not found
+
+            if not signup or not signup.doj:
+                continue  # Skip if signup or DoJ not found
+
+            doj = signup.doj
+
+            # Skip if employee hasn't completed 6 months
+            if today < doj + relativedelta(months=6):
+                continue
+
+            # If never updated, initialize to 6 months after DoJ
+            if not balance.last_updated:
+                balance.last_updated = doj + relativedelta(months=6)
+
+            # Calculate how many full months passed since last update
+            months_passed = (today.year - balance.last_updated.year) * 12 + (today.month - balance.last_updated.month)
+
+            if months_passed >= 1:
+                for _ in range(min(months_passed, 1)):
+
                     balance.privilege_leave_balance += 1.08
                     balance.casual_leave_balance += 0.67
 
+                # Update last_updated to today to reflect actual update date
+                balance.last_updated = today
+                # print(f"Updated leave for: {signup.email}, Months: {months_passed}, New Last Updated: {today}")
+
         try:
             db.session.commit()
-            print("Database commit successful.")
+            
         except Exception as e:
             print(f"Database commit failed: {str(e)}")
-
 
 
 from datetime import datetime, timedelta
@@ -83,7 +109,7 @@ def send_reminder_emails():
     from .models.query import Query
     from .common import verify_oauth2_and_send_email
     
-    print("Reminder email function started")
+    
 
     # IST timezone
     ist = pytz.timezone('Asia/Kolkata')
@@ -92,7 +118,7 @@ def send_reminder_emails():
     with scheduler.app.app_context():
         # Get all open queries
         queries = Query.query.filter_by(status='open').all()
-        print(f"Found {len(queries)} open queries")
+        
 
         for query in queries:
             # Make sure query.created_at is timezone-aware in IST
@@ -103,7 +129,7 @@ def send_reminder_emails():
 
             # Calculate time since last activity (query creation or reply)
             time_since_last_activity = now - last_activity_time
-            print(f"Query ID {query.id} age since last activity: {time_since_last_activity}")
+            
 
             # If 3 days or more have passed since last activity, send reminder to that particular employee's
             if time_since_last_activity >= timedelta(days=3):
@@ -120,7 +146,7 @@ def send_reminder_emails():
                 cc = None
 
                 admin_email = query.admin.email
-                print(f"Sending reminder from admin email: {admin_email}")
+                
 
                 subject = f"Reminder: No response to query '{query.title}' in 3 days"
                 body = f"""
@@ -142,7 +168,7 @@ def leave_reminder_email():
     from .models.manager_model import ManagerContact
     from .common import verify_oauth2_and_send_email
 
-    print("Reminder function started...")
+   
 
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
@@ -158,17 +184,17 @@ def leave_reminder_email():
                 last_activity_query_time = leave.created_at.astimezone(ist) #when qyery is create that time will store
 
             time_since_last_query_activity = now - last_activity_query_time
-            print(f"The leave_app id is {leave.id} and age since last activity: {time_since_last_query_activity}")
+            # print(f"The leave_app id is {leave.id} and age since last activity: {time_since_last_query_activity}")
             if time_since_last_query_activity >= timedelta(days=3):
                 user_email = leave.admin.email
-                print(f"successful get the user email {user_email}")
+                # print(f"successful get the user email {user_email}")
                 signup_data = Signup.query.filter_by(email=user_email).first()
                 # print(f"Successful got the signup data {signup_data}")
                 if signup_data:
                     emp_type = signup_data.emp_type
                     circle = signup_data.circle
-                    print(f"Employee Type: {emp_type}")
-                    print(f"Circle: {circle}")
+                    # print(f"Employee Type: {emp_type}")
+                    # print(f"Circle: {circle}")
                 else:
                     print("No signup data found.")
                     emp_type = None
@@ -177,8 +203,8 @@ def leave_reminder_email():
                 if manager_data:
                     l2_leader = manager_data.l2_email
                     l3_leader = manager_data.l3_email
-                    print(f"Get the data of l2 {l2_leader}")
-                    print(f"Get the data of l3 {l3_leader}")
+                    # print(f"Get the data of l2 {l2_leader}")
+                    # print(f"Get the data of l3 {l3_leader}")
 
                 cc = l2_leader
                 subject = f"Reminder: No response to leave application ' in 3 days"
@@ -249,6 +275,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
     app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'png', 'jpeg', 'pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'jfif'}
     app.config['WTF_CSRF_ENABLED'] = True
+    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 
 
     # Initialize extensions
     db.init_app(app)
@@ -256,8 +283,39 @@ def create_app():
     login_manager.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
+
+    
+    # ⬇️ Add this block immediately after
+    from flask_wtf.csrf import CSRFError
+    from flask import redirect, url_for, flash, session
+    
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        session.clear()
+        flash('Your session has expired. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))  # make sure this route exists
+    
+    
+    
+    from requests.exceptions import RequestException
+    
+    
+    @app.errorhandler(RequestException)
+    @app.errorhandler(NewConnectionError)
+    def handle_network_errors(e):
+        session.clear()
+        flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
+        return redirect(url_for('auth.login'))  # or your actual login route
+    
+    
     scheduler.init_app(app)
     Session.init_app(app)
+    
+    @app.errorhandler(413)
+    def too_large(e):
+        flash("Upload failed: File size exceeds limit.", "warning")
+        return redirect(request.url)
+
 
 
     # Import models before initializing migrate
@@ -272,6 +330,8 @@ def create_app():
     from .models.signup import Signup
     from .models.news_feed import NewsFeed, PaySlip
     from .models.otp import OTP
+    from .models.expense import ExpenseClaimHeader, ExpenseLineItem
+    from .models.seperation import Resignation
 
     migrate.init_app(app, db)  # Now models are loaded, safe to initialize
 
@@ -301,6 +361,7 @@ def create_app():
     from .Aoocunts import Accounts
     from .auth_helper import auth_helper
     from .otp import forgot_password
+    from .offboard import offboard
 
     app.register_blueprint(profile, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
@@ -311,26 +372,25 @@ def create_app():
     app.register_blueprint(Accounts, url_prefix='/')
     app.register_blueprint(auth_helper, url_prefix='/')
     app.register_blueprint(forgot_password, url_prefix='/')
-
-
-    # Scheduler job
-    scheduler.add_job(
-    id='update_leave_balances',
-    func=update_leave_balances,
-    trigger='cron',
-    day='25-31',      # Runs only between the 25th and 31st
-    hour=17,
-    minute=55,
-    day_of_week='mon' # Ensures it runs only on Mondays
-)
+    app.register_blueprint(offboard, url_prefix='/')
     
 
     scheduler.add_job(
-    id='send_reminder_emails_job',
-    func=send_reminder_emails,  # your function name here
-    trigger='interval',
-    days = 3 # runs every day; adjust as needed
-)
+        id='update_leave_balances',
+        func=update_leave_balances,
+        trigger='cron',
+        day='last',
+        hour=8,
+        minute=23,
+    )
+
+
+    scheduler.add_job(
+        id='send_reminder_emails_job',
+        func=send_reminder_emails,  # your function name here
+        trigger='interval',
+        days=3  # runs every day; adjust as needed
+    )
     
     scheduler.add_job(
     id='leave_reminder_email()',
