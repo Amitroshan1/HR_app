@@ -372,6 +372,7 @@ def punch():
     selected_month = request.args.get('month', today.month, type=int)
     selected_year = request.args.get('year', today.year, type=int)
 
+    
     calendar.setfirstweekday(calendar.MONDAY)
     first_day = date(selected_year, selected_month, 1)
     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
@@ -457,6 +458,37 @@ def punch():
 
                 flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
 
+    
+    # Suppose punch.total_work is datetime.time (HH:MM:SS)
+    if punch and punch.today_work:
+        total_work_time = punch.today_work
+        total_work_td = timedelta(
+            hours=total_work_time.hour,
+            minutes=total_work_time.minute,
+            seconds=total_work_time.second
+        )
+
+        is_full_day = total_work_td >= timedelta(hours=8, minutes=15)  # 8 hours and 30 minutes
+    else:
+        is_full_day = False
+
+
+    
+    leave_records = LeaveApplication.query.filter(
+            LeaveApplication.admin_id == current_user.id,
+            LeaveApplication.start_date <= date(selected_year, selected_month, 31),
+            LeaveApplication.end_date >= date(selected_year, selected_month, 1),
+            LeaveApplication.status == 'Approved'
+        ).all()
+
+    # Collect all leave days
+    leave_days = set()
+    for leave in leave_records:
+        current_day = leave.start_date
+        while current_day <= leave.end_date:
+            leave_days.add(current_day)
+            current_day += timedelta(days=1)
+
     return render_template(
         'profile/punch.html',
         form=form,
@@ -465,8 +497,11 @@ def punch():
         today=today,
         selected_month=selected_month,
         selected_year=selected_year,
-        calendar=calendar
+        calendar=calendar,
+        is_full_day=is_full_day,
+        leave_days=leave_days
     )
+
 
 
   # adjust the import path if needed

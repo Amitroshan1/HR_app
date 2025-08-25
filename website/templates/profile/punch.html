@@ -70,31 +70,36 @@
         <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
         </h3>
 
-        <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; font-family: Arial, sans-serif;">
-    <!-- Green Indicator -->
-    <div style="display: flex; align-items: center; gap: 5px;">
-        <span style="width: 18px; height: 18px; background-color: #4CAF50; border-radius: 3px; display: inline-block;"></span>
-        <span>Present (Punch In/Out Done)</span>
-    </div>
-
-    <!-- Yellow Indicator -->
-    <div style="display: flex; align-items: center; gap: 5px;">
-        <span style="width: 18px; height: 18px; background-color: #FFC107; border-radius: 3px; display: inline-block;"></span>
-        <span>Pending (No Punch Out)</span>
-    </div>
-
-<!--          Red Indicator half day/9 hours -->
-     <div style="display: flex; align-items: center; gap: 5px;">
-        <span style="width: 18px; height: 18px; background-color: #FF0000; border-radius: 3px; display: inline-block;"></span>
-        <span>Half-Day / less than 9 hours </span>
-    </div>
-
-<!--            Blue Indicator for leave -->
+        <div
+            style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; font-family: Arial, sans-serif;">
+            <!-- Green Indicator -->
             <div style="display: flex; align-items: center; gap: 5px;">
-        <span style="width: 18px; height: 18px; background-color: 	#4169E1; border-radius: 3px; display: inline-block;"></span>
-        <span>Leave </span>
-    </div>
-</div>
+                <span
+                    style="width: 18px; height: 18px; background-color: #4CAF50; border-radius: 3px; display: inline-block;"></span>
+                <span>Present (Punch In/Out Done)</span>
+            </div>
+
+            <!-- Yellow Indicator -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: hsl(0, 100%, 51%); border-radius: 3px; display: inline-block;"></span>
+                <span>Pending (No Punch Out)</span>
+            </div>
+
+            <!--          Red Indicator half day/9 hours -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: #fffb00; border-radius: 3px; display: inline-block;"></span>
+                <span>Half-Day / less than 9 hours </span>
+            </div>
+
+            <!--            Blue Indicator for leave -->
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span
+                    style="width: 18px; height: 18px; background-color: 	#f5935b; border-radius: 3px; display: inline-block;"></span>
+                <span>Leave </span>
+            </div>
+        </div>
 
         <table class="table table-bordered">
             <thead>
@@ -114,15 +119,36 @@
                 <tr>
                     {% for day in week %}
                     {% set punch = punch_data.get(day) %}
-                    <td
-                        class="{% if day.month != selected_month %}bg-light{% elif punch %}{% if punch.is_holiday %}bg-white{% elif punch.punch_in and punch.punch_out %}bg-success text-white{% else %}bg-warning{% endif %}{% else %}bg-white{% endif %}">
+                    {% set is_leave_day = leave_days and (day in leave_days) %}
+                    <td class="
+            {% if day.month != selected_month %}
+                bg-light
+            {% elif is_leave_day %}
+                custom-blue text-white  {# Leave day #}
+            {% elif punch %}
+                {% if punch.is_holiday %}
+                    bg-white
+                {% elif punch.punch_in and punch.punch_out %}
+                    {% if is_full_day %}
+                        bg-success text-white  {# Full day #}
+                    {% else %}
+                        custom-red text-white  {# Present but not full day #}
+                    {% endif %}
+                {% else %}
+                    bg-warning  {# Absent #}
+                {% endif %}
+            {% else %}
+                bg-white
+            {% endif %}
+        ">
                         {{ day.day }} <br>
-                        <small>{{ day.strftime('%A') }}</small> <!-- Show the actual day name -->
+                        <small>{{ day.strftime('%A') }}</small>
                     </td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
+
         </table>
     </div>
 </div>

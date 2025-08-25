@@ -196,7 +196,7 @@ def acc_noc():
         file = request.files.get('noc_file')
         if admin_id and file:
             success, message = noc_store(admin_id, file, current_user.email)
-            print("FLASH DEBUG:", message)
+            
             flash(message, "success" if success else "error")
             return redirect(url_for("offboard.acc_noc"))
     noc_data = Noc.query.all()
@@ -216,7 +216,7 @@ def download_noc(file_id):
     upload_folder = os.path.join(current_app.root_path, "static", "uploads")
     full_path = os.path.join(upload_folder, noc_file.file_path)
 
-    print("Looking for file:", full_path)  # ✅ Debugging
+   
 
     if not os.path.exists(full_path):
         flash(f"File not found: {full_path}", "danger")

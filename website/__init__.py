@@ -57,7 +57,6 @@ def update_leave_balances():
     with scheduler.app.app_context():
         leave_balances = LeaveBalance.query.all()
         if not leave_balances:
-            print("No leave balances found in the database.")
             return
 
         today = datetime.now().date()
@@ -98,7 +97,7 @@ def update_leave_balances():
 
         try:
             db.session.commit()
-            print("Leave balances updated successfully.")
+            
         except Exception as e:
             print(f"Database commit failed: {str(e)}")
 
@@ -139,9 +138,9 @@ def send_reminder_emails():
 
                 # Assign department email (example)
                 if 'Human Resource' in departments:
-                    department_email = 'chauguleshubham390@gmail.com'
+                    department_email = 'hr@saffotech.com'
                 elif 'Accounts' in departments:
-                    department_email = 'skchaugule@saffotech.com'
+                    department_email = 'accounts@saffotech.com'
                
 
                 cc = None
@@ -286,36 +285,36 @@ def create_app():
     csrf.init_app(app)
 
     
-    # # ⬇️ Add this block immediately after
-    # from flask_wtf.csrf import CSRFError
-    # from flask import redirect, url_for, flash, session
-    #
-    # @app.errorhandler(CSRFError)
-    # def handle_csrf_error(e):
-    #     session.clear()
-    #     flash('Your session has expired. Please log in again.', 'warning')
-    #     return redirect(url_for('auth.login'))  # make sure this route exists
-    #
-    #
-    #
-    # from requests.exceptions import RequestException
-    #
-    #
-    # @app.errorhandler(RequestException)
-    # @app.errorhandler(NewConnectionError)
-    # def handle_network_errors(e):
-    #     session.clear()
-    #     flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
-    #     return redirect(url_for('auth.login'))  # or your actual login route
-    #
-    #
-    # scheduler.init_app(app)
-    # Session.init_app(app)
-    #
-    # @app.errorhandler(413)
-    # def too_large(e):
-    #     flash("Upload failed: File size exceeds limit.", "warning")
-    #     return redirect(request.url)
+    # ⬇️ Add this block immediately after
+    from flask_wtf.csrf import CSRFError
+    from flask import redirect, url_for, flash, session
+    
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        session.clear()
+        flash('Your session has expired. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))  # make sure this route exists
+    
+    
+    
+    from requests.exceptions import RequestException
+    
+    
+    @app.errorhandler(RequestException)
+    @app.errorhandler(NewConnectionError)
+    def handle_network_errors(e):
+        session.clear()
+        flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
+        return redirect(url_for('auth.login'))  # or your actual login route
+    
+    
+    scheduler.init_app(app)
+    Session.init_app(app)
+    
+    @app.errorhandler(413)
+    def too_large(e):
+        flash("Upload failed: File size exceeds limit.", "warning")
+        return redirect(request.url)
 
 
 

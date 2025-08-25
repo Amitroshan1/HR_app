@@ -121,3 +121,59 @@ class PunchManuallyForm(FlaskForm):
     punch_out = TimeField('Punch Out', format='%H:%M:%S', validators=[Optional()])
     submit = SubmitField('Search')
     punch_submit = SubmitField('Save')
+
+
+
+
+class SearchFormmanager(FlaskForm):
+    circle = SelectField(
+        'Circle',
+        choices=[
+            ('', 'Choose Your Circle'),
+            ('NHQ', 'NHQ'),
+            ('Noida', 'Noida'),
+            ('Noida-Loire', 'Noida-Loire'),
+            ('Haryana', 'Haryana'),
+            ('Haryana-Loyal', 'Haryana-Loyal'),
+            ('Gurugram', 'Gurugram'),
+            ('Gurugram-Awesome', 'Gurugram-Awesome'),
+            ('Gurugram-Rabbit', 'Gurugram-Rabbit'),
+            ('Pune', 'Pune'),
+            ('Jaipur', 'Jaipur'),
+            ('Jaipur-Rabbit', 'Jaipur-Rabbit'),
+            ('Greater Noida', 'Greater Noida'),
+            ('Mumbai', 'Mumbai'),
+            ('G.Noida-Rabbit', 'G.Noida-Rabbit'),
+            ('Mumbai-Bonita', 'Mumbai-Bonita'),
+            ('Mumbai-Victory', 'Mumbai-Victory'),
+            ('Mumbai-Rabbit', 'Mumbai-Rabbit'),
+            ('Ahmedabad', 'Ahmedabad'),
+            ('Bangalore', 'Bangalore'),
+            ('Punjab', 'Punjab'),
+            ('Punjab-Loyal', 'Punjab-Loyal'),
+            ('Hyderabad', 'Hyderabad'),
+            ('Chennai', 'Chennai'),
+            ('Kolkata', 'Kolkata'),
+            ('Kolkata-Rabbit', 'Kolkata-Rabbit')
+        ]
+    )
+
+    emp_type = SelectField(
+        'Employee Type',
+        choices=[
+            ('', 'Select Employee Type'),
+            ('Human Resource', 'Human Resource'),
+            ('Accounts', 'Accounts'),
+            ('Engineering', 'Engineering'),
+            ('TEC', 'TEC'),
+            ('Certification', 'Certification'),
+            ('Software Development', 'Software Development'),
+            ('IT Department', 'IT Department')
+        ]
+    )
+
+    identifier = StringField(  # <-- for email or emp_id input
+        'Employee Email / ID (optional)'
+    )
+
+    submit = SubmitField('Search')

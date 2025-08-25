@@ -161,15 +161,10 @@ def add_payslip(admin_id):
         return redirect(url_for('Accounts.search_results'))
 
     if request.method == 'POST':
-        print("==== INSIDE POST ====")
-        print("Request method:", request.method)
-        print("Form validated?", form.validate_on_submit())
-        print("Form errors:", form.errors)
-        print("Form data:", form.data)
+        
 
         file = request.files.get('payslip_file')
-        print("Uploaded file object:", file)
-        print("Uploaded file name:", file.filename if file else "No file uploaded")
+        
 
         file_path = None
         filename = None
@@ -344,7 +339,7 @@ def chat_query(query_id):
         if reply_text:
             # Determine if current user is the one who created the query
             is_creator = emp_type_of_creator.emp_type == signups_data.emp_type
-            print(f"Is creator: {is_creator}")  # Debugging line
+            
 
             # Set user_type accordingly
             user_type = "User" if is_creator else "Team"
@@ -460,7 +455,7 @@ def close_query(query_id):
 @login_required
 def policy_structure():
     user_email = current_user.email
-    print(user_email)
+    
     signup_data  = Signup.query.filter_by(email=user_email).first()
     return render_template('policy/policy_structure.html',signup_data=signup_data)
 

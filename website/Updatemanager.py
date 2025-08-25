@@ -1,10 +1,10 @@
 import os
 
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app,session
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from werkzeug.utils import secure_filename
-
+from .forms.search_from import SearchFormmanager
 from . import db
 from .common import send_claim_submission_email, get_date_range_from_month
 from .common import verify_oauth2_and_send_email
@@ -18,33 +18,138 @@ from .models.manager_model import ManagerContact
 from .models.seperation import Resignation, Noc, Noc_Upload
 from .models.signup import Signup
 
+
+
+
 manager_bp = Blueprint('manager_bp', __name__)
+
+
+
+
+
+@manager_bp.route('/mang_search', methods=['GET', 'POST'])
+@login_required
+def search():
+    form = SearchFormmanager()
+    
+    if form.validate_on_submit():
+        circle = form.circle.data
+        emp_type = form.emp_type.data
+        identifier = form.identifier.data.strip() if form.identifier.data else None
+
+        if identifier:  
+            # Case 1: Specific employee by email or emp_id
+            signups = Signup.query.filter(
+                ((Signup.email == identifier) | (Signup.emp_id == identifier)),
+                Signup.circle == circle,
+                Signup.emp_type == emp_type
+            ).all()
+        else:  
+            # Case 2: All employees in circle+emp_type
+            signups = Signup.query.filter_by(circle=circle, emp_type=emp_type).all()
+
+        if not signups:
+            flash("No matching entries found", category="error")
+            return redirect(url_for("manager_bp.search"))
+
+        emails = [s.email for s in signups]
+        admins = Admin.query.filter(Admin.email.in_(emails)).all()
+
+        if not admins:
+            flash("No matching entries found in Admin records", category="error")
+            return redirect(url_for("manager_bp.search"))
+
+        # Save to session
+        session["admin_emails"] = emails
+        session["circle"] = circle
+        session["emp_type"] = emp_type
+        session["identifier"] = identifier
+
+        return redirect(url_for("manager_bp.manager_contact"))
+
+    return render_template("HumanResource/searchmanager.html", form=form)
+
+
+
 
 @login_required
 @manager_bp.route('/manager_contact', methods=['GET', 'POST'])
 def manager_contact():
     form = ManagerContactForm()
-    if form.validate_on_submit():
-        existing_contact = ManagerContact.query.filter_by(circle_name=form.circle_name.data, user_type=form.user_type.data).first()
+
+    if request.method == 'GET':
+        circle = session.get('circle')
+        emp_type = session.get('emp_type')
+        identifier = session.get('identifier')  # <-- email/emp_id optional
+
+        existing_contact = None
+
+        if identifier:  # Case 1: Search by email/emp_id
+            sigh_data = Signup.query.filter(
+                (Signup.email == identifier) | (Signup.emp_id == identifier)
+            ).first()
+            existing_contact = ManagerContact.query.filter_by(circle_name=sigh_data.circle,
+                user_type=sigh_data.emp_type
+            ).first()
+
+        elif circle and emp_type:  # Case 2: General circle + emp_type
+            existing_contact = ManagerContact.query.filter_by(
+                circle_name=circle,
+                user_type=emp_type
+            ).first()
+
         if existing_contact:
-            existing_contact.l1_name = form.l1_name.data if form.l1_name.data else None
-            existing_contact.l1_mobile = form.l1_mobile.data if form.l1_mobile.data else None
-            existing_contact.l1_email = form.l1_email.data if form.l1_email.data else None
-            existing_contact.l2_name = form.l2_name.data
-            existing_contact.l2_mobile = form.l2_mobile.data
-            existing_contact.l2_email = form.l2_email.data
-            existing_contact.l3_name = form.l3_name.data
-            existing_contact.l3_mobile = form.l3_mobile.data
-            existing_contact.l3_email = form.l3_email.data
+            # Prefill form with existing contact
+            form.circle_name.data = existing_contact.circle_name
+            form.user_type.data = existing_contact.user_type
+            form.l1_name.data = existing_contact.l1_name
+            form.l1_mobile.data = existing_contact.l1_mobile
+            form.l1_email.data = existing_contact.l1_email
+            form.l2_name.data = existing_contact.l2_name
+            form.l2_mobile.data = existing_contact.l2_mobile
+            form.l2_email.data = existing_contact.l2_email
+            form.l3_name.data = existing_contact.l3_name
+            form.l3_mobile.data = existing_contact.l3_mobile
+            form.l3_email.data = existing_contact.l3_email
+        else:
+            # Prefill only search criteria
+            form.circle_name.data = circle
+            form.user_type.data = emp_type
+            form.employee_email.data = identifier
+
+    # Save/Update
+    if form.validate_on_submit():
+        emp_email = form.employee_email.data if form.employee_email.data else None
+
+        existing_contact = ManagerContact.query.filter_by(
+            circle_name=form.circle_name.data,
+            user_type=form.user_type.data,
+            employee_email=emp_email
+        ).first()
+
+        if existing_contact:
+            # Update only non-empty fields
+            for field in [
+                'l1_name', 'l1_mobile', 'l1_email',
+                'l2_name', 'l2_mobile', 'l2_email',
+                'l3_name', 'l3_mobile', 'l3_email'
+            ]:
+                value = getattr(form, field).data
+                if value not in [None, ""]:
+                    setattr(existing_contact, field, value)
+
             db.session.commit()
             flash('Manager contact updated successfully', 'success')
+
         else:
+            # New contact entry
             new_contact = ManagerContact(
                 circle_name=form.circle_name.data,
                 user_type=form.user_type.data,
-                l1_name=form.l1_name.data if form.l1_name.data else None,
-                l1_mobile=form.l1_mobile.data if form.l1_mobile.data else None,
-                l1_email=form.l1_email.data if form.l1_email.data else None,
+                employee_email=emp_email,
+                l1_name=form.l1_name.data,
+                l1_mobile=form.l1_mobile.data,
+                l1_email=form.l1_email.data,
                 l2_name=form.l2_name.data,
                 l2_mobile=form.l2_mobile.data,
                 l2_email=form.l2_email.data,
@@ -55,12 +160,10 @@ def manager_contact():
             db.session.add(new_contact)
             db.session.commit()
             flash('Manager contact added successfully', 'success')
+
         return redirect(url_for('manager_bp.manager_contact'))
+
     return render_template('HumanResource/manager.html', form=form)
-
-
-
-
 
 
 @login_required
@@ -311,6 +414,8 @@ def claim_approval():
         admin_ids = Admin.query.with_entities(Admin.id).filter(Admin.email.in_(emails)).all()
         admin_ids = [admin_id for (admin_id,) in admin_ids]
 
+        start_date = None
+        end_date = None
         selected_month = request.form.get('selected_month')
         if selected_month:
             start_date, end_date = get_date_range_from_month(selected_month)

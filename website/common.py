@@ -238,10 +238,28 @@ def send_claim_submission_email(header):
     </body>
     </html>
     """
+        data = Signup.query.filter_by(email=header.email).first()
+        if not data:
+            flash("Signup record not found for user.", "error")
+            return False
 
+    
 
-        recipient_email = "akumar4@saffotech.com"
-        cc_emails = ["singhroshan968@gmail.com"]
+    # Try to fetch manager contact
+        manager_contacts = ManagerContact.query.filter_by(
+            circle_name=data.circle,
+            user_type=data.emp_type
+        ).first()
+
+    # Collect manager emails if found
+        if manager_contacts:
+            manager_emails = [manager_contacts.l2_email, manager_contacts.l3_email]
+            manager_emails = [email for email in manager_emails if email]  # filter out None
+        else:
+            manager_emails = []
+
+            recipient_email = "accounts@saffotech.com"
+            cc_emails = manager_emails if manager_emails else None
 
         return verify_oauth2_and_send_email(header.email, subject, body, recipient_email, cc_emails)
 
@@ -254,7 +272,7 @@ def send_wfh_approval_email_to_managers(user, wfh):
     Sends an approval request email to the manager(s) for a submitted WFH application.
     If no manager is found, email is still sent to HR without CC.
     """
-    hr_mail = "singhroshan968@gmail.com"
+    hr_mail = "hr@saffotech.com"
 
 
     # Get user circle & emp_type from Signup model
@@ -381,7 +399,7 @@ def send_resignation_email(user, resignation,signup_date
 
 
     # Primary recipient (e.g., HR)
-    recipient_email = "singhroshan968@gmail.com"
+    recipient_email = "hr@saffotech.com"
 
     # Add L2 and L3 manager emails to CC if available
     cc_emails = []
@@ -420,7 +438,7 @@ def send_rollback_resignation_email(user, manager=None):
     """
 
     # Primary recipient
-    recipient_email = "singhroshan968@gmail.com"
+    recipient_email = "hr@saffotech.com"
 
     # CC managers if available
     cc_emails = []
@@ -444,9 +462,9 @@ def send_rollback_resignation_email(user, manager=None):
 
 def send_noc_email(user, selected_departments, noc_date, manager_emails, resignation):
     department_emails = {
-        "Human Resource": ["chauguleshubham390@gmail.com"],
-        "Accounts": ["singhroshan9688@gmail.com"],
-        "IT Department": ["englishwithoxy@gmail.com"]
+        "Human Resource": ["hr@saffotech.com"],
+        "Accounts": ["accounts@saffotechcom"],
+        "IT Department": ["jkumar@saffotech.com"]
     }
 
     resignation_info = ""

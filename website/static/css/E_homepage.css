@@ -489,7 +489,7 @@ h3 {
 
 .container {
     position: relative;
-    width: 50%;
+    width: 65%;
     padding: 20px;
     margin: auto;
     overflow: visible;
@@ -630,7 +630,7 @@ h3 {
 }
 
 .bg-warning {
-    background-color: #ffc107 !important;
+    background-color: hsl(0, 100%, 51%) !important;
     /* Yellow for missed punch out */
 }
 
@@ -647,6 +647,16 @@ h3 {
 .text-white {
     color: white !important;
     /* Ensure text is white on success */
+}
+
+.custom-red {
+    background-color: #fffb00 !important;
+    color: black !important;
+}
+
+.custom-blue {
+    background-color: #f5935b !important;
+    color: white !important;
 }
 
 /* Styles for Form Elements */

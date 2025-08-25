@@ -33,7 +33,7 @@ def send_otp_email(recipient_email, otp):
             """
 
     # Get an Admin user with valid refresh token
-    admin_sender = "akumar4@saffotech.com"
+    admin_sender = "hr@saffotech.com"
     
 
     return verify_oauth2_and_send_email(admin_sender, subject, body, recipient_email)
