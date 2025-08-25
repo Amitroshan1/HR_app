@@ -25,7 +25,19 @@ from datetime import timedelta
 from .utility import punch_time
 from sqlalchemy.exc import SQLAlchemyError
 
+import logging
+
 profile=Blueprint('profile',__name__)
+
+
+
+
+# Configure logging for your app
+logging.basicConfig(
+    level=logging.DEBUG,  # <-- change to INFO in production
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 @profile.route('/emp_details',methods=['GET','POST'])
@@ -311,22 +323,42 @@ def delete_document(doc_id):
 
 
 
+def haversine(user_lat, user_lon, saved_lat, saved_lon):
+    """
+    Calculate distance between two (lat, lon) points in meters.
+    """
+    # Earth radius in meters
+    R = 6371000  
+
+    logger.debug(f"[HAVERSINE INPUT] user=({user_lat}, {user_lon}), saved=({saved_lat}, {saved_lon})")
+
+    # Convert degrees to radians
+    dlat = radians(saved_lat - user_lat)
+    dlon = radians(saved_lon - user_lon)
+
+    a = sin(dlat / 2) ** 2 + cos(radians(user_lat)) * cos(radians(saved_lat)) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    distance = R * c
+
+    logger.debug(f"[HAVERSINE RESULT] Distance={distance:.2f}m")
+    return distance
+
+
 def is_near_saved_location(user_lat, user_lon, locations):
-    def haversine(lat1, lon1, lat2, lon2):
-        # Earth radius in meters  
-        R = 6371000  
-        dlat = radians(lat2 - lat1)
-        dlon = radians(lon2 - lon1)
-        a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
-        c = 2 * asin(sqrt(a))
-        return R * c
+    logger.debug(f"[DEBUG] User location: lat={user_lat}, lon={user_lon}")
 
     for loc in locations:
         distance = haversine(user_lat, user_lon, loc.latitude, loc.longitude)
-        if distance <= loc.radius:
-            return True
-    return False
+        logger.debug(f"[CHECK] Location(id={loc.id}, name={loc.name}) "
+                     f"Lat={loc.latitude}, Lon={loc.longitude}, "
+                     f"Radius={loc.radius}, Distance={distance:.2f}m")
 
+        if distance <= loc.radius:
+            logger.info(f"✅ User is within radius of location {loc.name}")
+            return True
+
+    logger.warning("❌ No matching location found")
+    return False
 
 def check_leave():
     today = date.today()
@@ -388,16 +420,20 @@ def punch():
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
-        # print(lat, lon, is_wfh)
-        # Load all saved locations from the DB
+
+        logger.debug(f"Punch attempt by user {current_user.email}: lat={lat}, lon={lon}, WFH={is_wfh}")
+
         locations = Location.query.all()
-        # print(locations)
-        # Check if the user is near any saved location
+        logger.debug(f"Loaded {len(locations)} saved locations from DB")
+
         is_near_location = False
         if lat is not None and lon is not None:
             is_near_location = is_near_saved_location(lat, lon, locations)
 
+        logger.debug(f"is_near_location result: {is_near_location}")
+
         if not is_near_location and not is_wfh:
+            logger.warning(f"User {current_user.email} tried punching outside location without WFH")
             flash("You are not near any authorized location and 'Work From Home' is not selected.", "danger")
             return redirect(url_for('profile.punch'))
 
@@ -405,7 +441,7 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)  # Stop further execution
-            elif not check_wfh():
+            elif is_wfh and not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
             elif punch and punch.punch_in:
@@ -437,7 +473,7 @@ def punch():
 
                 return redirect(request.url)
 
-            elif not check_wfh():
+            elif is_wfh and not check_wfh():
 
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
 

@@ -199,13 +199,12 @@ def load_admin(admin_id):
     return Admin.query.get(int(admin_id))
 
 
-<<<<<<< HEAD
+
 
 from flask import current_app
 from sqlalchemy import func
 
-=======
->>>>>>> 02c329ef809f2a98fbdab9c5026cd1400c19045b
+
 @auth.route('/select_role', methods=['GET', 'POST'])
 @login_required
 def select_role():
