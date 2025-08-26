@@ -721,8 +721,8 @@ def apply_leave():
         # Email notification
         manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle,
                                                          user_type=employee.emp_type).first()
-        department_email = 'singhroshan968@gmail.com'
-        cc_emails = ['singhroshan9688@gmail.com']
+        department_email = 'hr@saffotech.com'
+        cc_emails = []
         if manager_contact:
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 
