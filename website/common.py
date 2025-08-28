@@ -260,7 +260,7 @@ def send_claim_submission_email(header):
         else:
             manager_emails = []
 
-        recipient_email = "singhroshan968@gmail.com"
+        recipient_email = "accounts@saffotech.com"
         cc_emails = manager_emails if manager_emails else None
 
         return verify_oauth2_and_send_email(header.email, subject, body, recipient_email, cc_emails)
