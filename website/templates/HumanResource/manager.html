@@ -31,7 +31,14 @@
         </div>
 
         <div class="manager-section mt-4 p-3 border rounded">
-            <h3 class="centered-heading">L1 Contact Information</h3>
+            <h3 class="centered-heading">Lead/Manager (Optional)</h3>
+            <div class="form-group">
+                {{ form.user_email.label }} {{ form.user_email(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="manager-section mt-4 p-3 border rounded">
+            <h3 class="centered-heading">L1 Contact Information (Optional)</h3>
             <div class="form-group">
                 {{ form.l1_name.label }} {{ form.l1_name(class="form-control") }}
             </div>

@@ -173,6 +173,7 @@ def is_within_allowed_location(user_lat, user_lon, allowed_locations):
 def send_claim_submission_email(header):
     try:
         subject = f"Expense Claim Submitted: {header.employee_name} ({header.emp_id})"
+        print(header.email)
 
         # Build line items with file download + approve/reject buttons
         line_items_html = ""
@@ -239,6 +240,7 @@ def send_claim_submission_email(header):
     </html>
     """
         data = Signup.query.filter_by(email=header.email).first()
+        print(header.email)
         if not data:
             flash("Signup record not found for user.", "error")
             return False
@@ -258,8 +260,8 @@ def send_claim_submission_email(header):
         else:
             manager_emails = []
 
-            recipient_email = "accounts@saffotech.com"
-            cc_emails = manager_emails if manager_emails else None
+        recipient_email = "singhroshan968@gmail.com"
+        cc_emails = manager_emails if manager_emails else None
 
         return verify_oauth2_and_send_email(header.email, subject, body, recipient_email, cc_emails)
 

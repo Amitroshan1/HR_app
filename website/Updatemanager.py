@@ -26,40 +26,47 @@ manager_bp = Blueprint('manager_bp', __name__)
 
 
 
-
 @manager_bp.route('/mang_search', methods=['GET', 'POST'])
 @login_required
 def search():
     form = SearchFormmanager()
-    
+
     if form.validate_on_submit():
-        circle = form.circle.data
-        emp_type = form.emp_type.data
+        circle = form.circle.data.strip() if form.circle.data else None
+        emp_type = form.emp_type.data.strip() if form.emp_type.data else None
         identifier = form.identifier.data.strip() if form.identifier.data else None
 
-        if identifier:  
-            # Case 1: Specific employee by email or emp_id
+        signups = []
+
+        if circle and emp_type:
+            if identifier:
+                # Case 1: circle + emp_type + identifier (email/emp_id)
+                signups = Signup.query.filter(
+                    ((Signup.email == identifier) | (Signup.emp_id == identifier)),
+                    Signup.circle == circle,
+                    Signup.emp_type == emp_type
+                ).all()
+            else:
+                # Case 2: circle + emp_type only
+                signups = Signup.query.filter_by(circle=circle, emp_type=emp_type).all()
+        elif identifier:
+            # Case 3: identifier only (fallback, in case circle/emp_type not given)
             signups = Signup.query.filter(
-                ((Signup.email == identifier) | (Signup.emp_id == identifier)),
-                Signup.circle == circle,
-                Signup.emp_type == emp_type
+                (Signup.email == identifier) | (Signup.emp_id == identifier)
             ).all()
-        else:  
-            # Case 2: All employees in circle+emp_type
-            signups = Signup.query.filter_by(circle=circle, emp_type=emp_type).all()
 
         if not signups:
-            flash("No matching entries found", category="error")
+            flash("No matching Signup entries found", category="error")
             return redirect(url_for("manager_bp.search"))
 
         emails = [s.email for s in signups]
-        admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
+        admins = Admin.query.filter(Admin.email.in_(emails)).all()
         if not admins:
-            flash("No matching entries found in Admin records", category="error")
+            flash("No matching Admin records found", category="error")
             return redirect(url_for("manager_bp.search"))
 
-        # Save to session
+        # Save to session for manager_contact route
         session["admin_emails"] = emails
         session["circle"] = circle
         session["emp_type"] = emp_type
@@ -71,7 +78,6 @@ def search():
 
 
 
-
 @login_required
 @manager_bp.route('/manager_contact', methods=['GET', 'POST'])
 def manager_contact():
@@ -80,86 +86,75 @@ def manager_contact():
     if request.method == 'GET':
         circle = session.get('circle')
         emp_type = session.get('emp_type')
-        identifier = session.get('identifier')  # <-- email/emp_id optional
+        identifier = session.get('identifier')  # may be email/emp_id from search flow
 
-        existing_contact = None
+        # Prefill from identifier (email/emp_id) if present
+        if identifier and '@' in identifier:
+            form.user_email.data = identifier
 
-        if identifier:  # Case 1: Search by email/emp_id
-            sigh_data = Signup.query.filter(
-                (Signup.email == identifier) | (Signup.emp_id == identifier)
-            ).first()
-            existing_contact = ManagerContact.query.filter_by(circle_name=sigh_data.circle,
-                user_type=sigh_data.emp_type
-            ).first()
-
-        elif circle and emp_type:  # Case 2: General circle + emp_type
-            existing_contact = ManagerContact.query.filter_by(
-                circle_name=circle,
-                user_type=emp_type
-            ).first()
-
-        if existing_contact:
-            # Prefill form with existing contact
-            form.circle_name.data = existing_contact.circle_name
-            form.user_type.data = existing_contact.user_type
-            form.l1_name.data = existing_contact.l1_name
-            form.l1_mobile.data = existing_contact.l1_mobile
-            form.l1_email.data = existing_contact.l1_email
-            form.l2_name.data = existing_contact.l2_name
-            form.l2_mobile.data = existing_contact.l2_mobile
-            form.l2_email.data = existing_contact.l2_email
-            form.l3_name.data = existing_contact.l3_name
-            form.l3_mobile.data = existing_contact.l3_mobile
-            form.l3_email.data = existing_contact.l3_email
-        else:
-            # Prefill only search criteria
-            form.circle_name.data = circle
-            form.user_type.data = emp_type
-            form.employee_email.data = identifier
-
-    # Save/Update
-    if form.validate_on_submit():
-        emp_email = form.employee_email.data if form.employee_email.data else None
-
-        existing_contact = ManagerContact.query.filter_by(
-            circle_name=form.circle_name.data,
-            user_type=form.user_type.data,
-            employee_email=emp_email
+        # Try to fetch existing record to prefill
+        q = ManagerContact.query.filter_by(
+            circle_name=circle, user_type=emp_type,
+            user_email=form.user_email.data or None
         ).first()
 
-        if existing_contact:
-            # Update only non-empty fields
-            for field in [
-                'l1_name', 'l1_mobile', 'l1_email',
-                'l2_name', 'l2_mobile', 'l2_email',
-                'l3_name', 'l3_mobile', 'l3_email'
-            ]:
-                value = getattr(form, field).data
-                if value not in [None, ""]:
-                    setattr(existing_contact, field, value)
+        if q:
+            form.circle_name.data = q.circle_name
+            form.user_type.data   = q.user_type
+            form.user_email.data  = q.user_email
 
-            db.session.commit()
-            flash('Manager contact updated successfully', 'success')
+            form.l1_name.data   = q.l1_name
+            form.l1_mobile.data = q.l1_mobile
+            form.l1_email.data  = q.l1_email
 
+            form.l2_name.data   = q.l2_name
+            form.l2_mobile.data = q.l2_mobile
+            form.l2_email.data  = q.l2_email
+
+            form.l3_name.data   = q.l3_name
+            form.l3_mobile.data = q.l3_mobile
+            form.l3_email.data  = q.l3_email
         else:
-            # New contact entry
-            new_contact = ManagerContact(
-                circle_name=form.circle_name.data,
-                user_type=form.user_type.data,
-                employee_email=emp_email,
-                l1_name=form.l1_name.data,
-                l1_mobile=form.l1_mobile.data,
-                l1_email=form.l1_email.data,
-                l2_name=form.l2_name.data,
-                l2_mobile=form.l2_mobile.data,
-                l2_email=form.l2_email.data,
-                l3_name=form.l3_name.data,
-                l3_mobile=form.l3_mobile.data,
-                l3_email=form.l3_email.data
-            )
-            db.session.add(new_contact)
+            # Prefill just the scope
+            form.circle_name.data = circle
+            form.user_type.data   = emp_type
+
+    if form.validate_on_submit():
+        scope = dict(
+            circle_name=form.circle_name.data.strip(),
+            user_type=form.user_type.data.strip(),
+        )
+        target_email = (form.user_email.data or None)
+
+        # Try to find the exact row we should edit (general or specific)
+        row = ManagerContact.query.filter_by(
+            **scope, user_email=target_email
+        ).first()
+
+        if not row:
+            # Create new row (unique index ensures we can't duplicate)
+            row = ManagerContact(**scope, user_email=target_email)
+            db.session.add(row)
+
+        # Update payload (only overwrite with non-empty values if you prefer)
+        row.l1_name   = form.l1_name.data or None
+        row.l1_mobile = form.l1_mobile.data or None
+        row.l1_email  = form.l1_email.data or None
+
+        row.l2_name   = form.l2_name.data
+        row.l2_mobile = form.l2_mobile.data
+        row.l2_email  = form.l2_email.data
+
+        row.l3_name   = form.l3_name.data
+        row.l3_mobile = form.l3_mobile.data
+        row.l3_email  = form.l3_email.data
+
+        try:
             db.session.commit()
-            flash('Manager contact added successfully', 'success')
+            flash('Manager contact saved successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Could not save: ' + str(e), 'danger')
 
         return redirect(url_for('manager_bp.manager_contact'))
 
@@ -170,8 +165,9 @@ def manager_contact():
 @manager_bp.route('/claim-expense', methods=['GET', 'POST'])
 def claim_expense():
     form = ExpenseClaimForm()
+    
     if form.validate_on_submit():
-
+        
         try:
             # Save header
             header = ExpenseClaimHeader(
@@ -211,9 +207,11 @@ def claim_expense():
                     status=item_form.form.status.data or 'Pending'
                 )
                 db.session.add(item)
-
+            
             db.session.commit()
+            
             try:
+                
                 send_claim_submission_email(header)
             except Exception as email_err:
                 current_app.logger.warning(f"Email not sent: {email_err}")
@@ -226,7 +224,10 @@ def claim_expense():
             db.session.rollback()
             flash(f"An error occurred: {str(e)}", 'danger')
             current_app.logger.error(f"Error in claim_expense: {e}")
-
+    else:
+        if request.method == 'POST':
+            
+            raise form.errors
 
 
     # ✅ Fetch existing claims
@@ -459,91 +460,91 @@ def view_items(claim_id):
         not_pending_items=not_pending_items
     )
 
-@manager_bp.route('/send_claim_email/<int:claim_id>', methods=['GET', 'POST'])
-def send_claim_email(claim_id):
-    claim = ExpenseClaimHeader.query.get_or_404(claim_id)
-    items = ExpenseLineItem.query.filter_by(claim_id=claim_id).all()
+# @manager_bp.route('/send_claim_email/<int:claim_id>', methods=['GET', 'POST'])
+# def send_claim_email(claim_id):
+#     claim = ExpenseClaimHeader.query.get_or_404(claim_id)
+#     items = ExpenseLineItem.query.filter_by(claim_id=claim_id).all()
 
-    subject = f"Expense Claim Submitted by {claim.employee_name}"
+#     subject = f"Expense Claim Submitted by {claim.employee_name}"
 
-    # Reusable inline styles
-    table_style = "border-collapse: collapse; width: 100%; font-size: 14px;"
-    th_style = "background-color: #f2f2f2; text-align: left;"
-    td_style = "padding: 6px; border: 1px solid #ccc;"
+#     # Reusable inline styles
+#     table_style = "border-collapse: collapse; width: 100%; font-size: 14px;"
+#     th_style = "background-color: #f2f2f2; text-align: left;"
+#     td_style = "padding: 6px; border: 1px solid #ccc;"
 
-    body = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; color: #333;">
-        <p>Hi,</p>
-        <p>An expense claim has been submitted. Below are the details:</p>
+#     body = f"""
+#     <html>
+#     <body style="font-family: Arial, sans-serif; color: #333;">
+#         <p>Hi,</p>
+#         <p>An expense claim has been submitted. Below are the details:</p>
 
-        <h4>Claim Summary:</h4>
-        <table style="{table_style}">
-            <tr><td style="{td_style}"><strong>Employee ID:</strong></td><td style="{td_style}">{claim.emp_id}</td></tr>
-            <tr><td style="{td_style}"><strong>Employee Name:</strong></td><td style="{td_style}">{claim.employee_name}</td></tr>
-            <tr><td style="{td_style}"><strong>Designation:</strong></td><td style="{td_style}">{claim.designation}</td></tr>
-            <tr><td style="{td_style}"><strong>Project Name:</strong></td><td style="{td_style}">{claim.project_name}</td></tr>
-            <tr><td style="{td_style}"><strong>Location:</strong></td><td style="{td_style}">{claim.country_state}</td></tr>
-            <tr><td style="{td_style}"><strong>Travel Dates:</strong></td><td style="{td_style}">{claim.travel_from_date} to {claim.travel_to_date}</td></tr>
-        </table>
+#         <h4>Claim Summary:</h4>
+#         <table style="{table_style}">
+#             <tr><td style="{td_style}"><strong>Employee ID:</strong></td><td style="{td_style}">{claim.emp_id}</td></tr>
+#             <tr><td style="{td_style}"><strong>Employee Name:</strong></td><td style="{td_style}">{claim.employee_name}</td></tr>
+#             <tr><td style="{td_style}"><strong>Designation:</strong></td><td style="{td_style}">{claim.designation}</td></tr>
+#             <tr><td style="{td_style}"><strong>Project Name:</strong></td><td style="{td_style}">{claim.project_name}</td></tr>
+#             <tr><td style="{td_style}"><strong>Location:</strong></td><td style="{td_style}">{claim.country_state}</td></tr>
+#             <tr><td style="{td_style}"><strong>Travel Dates:</strong></td><td style="{td_style}">{claim.travel_from_date} to {claim.travel_to_date}</td></tr>
+#         </table>
 
-        <h4 style="margin-top: 20px;">Expense Line Items:</h4>
-        <table style="{table_style}">
-            <thead>
-                <tr style="{th_style}">
-                    <th style="{td_style}">Date</th>
-                    <th style="{td_style}">Description</th>
-                    <th style="{td_style}">Amount</th>
-                    <th style="{td_style}">Currency</th>
-                    <th style="{td_style}">Attachment</th>
-                    <th style="{td_style}">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-    for item in items:
-        file_link = (
-            f'<a href="{url_for("static", filename="uploads/" + item.Attach_file, _external=True)}" '
-            f'target="_blank" style="color: #007bff;">Download File</a>'
-            if item.Attach_file else "No attachment"
-        )
-        body += f"""
-            <tr>
-                <td style="{td_style}">{item.date}</td>
-                <td style="{td_style}">{item.purpose}</td>
-                <td style="{td_style}">{item.amount}</td>
-                <td style="{td_style}">{item.currency}</td>
-                <td style="{td_style}">{file_link}</td>
-                <td style="{td_style}">{item.status}</td>
-            </tr>
-        """
+#         <h4 style="margin-top: 20px;">Expense Line Items:</h4>
+#         <table style="{table_style}">
+#             <thead>
+#                 <tr style="{th_style}">
+#                     <th style="{td_style}">Date</th>
+#                     <th style="{td_style}">Description</th>
+#                     <th style="{td_style}">Amount</th>
+#                     <th style="{td_style}">Currency</th>
+#                     <th style="{td_style}">Attachment</th>
+#                     <th style="{td_style}">Status</th>
+#                 </tr>
+#             </thead>
+#             <tbody>
+#     """
+#     for item in items:
+#         file_link = (
+#             f'<a href="{url_for("static", filename="uploads/" + item.Attach_file, _external=True)}" '
+#             f'target="_blank" style="color: #007bff;">Download File</a>'
+#             if item.Attach_file else "No attachment"
+#         )
+#         body += f"""
+#             <tr>
+#                 <td style="{td_style}">{item.date}</td>
+#                 <td style="{td_style}">{item.purpose}</td>
+#                 <td style="{td_style}">{item.amount}</td>
+#                 <td style="{td_style}">{item.currency}</td>
+#                 <td style="{td_style}">{file_link}</td>
+#                 <td style="{td_style}">{item.status}</td>
+#             </tr>
+#         """
 
-    body += f"""
-            </tbody>
-        </table>
+#     body += f"""
+#             </tbody>
+#         </table>
 
-        <p style="margin-top: 20px;">Click below to review the claim:</p>
-        <p>
-            <a href="https://solviotec.com/"
-               style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
-               Login to HRMS
-            </a>
-        </p>
+#         <p style="margin-top: 20px;">Click below to review the claim:</p>
+#         <p>
+#             <a href="https://solviotec.com/"
+#                style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+#                Login to HRMS
+#             </a>
+#         </p>
 
-        <p>Thanks & Regards,<br>HRMS System</p>
-    </body>
-    </html>
-    """
+#         <p>Thanks & Regards,<br>HRMS System</p>
+#     </body>
+#     </html>
+#     """
 
-    # Recipient emails
-    to_email = "chauguleshubham390@gmail.com"
-    cc_emails = ["examattend87@gmail.com"]
+#     # Recipient emails
+#     to_email = "chauguleshubham390@gmail.com"
+#     cc_emails = ["examattend87@gmail.com"]
 
-    # Send email
-    verify_oauth2_and_send_email(current_user, subject, body, to_email, cc_emails)
+#     # Send email
+#     verify_oauth2_and_send_email(current_user, subject, body, to_email, cc_emails)
 
-    flash('Email sent successfully!', 'success')
-    return redirect(url_for('manager_bp.view_items', claim_id=claim_id))
+#     flash('Email sent successfully!', 'success')
+#     return redirect(url_for('manager_bp.view_items', claim_id=claim_id))
 
 
 
