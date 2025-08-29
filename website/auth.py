@@ -297,7 +297,14 @@ def E_homepage():
         count_new_queries = Query.query.filter_by(emp_type=emp.emp_type, status='New').count()
 
         # Manager contact
-        manager_contact = ManagerContact.query.filter_by(circle_name=circle, user_type=emp_type).first()
+        manager_contact = ManagerContact.query.filter_by(user_email=current_user.email).first()
+
+        # If not found, fallback to circle + emp_type
+        if not manager_contact:
+            manager_contact = ManagerContact.query.filter_by(
+                circle_name=circle,
+                user_type=emp_type
+            ).first()
 
         # News feeds
         news_feeds = NewsFeed.query.filter(

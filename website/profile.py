@@ -488,9 +488,23 @@ def punch():
                 # Set punch-out time
 
                 punch.punch_out = datetime.now().time()
-                store_today_work(punch)
-
+                punch_time(current_user.id)  # Update today's work time
                 db.session.commit()
+
+                # ✅ Check if today is Sunday
+                if datetime.today().weekday() == 4:  # 6 = 
+                    dataa=Signup.query.filter_by(email=current_user.email).first()
+                    print(current_user.email)
+                    leave_balance = LeaveBalance.query.filter_by(signup_id=dataa.id).first()
+                    if leave_balance:
+                        leave_balance.compensatory_leave_balance = (leave_balance.compensatory_leave_balance or 0) + 1
+                    else:
+                        leave_balance = LeaveBalance(
+                            user_id=current_user.id,
+                            compensatory_leave_balance=1
+                        )
+                        db.session.add(leave_balance)
+                    db.session.commit()
 
                 flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
 

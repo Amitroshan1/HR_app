@@ -210,7 +210,7 @@ def add_payslip(admin_id):
             return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
 
     # ✅ ALWAYS return something, even if form not submitted
-    return render_template('accounts/add_payslip.html', form=form, employee=employee)
+    return render_template('Accounts/add_payslip.html', form=form, employee=employee)
 
 
 
