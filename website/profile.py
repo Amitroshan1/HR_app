@@ -524,12 +524,14 @@ def punch():
 
 
     
+    last_day = calendar.monthrange(selected_year, selected_month)[1]
+
     leave_records = LeaveApplication.query.filter(
-            LeaveApplication.admin_id == current_user.id,
-            LeaveApplication.start_date <= date(selected_year, selected_month, 31),
-            LeaveApplication.end_date >= date(selected_year, selected_month, 1),
-            LeaveApplication.status == 'Approved'
-        ).all()
+        LeaveApplication.admin_id == current_user.id,
+        LeaveApplication.start_date <= date(selected_year, selected_month, last_day),
+        LeaveApplication.end_date >= date(selected_year, selected_month, 1),
+        LeaveApplication.status == 'Approved'
+    ).all()
 
     # Collect all leave days
     leave_days = set()
