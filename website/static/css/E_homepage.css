@@ -403,6 +403,42 @@ form {
     }
 }
 
+
+
+
+/* ============================= */
+/* Media Queries only for Punch Form */
+/* ============================= */
+
+/* Tablet */
+@media (max-width: 768px) {
+    .puch_form {
+        padding: 12px;
+    }
+    .form-grouppuch {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .form-grouppuch .btn,
+    .ms-button {
+        width: 40%;
+        text-align: center;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .puch_form {
+        padding: 10px;
+    }
+    .form-grouppuch span {
+        font-size: 12px;
+        text-align: center;
+    }
+}
+
+
 img {
     width: 200px;
     height: 200px;
@@ -418,16 +454,55 @@ h3 {
 .container-details {
     width: 100%;
     margin: auto;
+    padding-top: 20px;
+}
 
+/* Tablet screens */
+@media (max-width: 992px) {
+    .container-details {
+        width: 95%;
+        padding-top: 15px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .container-details {
+        width: 100%;
+        padding-top: 10px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 }
 
 /* Table Styles */
 .table {
     width: 100%;
+    margin-top: 20px;
     border-collapse: collapse;
     margin: 10px 0;
     font-size: 1em;
     box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Tablet screens */
+@media (max-width: 992px) {
+    .table {
+        font-size: 0.9em;
+        margin: 8px 0;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .table {
+        
+        margin: 5px 0;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
 }
 
 .table thead tr {
@@ -504,6 +579,26 @@ h3 {
     /* Optional: prevents collapse when content is small */
 }
 
+/* Tablet screens */
+@media (max-width: 992px) {
+    .container {
+        width: 145%;
+        padding: 15px;
+        border-radius: 20px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .container {
+        width: 175%;
+        padding: 12px;
+        border-radius: 15px;
+        min-height: 120px;
+    }
+}
+
+
 .row {
     display: flex;
     flex-wrap: wrap;
@@ -532,9 +627,6 @@ h3 {
 }
 
 /* Additional padding for the details below the image */
-.container-details {
-    padding-top: 20px;
-}
 
 
 /* Style for Add Member button */
@@ -592,9 +684,7 @@ h3 {
 }
 
 /* Container Styles */
-.container {
-    margin: 20px auto;
-}
+
 
 /* Heading Styles */
 
@@ -609,11 +699,7 @@ h3 {
 }
 
 /* Calendar Styles */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
+
 
 .table th,
 .table td {
@@ -736,7 +822,7 @@ h3 {
 .leave123 {
     flex: 1;                        /* Equal width for all three */
     text-align: center;
-    background-color: #b4f4b4;      /* Light background */
+    background-color: #78f578;      /* Light background */
     border: 1px solid #ccc;         /* Subtle border */
     border-radius: 8px;             /* Rounded corners */
     padding: 15px;
@@ -1011,6 +1097,28 @@ button[type="button"], .btn {
     .ms-button:active {
         background-color: #aff522;
     }
+
+    /* Tablet screens */
+@media (max-width: 992px) {
+    .ms-button {
+        font-size: 13px;
+        padding: 8px 18px;
+        margin-left: 20px;
+        border-radius: 8px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .ms-button {
+        display: block;        /* Stack instead of inline */
+        width: 40%;           /* Full width button */
+        margin: 10px 0;        /* Vertical spacing */
+        font-size: 14px;
+        padding: 10px;
+        text-align: center;
+    }
+}
 
 
     /* Main form container */

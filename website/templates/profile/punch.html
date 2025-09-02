@@ -14,7 +14,7 @@
     {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('profile.punch') }}">
+    <form class="puch_form" method="POST" action="{{ url_for('profile.punch') }}">
         {{ form.hidden_tag() }}
 
         <!-- Hidden fields for location -->
@@ -22,14 +22,14 @@
         <input type="hidden" name="lon" id="lon">
 
         <!-- Work from Home checkbox -->
-        <div class="form-group text-center">
+        <div class="form-grouppuch text-center">
             <label><input type="checkbox" name="wfh" id="wfh"> Work From Home</label>
             <a href="{{ url_for('profile.submit_wfh') }}" class="ms-button">
                 Apply for WFH
             </a>
         </div>
 
-        <div class="form-group text-center">
+        <div class="form-grouppuch text-center">
             {{ form.punch_in(class_='btn btn-primary') }}
             <span>{{ punch.punch_in if punch else 'Not Punched In' }}</span>
 
