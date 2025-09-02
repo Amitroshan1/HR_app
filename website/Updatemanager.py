@@ -665,7 +665,7 @@ def separation_approval():
             not_pending_separations = [r for r in all_separations if r.status != 'Pending']
 
     return render_template(
-        'manager/separation_approval.html',
+        'Manager/separation_approval.html',
         pending_separations=pending_separations,
         not_pending_separations=not_pending_separations
     )
