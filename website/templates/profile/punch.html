@@ -70,36 +70,32 @@
         <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
         </h3>
 
-        <div
-            style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; font-family: Arial, sans-serif;">
+        <div class="legend-box">
             <!-- Green Indicator -->
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <span
-                    style="width: 18px; height: 18px; background-color: #4CAF50; border-radius: 3px; display: inline-block;"></span>
+            <div class="legend-item">
+                <span class="legend-color present"></span>
                 <span>Present (Punch In/Out Done)</span>
             </div>
 
             <!-- Yellow Indicator -->
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <span
-                    style="width: 18px; height: 18px; background-color: hsl(0, 100%, 51%); border-radius: 3px; display: inline-block;"></span>
+            <div class="legend-item">
+                <span class="legend-color pending"></span>
                 <span>Pending (No Punch Out)</span>
             </div>
 
-            <!--          Red Indicator half day/9 hours -->
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <span
-                    style="width: 18px; height: 18px; background-color: #fffb00; border-radius: 3px; display: inline-block;"></span>
-                <span>Half-Day / less than 9 hours </span>
+            <!-- Red Indicator -->
+            <div class="legend-item">
+                <span class="legend-color halfday"></span>
+                <span>Half-Day / less than 9 hours</span>
             </div>
 
-            <!--            Blue Indicator for leave -->
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <span
-                    style="width: 18px; height: 18px; background-color: 	#f5935b; border-radius: 3px; display: inline-block;"></span>
-                <span>Leave </span>
+            <!-- Blue Indicator -->
+            <div class="legend-item">
+                <span class="legend-color leave"></span>
+                <span>Leave</span>
             </div>
         </div>
+
 
         <table class="table table-bordered">
             <thead>

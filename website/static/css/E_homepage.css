@@ -427,6 +427,72 @@ form {
     }
 }
 
+
+
+
+.legend-box {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 15px;
+    font-family: Arial, sans-serif;
+    flex-wrap: wrap; /* allows wrapping on smaller screens */
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+/* Colors */
+.legend-color.present {
+    background-color: #4CAF50;
+}
+.legend-color.pending {
+    background-color: hsl(0, 100%, 51%);
+}
+.legend-color.halfday {
+    background-color: #fffb00;
+}
+.legend-color.leave {
+    background-color: #f5935b;
+}
+
+
+/* Tablet screens */
+@media (max-width: 992px) {
+    .legend-box {
+        gap: 15px;
+    }
+    .legend-item span:last-child {
+        font-size: 0.9em;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .legend-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .legend-item span:last-child {
+        font-size: 0.85em;
+    }
+    .legend-color {
+        width: 14px;
+        height: 14px;
+    }
+}
+
 /* Mobile */
 @media (max-width: 480px) {
     .puch_form {
@@ -1112,7 +1178,7 @@ button[type="button"], .btn {
 @media (max-width: 576px) {
     .ms-button {
         display: block;        /* Stack instead of inline */
-        width: 40%;           /* Full width button */
+        width: 60%;           /* Full width button */
         margin: 10px 0;        /* Vertical spacing */
         font-size: 14px;
         padding: 10px;
