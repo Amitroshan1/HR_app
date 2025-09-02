@@ -13,10 +13,10 @@
     {% endif %}  
     {% endwith %}
 
-    <div class="leave-balance">
-        <p><strong>Privilege Leave Balance:</strong> {{ leave_balance.privilege_leave_balance }}</p>
-        <p><strong>Casual Leave Balance:</strong> {{ leave_balance.casual_leave_balance }}</p>
-        <p><strong>compensatory Leave Balance:</strong> {{ leave_balance.compensatory_leave_balance }}</p>
+    <div class="leave-balance2">
+        <p class="leave123"><strong>Privilege Leave:</strong> {{ leave_balance.privilege_leave_balance }}</p>
+        <p class="leave123"><strong>Casual Leave:</strong> {{ leave_balance.casual_leave_balance }}</p>
+        <p class="leave123"><strong>Comp/Off:</strong> {{ leave_balance.compensatory_leave_balance }}</p>
     </div>
 
     <form method="POST" action="{{ url_for('profile.apply_leave') }}" class="leave-form">

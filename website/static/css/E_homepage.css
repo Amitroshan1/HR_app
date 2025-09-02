@@ -726,6 +726,29 @@ h3 {
     background-color: #0056b3;
 }
 
+.leave-balance2 {
+    display: flex;                  /* Arrange items side by side */
+    justify-content: space-between; /* Even spacing */
+    gap: 15px;                      /* Space between boxes */
+    margin: 20px 0;
+}
+
+.leave123 {
+    flex: 1;                        /* Equal width for all three */
+    text-align: center;
+    background-color: #b4f4b4;      /* Light background */
+    border: 1px solid #ccc;         /* Subtle border */
+    border-radius: 8px;             /* Rounded corners */
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* Soft shadow */
+    transition: transform 0.2s ease;
+}
+
+.leave123:hover {
+    transform: translateY(-3px);    /* Small hover effect */
+}
 
 /* Content wrapper with padding */
 .punch-container {
