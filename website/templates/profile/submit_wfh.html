@@ -34,6 +34,51 @@
     .form-groupwhf {
         text-align: center;
     }
+
+
+    @media (max-width: 992px) {
+    .container_WFH {
+        max-width: 90%;
+        padding: 15px;
+    }
+
+    .form-whf {
+        gap: 15px;
+    }
+
+    .col_claim3_WFH,
+    .col_claim3_WHF {
+        min-width: 220px;
+    }
+}
+
+/* 📱 Mobile screens */
+@media (max-width: 576px) {
+    .container_WFH {
+        max-width: 100%;
+        padding: 10px;
+    }
+
+    .form-whf {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .col_claim3_WFH,
+    .col_claim3_WHF {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .centered-heading {
+        font-size: 1.2em;
+        margin-bottom: 20px;
+    }
+
+    .form-groupwhf {
+        text-align: left; /* easier readability on mobile */
+    }
+}
 </style>
 
 <div class="container_WFH">

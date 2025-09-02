@@ -888,6 +888,34 @@ h3 {
     transform: translateY(-3px);    /* Small hover effect */
 }
 
+
+
+/* 📱 Tablet screens */
+@media (max-width: 992px) {
+    .leave-balance2 {
+        gap: 10px;
+    }
+
+    .leave123 {
+        font-size: 15px;
+        padding: 12px;
+    }
+}
+
+/* 📱 Mobile screens */
+@media (max-width: 576px) {
+    .leave-balance2 {
+          /* Stack boxes */
+        gap: 12px;
+    }
+
+    .leave123 {
+        width: 100%;             /* Full width */
+        font-size: 14px;
+        padding: 10px;
+    }
+}
+
 /* Content wrapper with padding */
 .punch-container {
     position: relative;
