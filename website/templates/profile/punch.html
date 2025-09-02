@@ -27,7 +27,9 @@
             <a href="{{ url_for('profile.submit_wfh') }}" class="ms-button">
                 Apply for WFH
             </a>
-        
+        </div>
+
+        <div class="form-grouppuch text-center">
             {{ form.punch_in(class_='btn btn-primary') }}
             <span>{{ punch.punch_in if punch else 'Not Punched In' }}</span>
 
