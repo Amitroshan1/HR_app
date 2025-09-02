@@ -116,3 +116,35 @@ def get_remaining_resignation_days(resignation_date, notice_period_days=90):
         return None, "Notice period has not started yet."
 
     return None, None
+
+
+
+
+@staticmethod
+def add_comp_off(signup_id):
+    today = datetime.today().date()  # only date part
+    year, month = today.year, today.month
+
+    leave_balance = LeaveBalance.query.filter_by(signup_id=signup_id).first()
+
+    if leave_balance:
+        # Prevent multiple additions on same day
+        if leave_balance.last_updated == today:
+            return  # already given today, do nothing
+
+        if leave_balance.last_updated and leave_balance.last_updated.year == year and leave_balance.last_updated.month == month:
+            if leave_balance.compensatory_leave_balance < 2:
+                leave_balance.compensatory_leave_balance += 1
+                leave_balance.last_updated = today
+        else:
+            leave_balance.compensatory_leave_balance = 1
+            leave_balance.last_updated = today
+    else:
+        leave_balance = LeaveBalance(
+            signup_id=signup_id,
+            compensatory_leave_balance=1,
+            last_updated=today
+        )
+        db.session.add(leave_balance)
+
+    db.session.commit()

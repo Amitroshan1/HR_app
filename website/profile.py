@@ -22,7 +22,7 @@ from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
 from datetime import timedelta
-from .utility import punch_time
+from .utility import punch_time,add_comp_off
 from sqlalchemy.exc import SQLAlchemyError
 
 import logging
@@ -492,20 +492,10 @@ def punch():
                 db.session.commit()
 
                 # ✅ Check if today is Sunday
-                if datetime.today().weekday() == 4:  # 6 = 
-                    dataa=Signup.query.filter_by(email=current_user.email).first()
-                    print(current_user.email)
-                    leave_balance = LeaveBalance.query.filter_by(signup_id=dataa.id).first()
-                    if leave_balance:
-                        leave_balance.compensatory_leave_balance = (leave_balance.compensatory_leave_balance or 0) + 1
-                    else:
-                        leave_balance = LeaveBalance(
-                            user_id=current_user.id,
-                            compensatory_leave_balance=1
-                        )
-                        db.session.add(leave_balance)
-                    db.session.commit()
-
+                if datetime.today().weekday() == 6:  # Sunday
+                    user = Signup.query.filter_by(email=current_user.email).first()
+                    add_comp_off(user.id)
+                    print("Comp Off added for Sunday work!")
                 flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
 
     
@@ -670,14 +660,13 @@ def apply_leave():
 
      # Variable to track extra leave days
 
-
          # Still useful for alerts or UI
 
         # Privilege Leave
         if leave_type == 'Privilege Leave':
             if leave_days > leave_balance.privilege_leave_balance:
-                extra_leave = leave_days - float(leave_balance.privilege_leave_balance)
-                deducted_days = leave_days - extra_leave
+                extra_leave = leave_days - leave_balance.privilege_leave_balance
+                deducted_days = leave_balance.privilege_leave_balance
                 leave_balance.privilege_leave_balance = 0
             else:
                 deducted_days = leave_days
@@ -690,7 +679,7 @@ def apply_leave():
                 return redirect(url_for('profile.apply_leave'))
 
             if leave_days > leave_balance.casual_leave_balance:
-                flash('You do not have enough Casual Leave balance for the requested days. Please apply under Privilege Leave instead.', 'danger')
+                flash('Not enough Casual Leave. Please apply under Privilege Leave instead.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
 
             deducted_days = leave_days
@@ -702,24 +691,35 @@ def apply_leave():
                 flash('Half Day Leave can only be applied for one day.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
 
+            deducted_days = 0.5
             if leave_balance.casual_leave_balance >= 0.5:
-                deducted_days = 0.5
                 leave_balance.casual_leave_balance -= 0.5
             elif leave_balance.privilege_leave_balance >= 0.5:
-                deducted_days = 0.5
                 leave_balance.privilege_leave_balance -= 0.5
                 flash('0.5 day deducted from Privilege Leave due to insufficient Casual Leave.', 'info')
             else:
+                flash('Not enough balance. 0.5 day marked as Extra Leave.', 'warning')
                 extra_leave = 0.5
-                flash(f'Not enough Privilege Leave either. {extra_leave} day marked as Extra Leave.', 'warning')
 
+        # Compensatory Leave
+        elif leave_type == "Compensatory Leave":
+            if not leave_balance or leave_balance.compensatory_leave_balance <= 0:
+                flash('You do not have any Compensatory Leave balance available.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
 
-                if leave_type == "Compensatory Leave":
-                    if leave_days > 3:
-                        flash('Compensatory Leave can only be applied for Two days.', 'danger')
-                        return redirect(url_for('profile.apply_leave'))
+            if leave_days > 2:
+                flash('You can apply for a maximum of 2 Compensatory Leave days at once.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
 
-                    flash('Please ask Lead/manager for Approve Compensatory Leave.', 'danger')
+            if leave_days > leave_balance.compensatory_leave_balance:
+                flash(f'You only have {leave_balance.compensatory_leave_balance} Compensatory Leave days available.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+
+            leave_balance.compensatory_leave_balance -= leave_days
+            flash('Please ask Lead/Manager for approval of Compensatory Leave.', 'info')
+
+        db.session.commit()
+
 
 
         # Save leave application
