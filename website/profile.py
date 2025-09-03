@@ -507,8 +507,9 @@ def punch():
             minutes=total_work_time.minute,
             seconds=total_work_time.second
         )
-
-        is_full_day = total_work_td >= timedelta(hours=8, minutes=15)  # 8 hours and 30 minutes
+        logger.debug(f"[WORK TIME] User {current_user.email} total work time today: {total_work_time}")
+        is_full_day = total_work_td >= timedelta(hours=8, minutes=0,seconds=10)  # 8 hours and 30 minutes
+        logger.debug(f"[WORK TIME] User {current_user.email} worked {total_work_td}, Full day: {is_full_day}")
     else:
         is_full_day = False
 
@@ -523,6 +524,7 @@ def punch():
         LeaveApplication.status == 'Approved'
     ).all()
 
+
     # Collect all leave days
     leave_days = set()
     for leave in leave_records:
@@ -530,6 +532,8 @@ def punch():
         while current_day <= leave.end_date:
             leave_days.add(current_day)
             current_day += timedelta(days=1)
+
+
 
     return render_template(
         'profile/punch.html',

@@ -439,16 +439,12 @@ def claim_approval():
 
 @manager_bp.route('/view_items/<int:claim_id>', methods=['GET', 'POST'])
 def view_items(claim_id):
-
     claim = ExpenseClaimHeader.query.get_or_404(claim_id)
-
-
     items = ExpenseLineItem.query.filter_by(claim_id=claim_id).all()
 
 
     # Split pending and non-pending items
     pending_items = [item for item in items if item.status == "Pending"]
-
     not_pending_items = [item for item in items if item.status != "Pending"]
 
 
@@ -673,21 +669,15 @@ def separation_approval():
 
 @manager_bp.route('/accept_item/<int:item_id>', methods=['GET', 'POST'])
 def accept(item_id):
-
     item = ExpenseLineItem.query.get_or_404(item_id)
-
     item.status = "Approved"
     db.session.commit()
-
     return redirect(url_for('manager_bp.view_items',claim_id=item.claim_id))
 
 
 @manager_bp.route('/reject_item/<int:item_id>', methods=['GET', 'POST'])
 def reject(item_id):
-
     item = ExpenseLineItem.query.get_or_404(item_id)
-
-
     item.status = "Rejected"
     db.session.commit()
     return redirect(url_for('manager_bp.view_items', claim_id=item.claim_id))
