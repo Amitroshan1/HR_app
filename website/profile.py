@@ -508,7 +508,7 @@ def punch():
             seconds=total_work_time.second
         )
         logger.debug(f"[WORK TIME] User {current_user.email} total work time today: {total_work_time}")
-        is_full_day = total_work_td >= timedelta(hours=1, minutes=0,seconds=10)  # 8 hours and 30 minutes
+        is_full_day = total_work_td >= timedelta(hours=8, minutes=10,seconds=10)  # 8 hours and 30 minutes
         logger.debug(f"[WORK TIME] User {current_user.email} worked {total_work_td}, Full day: {is_full_day}")
     else:
         is_full_day = False
