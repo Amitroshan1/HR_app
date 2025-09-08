@@ -1,0 +1,65 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Profiles View{% endblock %}
+{% block content %}
+
+<div class="container_list">
+{% with errors = get_flashed_messages(category_filter=["error","success"]) %}
+    {% if errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {%- for msg in errors %}
+                    <h3>{{ msg }}</h3>
+                {% endfor -%}
+            </ul>
+        </div>
+    {% endif %}
+{% endwith %}
+
+
+    <h2>Update SignUp</h2>
+    <div class="form-container_list">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.emp_type.label }} {{ form.emp_type(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.circle.label }} {{ form.circle(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+
+    <div class="table-container">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>First Name</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                <tr>
+                    <td>{{ employee.emp_id }}</td>
+                    <td>{{ employee.first_name | capitalize }}</td>
+                    <td>
+                        <a href="#" class="btn btn-primary">
+
+                            View Details
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}
+
+
+
+

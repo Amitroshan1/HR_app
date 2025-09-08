@@ -5,7 +5,11 @@ from wtforms.validators import DataRequired, Email, Length, ValidationError,Opti
 from werkzeug.security import generate_password_hash, check_password_hash  # For password hashing
 from website.models.signup import Signup  # Importing the Signup model
 
-class SignUpForm(FlaskForm): 
+class SignUpForm(FlaskForm):
+
+    user_name = StringField('UserName',
+                            validators=[DataRequired(), Length(min=2, max=20)],
+                            render_kw={"placeholder": "Create Unique UserName"})
     email = StringField(
         'Email',
         validators=[DataRequired(), Email()],
@@ -72,7 +76,8 @@ class SignUpForm(FlaskForm):
                                      ('Engineering', 'Engineering'),('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
                                      ('Software Development', 'Software Development'),
-                                     ('IT Department', 'IT Department')],
+                                     ('IT Department', 'IT Department'),
+                                     ('Admin', 'Admin')],
                               validators=[DataRequired()])
 
     submit = SubmitField('Sign Up')
@@ -109,16 +114,18 @@ from wtforms import SelectField, PasswordField
 from wtforms.validators import DataRequired, Length
 
 class SelectRoleForm(FlaskForm):
-    emp_type = SelectField('Employee Type', 
-                           choices=[('','Select Employee Type'),
-                                     ('Human Resource','Human Resource'),
-                                     ('Accounts','Accounts'), 
-                                
-                                     ('Engineering', 'Engineering'),('TEC', 'TEC'),
-                                     ('Certification', 'Certification'),
-                                     ('Software Development', 'Software Development'),
-                                     ('IT Department', 'IT Department')],
-                              validators=[DataRequired()])
+    user_name = StringField('Username or Phone Number', validators=[DataRequired()],render_kw={'placeholder':'Enter Username or Phone Number'})
+
+    # emp_type = SelectField('Employee Type',
+    #                        choices=[('','Select Employee Type'),
+    #                                  ('Human Resource','Human Resource'),
+    #                                  ('Accounts','Accounts'),
+    #
+    #                                  ('Engineering', 'Engineering'),('TEC', 'TEC'),
+    #                                  ('Certification', 'Certification'),
+    #                                  ('Software Development', 'Software Development'),
+    #                                  ('IT Department', 'IT Department')],
+    #                           validators=[DataRequired()])
     
     password = PasswordField('Password', 
-                             validators=[DataRequired()])
+                             validators=[DataRequired()],render_kw={'placeholder':'Enter Password'})

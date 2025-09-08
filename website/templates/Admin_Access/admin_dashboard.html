@@ -1,0 +1,127 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+
+
+<!-- Filter Section -->
+<div class="admin_container">
+
+  <!-- Filter -->
+  <div class="admin_Access-filter-box">
+    <form method="GET" action="{{ url_for('Admins_access.admin_dashboard') }}">
+      <label for="emp_type">Employee Type:</label>
+      <select id="emp_type" name="emp_type">
+        <option value="">-- Select Employee Type --</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Human Resource">Human Resource</option>
+        <option value="Admin">Admin</option>
+        <option value="Accounts">Accounts</option>
+        <option value="TEC">TEC</option>
+        <option value="Certification">Certification</option>
+        <option value="Software_Development">Software Development</option>
+        <option value="It Department">IT Department</option>
+      </select>
+
+      <label for="circle">Circle:</label>
+      <select id="circle" name="circle">
+        <option value="">-- Select Circle --</option>
+        <option value="NHQ">NHQ</option>
+        <option value="Noida">Noida</option>
+        <option value="Noida-Loire">Noida-Loire</option>
+        <option value="Haryana">Haryana</option>
+        <option value="Haryana-Loyal">Haryana-Loyal</option>
+        <option value="Gurugram">Gurugram</option>
+        <option value="Gurugram-Awesome">Gurugram-Awesome</option>
+        <option value="Gurugram-Rabbit">Gurugram-Rabbit</option>
+        <option value="Pune">Pune</option>
+        <option value="Jaipur">Jaipur</option>
+        <option value="Jaipur-Rabbit">Jaipur-Rabbit</option>
+        <option value="Greater Noida">Greater Noida</option>
+        <option value="Mumbai">Mumbai</option>
+        <option value="G.Noida-Rabbit">G.Noida-Rabbit</option>
+        <option value="Mumbai-Bonita">Mumbai-Bonita</option>
+        <option value="Mumbai-Victory">Mumbai-Victory</option>
+        <option value="Mumbai-Rabbit">Mumbai-Rabbit</option>
+        <option value="Ahmedabad">Ahmedabad</option>
+        <option value="Bangalore">Bangalore</option>
+        <option value="Punjab">Punjab</option>
+        <option value="Punjab-Loyal">Punjab-Loyal</option>
+        <option value="Hyderabad">Hyderabad</option>
+        <option value="Chennai">Chennai</option>
+        <option value="Kolkata">Kolkata</option>
+        <option value="Kolkata-Rabbit">Kolkata-Rabbit</option>
+      </select>
+
+      <button type="submit" class="admin_Access-btn">Apply Filter</button>
+    </form>
+  </div>
+
+<!--  statistic cards-->
+
+
+  <div class="stats-container">
+  <!-- Total Employees -->
+  <a href="{{ url_for('Admins_access.total_employee') }}" class="stat-card">
+    <h3>Total Employees</h3>
+    <p>{{ employee_count }}</p>
+  </a>
+
+  <!-- Total Leaves -->
+  <a href="{{ url_for('Admins_access.leave_employee') }}" class="stat-card">
+    <h3>Total Leaves</h3>
+    <p>{{ total_leaves }}</p>
+  </a>
+
+    <a href="{{ url_for('Admins_access.attendance_admin') }}" class="stat-card">
+    <h3>Attendance</h3>
+    <p>2T</p>
+  </a>
+
+
+
+  <!-- Queries -->
+  <div class="stat-card">
+    <h3>Queries</h3>
+    <p>9</p>
+  </div>
+</div>
+
+
+
+
+
+  <!-- Table -->
+  {% if users %}
+  <div class="admin_table_box">
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Employee type</th>
+          <th>Circle</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if users %}
+        {% for user in users %}
+        <tr>
+          <td>{{user.emp_id}}</td>
+          <td>{{user.first_name}}</td>
+          <td>{{user.emp_type}}</td>
+          <td>{{user.circle}}</td>
+          <td><a href="#" class="btn btn-primary">View</a></td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+
+
+
+{% endblock %}

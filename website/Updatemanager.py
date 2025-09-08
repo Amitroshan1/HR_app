@@ -210,7 +210,7 @@ def manager_access():
     leave_apps = LeaveApplication.query.filter(
         LeaveApplication.admin_id.in_(admin_ids),
         LeaveApplication.status == 'Pending'
-    ).all()
+    ).order_by(LeaveApplication.id.desc()).all()
 
 
     if start_date and end_date:
@@ -266,7 +266,8 @@ def wfh_approval():
 
     wfh_data = WorkFromHomeApplication.query.filter(
         WorkFromHomeApplication.admin_id.in_(admin_ids),
-        WorkFromHomeApplication.status == 'Pending').all()
+        WorkFromHomeApplication.status == 'Pending').order_by(WorkFromHomeApplication.id.desc()).all()
+    print(f"Got the work from home application: {wfh_data}")
 
 
     if start_date and end_date:
@@ -311,6 +312,8 @@ def claim_approval():
         admin_ids = Admin.query.with_entities(Admin.id).filter(Admin.email.in_(emails)).all()
         admin_ids = [admin_id for (admin_id,) in admin_ids]
 
+        start_date = None
+        end_date = None
         selected_month = request.form.get('selected_month')
         if selected_month:
             start_date, end_date = get_date_range_from_month(selected_month)
@@ -326,6 +329,7 @@ def claim_approval():
                 .order_by(ExpenseClaimHeader.travel_from_date.desc())
                 .all()
             )
+            # print(f"claim got: {claims}")
 
     return render_template('Manager/manager_claims.html', claim_data=claims)
 

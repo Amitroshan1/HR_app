@@ -1,5 +1,11 @@
-from flask import render_template, flash, redirect,Blueprint, request, url_for, current_app as app,session
+from io import BytesIO
+from zoneinfo import ZoneInfo
+from flask import send_file
+import pandas as pd
+from flask import render_template, flash, redirect, Blueprint, request, url_for, current_app as app, session, Response
 from flask_login import current_user, login_required
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Side, Border
 from werkzeug.utils import secure_filename
 import os
 from .models.family_models import FamilyDetails
@@ -451,7 +457,7 @@ def punch():
                 # Set punch-out time
 
                 punch.punch_out = datetime.now().time()
-                store_today_work(punch)
+                punch_time(current_user.id)
 
                 db.session.commit()
 
@@ -467,6 +473,143 @@ def punch():
         selected_year=selected_year,
         calendar=calendar
     )
+
+
+@profile.route('/download_excel_emp', methods=['GET'])
+@login_required
+def download_excel_emp():
+    # ✅ Get selected month & year (default to current if not provided)
+    today = date.today()
+    selected_month = request.args.get('month', today.month, type=int)
+    selected_year = request.args.get('year', today.year, type=int)
+    print(f"got the selected month: {selected_month}")
+    print(f"got the selected year: {selected_year}")
+    # Get user info
+    emp = Signup.query.filter_by(email=current_user.email).first()
+    if not emp:
+        flash("User not found!", "danger")
+        return redirect(url_for('profile.punch'))
+
+    emp_type = emp.emp_type
+    circle = emp.circle
+    emp_code = emp.emp_id
+    emp_name = emp.first_name
+
+    # 📌 Get number of days in selected month
+    num_days = calendar.monthrange(selected_year, selected_month)[1]
+
+    # Create Excel
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        workbook = writer.book
+        worksheet = workbook.add_worksheet("Attendance")
+        writer.sheets["Attendance"] = worksheet
+
+        # Styles
+        border_fmt = workbook.add_format({'border': 1})
+        header_fmt = workbook.add_format({
+            'border': 1, 'bold': True, 'align': 'center',
+            'valign': 'vcenter', 'bg_color': '#D9E1F2'
+        })
+        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})
+        bold_fmt = workbook.add_format({'bold': True})
+
+        # 📌 Write emp_type and circle at the top
+        worksheet.write(0, 0, "emp_type", bold_fmt)
+        worksheet.write(0, 1, emp_type)
+        worksheet.write(0, 3, "CIRCLE", bold_fmt)
+        worksheet.write(0, 4, circle)
+
+        row = 2
+        worksheet.write(row, 0, "Emp ID:", bold_fmt)
+        worksheet.write(row, 1, emp_code)
+        worksheet.write(row, 3, "Emp Name:", bold_fmt)
+        worksheet.write(row, 4, emp_name)
+        row += 1
+
+        # 📌 Get punch records for selected month
+        first_day = date(selected_year, selected_month, 1)
+        last_day = date(selected_year, selected_month, num_days)
+
+        punch_records = Punch.query.filter(
+            Punch.admin_id == current_user.id,
+            Punch.punch_date.between(first_day, last_day)
+        ).all()
+
+        punch_map = {p.punch_date.day: p for p in punch_records}
+
+        in_times, out_times, totals = [], [], []
+        for d in range(1, num_days + 1):
+            punch = punch_map.get(d)
+            if punch and punch.punch_in and punch.punch_out:
+                in_times.append(punch.punch_in.strftime("%H:%M"))
+                out_times.append(punch.punch_out.strftime("%H:%M"))
+
+                if punch.today_work:
+                    total_minutes = punch.today_work.hour * 60 + punch.today_work.minute
+                else:
+                    delta = datetime.combine(date.min, punch.punch_out) - datetime.combine(date.min, punch.punch_in)
+                    total_minutes = delta.seconds // 60
+
+                hours = total_minutes // 60
+                minutes = total_minutes % 60
+                if hours > 0 and minutes > 0:
+                    totals.append(f"{hours} hrs {minutes} min")
+                elif hours > 0:
+                    totals.append(f"{hours} hrs")
+                elif minutes > 0:
+                    totals.append(f"{minutes} min")
+                else:
+                    totals.append("")
+            else:
+                in_times.append("")
+                out_times.append("")
+                totals.append("")
+
+        # Headers
+        days = []
+        for d in range(1, num_days + 1):
+            weekday = calendar.day_abbr[date(selected_year, selected_month, d).weekday()][0]
+            days.append(f"{d} {weekday}")
+
+        worksheet.write(row, 0, "Days", header_fmt)
+        for col, val in enumerate(days, start=1):
+            worksheet.write(row, col, val, header_fmt)
+        row += 1
+
+        # InTime
+        worksheet.write(row, 0, "InTime", header_fmt)
+        for col, val in enumerate(in_times, start=1):
+            fmt = absent_fmt if val == "" else border_fmt
+            worksheet.write(row, col, val, fmt)
+        row += 1
+
+        # OutTime
+        worksheet.write(row, 0, "OutTime", header_fmt)
+        for col, val in enumerate(out_times, start=1):
+            fmt = absent_fmt if val == "" else border_fmt
+            worksheet.write(row, col, val, fmt)
+        row += 1
+
+        # Total
+        worksheet.write(row, 0, "Total", header_fmt)
+        for col, val in enumerate(totals, start=1):
+            fmt = absent_fmt if val == "" else border_fmt
+            worksheet.write(row, col, val, fmt)
+
+        worksheet.set_column(0, num_days, 12)
+
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        download_name=f'Attendance_{circle}_{emp_type}_{selected_month}_{selected_year}.xlsx',
+        as_attachment=True
+    )
+
+
+
+
 
 
   # adjust the import path if needed

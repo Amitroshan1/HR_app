@@ -1,22 +1,33 @@
-from.models.attendance import Punch,LeaveBalance
+from .models.attendance import Punch, LeaveBalance, LeaveApplication
 from .models.Admin_models import Admin
 from .models.signup import Signup
 from calendar import monthrange
 from . import db
-from datetime import date,timedelta,datetime
+from datetime import date, timedelta, datetime, time
 from datetime import date, timedelta,datetime
 
 
 
-def attend_calc(year,month,num_days,user_id):
-
+def attend_calc(year, month, num_days, user_id):
+    # ✅ Get punches for the month
     punches = Punch.query.filter(
         Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
         Punch.admin_id == user_id
     ).all()
 
+    # ✅ Get approved leaves for the month
+    leaves = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == user_id,
+        LeaveApplication.status == 'Approved',
+        LeaveApplication.start_date <= f'{year}-{month:02d}-{num_days}',
+        LeaveApplication.end_date >= f'{year}-{month:02d}-01'
+    ).all()
+
     calcu_data = 0
     calcu_hdata = 0
+    leave_days = 0
+
+    # ✅ Attendance + WFH
     for pdata in punches:
         if pdata.punch_date:
             if pdata.punch_in and pdata.punch_out:
@@ -25,11 +36,20 @@ def attend_calc(year,month,num_days,user_id):
                 calcu_data += 0.5
         if pdata.is_wfh:
             calcu_hdata += 1
+
+    # ✅ Count leave days
+    for leave in leaves:
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            if current_date.month == month and current_date.year == year:  # restrict to selected month
+                leave_days += 1
+            current_date += timedelta(days=1)
+
     return {
         "attendance": calcu_data,
-        "work from home": calcu_hdata
+        "work from home": calcu_hdata,
+        "leave days": leave_days
     }
-
 
 
 

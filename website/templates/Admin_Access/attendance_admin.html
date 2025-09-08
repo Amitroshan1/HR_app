@@ -1,0 +1,102 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+
+<h2 class="text-center my-3">Attendance</h2>
+
+<div class="admin_Access-filter-box">
+  <form id="attendanceFilterForm" method="GET" action="{{ url_for('Admins_access.attendance_admin') }}">
+    <!-- Employee Type -->
+    <label for="emp_type">Employee Type:</label>
+    <select id="emp_type" name="emp_type_attendance">
+      <option value="">-- Select Employee Type --</option>
+      <option value="Engineering" {% if emp_type=="Engineering" %}selected{% endif %}>Engineering</option>
+      <option value="Human Resource" {% if emp_type=="Human Resource" %}selected{% endif %}>Human Resource</option>
+      <option value="Admin" {% if emp_type=="Admin" %}selected{% endif %}>Admin</option>
+      <option value="Accounts" {% if emp_type=="Accounts" %}selected{% endif %}>Accounts</option>
+      <option value="TEC" {% if emp_type=="TEC" %}selected{% endif %}>TEC</option>
+      <option value="Certification" {% if emp_type=="Certification" %}selected{% endif %}>Certification</option>
+      <option value="Software_Development" {% if emp_type=="Software_Development" %}selected{% endif %}>Software Development</option>
+      <option value="It Department" {% if emp_type=="It Department" %}selected{% endif %}>IT Department</option>
+    </select>
+
+    <!-- Circle -->
+    <label for="circle">Circle:</label>
+    <select id="circle" name="circle_attendance">
+      <option value="">-- Select Circle --</option>
+      <option value="NHQ" {% if circle=="NHQ" %}selected{% endif %}>NHQ</option>
+      <option value="Noida" {% if circle=="Noida" %}selected{% endif %}>Noida</option>
+      <option value="Pune" {% if circle=="Pune" %}selected{% endif %}>Pune</option>
+      <option value="Mumbai" {% if circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
+      <option value="Chennai" {% if circle=="Chennai" %}selected{% endif %}>Chennai</option>
+      <option value="Hyderabad" {% if circle=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
+      <option value="Kolkata" {% if circle=="Kolkata" %}selected{% endif %}>Kolkata</option>
+    </select>
+  </form>
+</div>
+
+
+
+<!-- Attendance Table -->
+{% if attendance_data %}
+<div class="admin_table_box">
+  <h4 class="table-heading">Attendance</h4>
+  <table class="admin_table">
+    <thead>
+      <tr>
+        <th>Employee ID</th>
+        <th>Name</th>
+        <th>Employee Type</th>
+        <th>Circle</th>
+        <th>Status</th>
+        <th>Punch In</th>
+        <th>Punch Out</th>
+        <th>Work Duration</th>
+        <th>Holiday</th>
+        <th>WFH</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in attendance_data %}
+      <tr>
+        <td>{{ emp.emp_id }}</td>
+        <td>{{ emp.name }}</td>
+        <td>{{ emp.emp_type }}</td>
+        <td>{{ emp.circle }}</td>
+        <td>
+          {% if emp.present %}
+            <span style="color: green; font-weight: bold;">Present</span>
+          {% else %}
+            <span style="color: red; font-weight: bold;">Absent</span>
+          {% endif %}
+        </td>
+        <td>{{ emp.punch_in or "-" }}</td>
+        <td>{{ emp.punch_out or "-" }}</td>
+        <td>{{ emp.today_work or "-" }}</td>
+        <td>{{ "Yes" if emp.is_holiday else "No" }}</td>
+        <td>{{ "Yes" if emp.is_wfh else "No" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No attendance records found.</p>
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("attendanceFilterForm");
+  const selects = form.querySelectorAll("select");
+
+  selects.forEach(select => {
+    select.addEventListener("change", function () {
+      // Build query params manually so both values are preserved
+      const params = new URLSearchParams(new FormData(form));
+      window.location = form.action + "?" + params.toString();
+    });
+  });
+});
+</script>
+
+{% endblock %}

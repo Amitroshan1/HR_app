@@ -14,7 +14,7 @@ from datetime import timedelta, datetime
 from pytz import timezone
 import logging
 import os
-from flask_session import Session 
+from flask_session import Session
 from dotenv import load_dotenv
 from dateutil.relativedelta import relativedelta
 from urllib3.exceptions import NewConnectionError
@@ -43,7 +43,7 @@ class Config:
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
-    test_url = urlparse(urljoin(request.host_url, target)) 
+    test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 
@@ -51,8 +51,8 @@ def is_safe_url(target):
 def update_leave_balances():
     """ Updates leave balances monthly for employees after 6 months of joining. """
     from .models.attendance import LeaveBalance
-    from .models.Admin_models import Admin  
-    from .models.signup import Signup 
+    from .models.Admin_models import Admin
+    from .models.signup import Signup
 
     with scheduler.app.app_context():
         leave_balances = LeaveBalance.query.all()
@@ -66,7 +66,7 @@ def update_leave_balances():
             signup = Signup.query.filter_by(id=balance.signup_id).first()
             # print(f"Processing leave balance for signup ID: {balance.signup_id}, Admin ID: {signup.email if signup else 'None'}")
             admin = Admin.query.filter_by(email=signup.email).first() if signup else None
-            # print(f"Found admin: {admin.email if admin else 'None'} for signup ID: {signup.id if signup else 'None'}")  
+            # print(f"Found admin: {admin.email if admin else 'None'} for signup ID: {signup.id if signup else 'None'}")
             if not admin:
                 continue  # Skip if admin not found
 
@@ -109,8 +109,8 @@ import pytz
 def send_reminder_emails():
     from .models.query import Query
     from .common import verify_oauth2_and_send_email
-    
-    
+
+
 
     # IST timezone
     ist = pytz.timezone('Asia/Kolkata')
@@ -119,7 +119,7 @@ def send_reminder_emails():
     with scheduler.app.app_context():
         # Get all open queries
         queries = Query.query.filter_by(status='open').all()
-        
+
 
         for query in queries:
             # Make sure query.created_at is timezone-aware in IST
@@ -130,24 +130,24 @@ def send_reminder_emails():
 
             # Calculate time since last activity (query creation or reply)
             time_since_last_activity = now - last_activity_time
-            
+
 
             # If 3 days or more have passed since last activity, send reminder to that particular employee's
             if time_since_last_activity >= timedelta(days=3):
                 departments = query.emp_type.split(', ')
-                
+
 
                 # Assign department email (example)
                 if 'Human Resource' in departments:
                     department_email = 'chauguleshubham390@gmail.com'
                 elif 'Accounts' in departments:
                     department_email = 'skchaugule@saffotech.com'
-               
+
 
                 cc = None
 
                 admin_email = query.admin.email
-                
+
 
                 subject = f"Reminder: No response to query '{query.title}' in 3 days"
                 body = f"""
@@ -169,7 +169,7 @@ def leave_reminder_email():
     from .models.manager_model import ManagerContact
     from .common import verify_oauth2_and_send_email
 
-   
+
 
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
@@ -222,9 +222,9 @@ def leave_reminder_email():
                 HR & Admin Team
                 """
                 verify_oauth2_and_send_email(user_email, subject, body, l3_leader, [cc])
-                
-                
-        
+
+
+
 
 def create_app():
     app = Flask(__name__)
@@ -248,10 +248,10 @@ def create_app():
 
 
 
-    
-  
+
+
     # OAuth2 Configuration
-    app.config['SESSION_COOKIE_SECURE'] = True  
+    app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
 
     app.config['OAUTH2_CLIENT_ID'] = os.getenv("OAUTH2_CLIENT_ID")
@@ -276,7 +276,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
     app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'png', 'jpeg', 'pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'jfif'}
     app.config['WTF_CSRF_ENABLED'] = True
-    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 
+    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
 
     # Initialize extensions
     db.init_app(app)
@@ -285,7 +285,7 @@ def create_app():
     mail.init_app(app)
     csrf.init_app(app)
 
-    
+
     # # ⬇️ Add this block immediately after
     # from flask_wtf.csrf import CSRFError
     # from flask import redirect, url_for, flash, session
@@ -363,6 +363,7 @@ def create_app():
     from .auth_helper import auth_helper
     from .otp import forgot_password
     from .offboard import offboard
+    from .Admin_Access import Admins_access
 
     app.register_blueprint(profile, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
@@ -374,7 +375,8 @@ def create_app():
     app.register_blueprint(auth_helper, url_prefix='/')
     app.register_blueprint(forgot_password, url_prefix='/')
     app.register_blueprint(offboard, url_prefix='/')
-    
+    app.register_blueprint(Admins_access,url_prefix='/')
+
 
     scheduler.add_job(
         id='update_leave_balances',
@@ -392,7 +394,7 @@ def create_app():
         trigger='interval',
         days=3  # runs every day; adjust as needed
     )
-    
+
     scheduler.add_job(
     id='leave_reminder_email()',
     func=leave_reminder_email,  # your function name here

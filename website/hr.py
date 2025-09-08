@@ -29,7 +29,8 @@ from flask import send_file,session
 import io
 from openpyxl.styles import Font
 # from .utility import hr_manual_punch
-
+from io import BytesIO
+from datetime import datetime, date
 
 
 hr=Blueprint('hr',__name__)
@@ -217,9 +218,11 @@ def display_details():
                 current_date += timedelta(days=1)
 
             # Calculate the data of month
-        
+
         calcu_data = 0
         calcu_hdata = 0
+        leave_days = 0
+
         for pdata in punches:
             if pdata.punch_date:
                 if pdata.punch_in and pdata.punch_out:
@@ -228,10 +231,19 @@ def display_details():
                     calcu_data += 0.5
             if pdata.is_wfh:
                 calcu_hdata += 1
-        
+
+        # Count leave days
+        for leave in leaves:
+            current_date = leave.start_date
+            while current_date <= leave.end_date:
+                if current_date.month == month and current_date.year == year:  # restrict only to selected month
+                    leave_days += 1
+                current_date += timedelta(days=1)
+
         dict_data = {
             "attendance": calcu_data,
-            "work from home": calcu_hdata
+            "work from home": calcu_hdata,
+            "leave days": leave_days
         }
         
         session["attendance_details"] = json.dumps(details)
@@ -298,10 +310,11 @@ def display_details():
 
     return render_template('HumanResource/details.html', admin=admin, details=details, detail_type=detail_type, selected_month=month, selected_year=year, form=form, datetime=datetime,dict_data=dict_data)
 
+
 @hr.route('/download-attendance-excel')
+@login_required
 def download_attendance_excel():
     details_json = session.get('attendance_details')
-    summary_json = session.get('attendance_summary')
     user_id = session.get('viewing_user_id')
     month = session.get('selected_month')
     year = session.get('selected_year')
@@ -309,11 +322,9 @@ def download_attendance_excel():
     if not details_json:
         return "No attendance data to export.", 400
 
-    # Convert JSON data to Python objects
     details = json.loads(details_json)
-    summary = json.loads(summary_json)
 
-    # Fetch employee info (once, not inside the loop)
+    # Fetch employee info
     admin_data = Admin.query.filter_by(id=user_id).first()
     if not admin_data:
         return "Employee not found.", 404
@@ -325,54 +336,131 @@ def download_attendance_excel():
     employee_name = signups_data.first_name
     circle = signups_data.circle
     emp_type = signups_data.emp_type
-    # month_str = f"{month_name[month]} {year}"  # Optional
 
-    # Process details (convert boolean leave to 'Yes'/'')
+    num_days = calendar.monthrange(year, month)[1]
+
+    # Prepare data in a punch_map (day → punches)
+    punch_map = {}
     for d in details:
-        d['on_leave'] = 'Yes' if d['on_leave'] else ''
+        day = datetime.strptime(d['punch_date'], "%Y-%m-%d").day
+        punch_map[day] = d
 
-    # Create DataFrame
-    df = pd.DataFrame(details)
-    df.rename(columns={
-        'punch_date': 'Date',
-        'punch_in': 'Punch In',
-        'punch_out': 'Punch Out',
-        'today_work': 'Work Duration',
-        'is_wfh': 'Work From Home',
-        'on_leave': 'On Leave'
-    }, inplace=True)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        workbook = writer.book
+        worksheet = workbook.add_worksheet("Attendance")
+        writer.sheets["Attendance"] = worksheet
 
-    # Add summary row
-    df.loc[len(df.index)] = [
-        '', f'Total = {summary["attendance"]}', '', '', f'Total = {summary["work from home"]}', ''
-    ]
+        # Styles
+        border_fmt = workbook.add_format({'border': 1})
+        header_fmt = workbook.add_format({
+            'border': 1, 'bold': True, 'align': 'center',
+            'valign': 'vcenter', 'bg_color': '#D9E1F2'
+        })
+        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})
+        bold_fmt = workbook.add_format({'bold': True})
 
-    # Write to Excel
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        start_row = 5  # Leave space for info rows (row 1–4)
-        df.to_excel(writer, index=False, sheet_name='Attendance', startrow=start_row)
+        # Employee details at top
+        worksheet.write(0, 0, "Employee Name", bold_fmt)
+        worksheet.write(0, 1, employee_name)
+        worksheet.write(0, 3, "Employee Type", bold_fmt)
+        worksheet.write(0, 4, emp_type)
+        worksheet.write(1, 0, "Circle", bold_fmt)
+        worksheet.write(1, 1, circle)
 
-        worksheet = writer.sheets['Attendance']
-        bold_font = Font(bold=True)
+        # Weekday headers
+        days = []
+        for d in range(1, num_days + 1):
+            weekday = calendar.day_abbr[date(year, month, d).weekday()][0]
+            days.append(f"{d} {weekday}")
 
-        # Info headers
-        worksheet.cell(row=1, column=1, value='Employee Name: ').font = bold_font
-        worksheet.cell(row=1, column=2, value=employee_name)
+        row = 3
 
-        worksheet.cell(row=2, column=1, value='Employee Type: ').font = bold_font
-        worksheet.cell(row=2, column=2, value=emp_type)
+        in_times, out_times, totals = [], [], []
 
-        worksheet.cell(row=3, column=1, value='Circle: ').font = bold_font
-        worksheet.cell(row=3, column=2, value=circle)
+        for d in range(1, num_days + 1):
+            record = punch_map.get(d)
+            if record and record['punch_in'] and record['punch_out']:
+                in_times.append(record['punch_in'])
+                out_times.append(record['punch_out'])
+
+                total_minutes = 0
+
+                # Calculate worked minutes
+                if record.get('today_work'):
+                    try:
+                        parts = record['today_work'].split(":")
+                        h = int(parts[0])
+                        m = int(parts[1])
+                        total_minutes = h * 60 + m
+                    except:
+                        total_minutes = 0
+                else:
+                    try:
+                        punch_in = datetime.strptime(record['punch_in'], "%H:%M:%S")
+                        punch_out = datetime.strptime(record['punch_out'], "%H:%M:%S")
+                        delta = punch_out - punch_in
+                        total_minutes = delta.seconds // 60
+                    except:
+                        total_minutes = 0
+
+                hours = total_minutes // 60
+                minutes = total_minutes % 60
+
+                if hours > 0 and minutes > 0:
+                    totals.append(f"{hours} hrs {minutes} min")
+                elif hours > 0:
+                    totals.append(f"{hours} hrs")
+                elif minutes > 0:
+                    totals.append(f"{minutes} min")
+                else:
+                    totals.append("")
+            else:
+                in_times.append("")
+                out_times.append("")
+                totals.append("")
+
+        # Days row
+        worksheet.write(row, 0, "Days", header_fmt)
+        for col, val in enumerate(days, start=1):
+            worksheet.write(row, col, val, header_fmt)
+        row += 1
+
+        # InTime row
+        worksheet.write(row, 0, "InTime", header_fmt)
+        for col, val in enumerate(in_times, start=1):
+            fmt = absent_fmt if val == "" else border_fmt
+            worksheet.write(row, col, val, fmt)
+        row += 1
+
+        # OutTime row
+        worksheet.write(row, 0, "OutTime", header_fmt)
+        for col, val in enumerate(out_times, start=1):
+            fmt = absent_fmt if val == "" else border_fmt
+            worksheet.write(row, col, val, fmt)
+        row += 1
+
+        # Total row
+        worksheet.write(row, 0, "Total", header_fmt)
+        for col, val in enumerate(totals, start=1):
+            fmt = absent_fmt if val == "" else border_fmt
+            worksheet.write(row, col, val, fmt)
+        row += 2
+
+        # Adjust column width
+        worksheet.set_column(0, num_days, 15)
 
     output.seek(0)
     return send_file(
         output,
-        as_attachment=True,
-        download_name='attendance_report.xlsx',
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        download_name=f'Attendance_{circle}_{emp_type}_{month}_{year}.xlsx',
+        as_attachment=True
     )
+
+
+
+
 
 
 
@@ -674,6 +762,7 @@ def edit_signup(email):
     form = SignUpForm(obj=employee)
 
     # Disable unique field validators temporarily
+    form.user_name.validators = [DataRequired(),Length(min=2, max=20)]
     form.email.validators = [DataRequired(), Email()]
     form.emp_id.validators = [DataRequired(), Length(max=10)]
     form.mobile.validators = [DataRequired(), Length(min=10, max=10)]
@@ -681,7 +770,8 @@ def edit_signup(email):
     if form.validate_on_submit():
         if form.password.data:
             employee.password = generate_password_hash(form.password.data)
-        
+
+        employee.user_name = form.user_name.data
         employee.emp_id = form.emp_id.data
         employee.first_name = form.first_name.data
         employee.doj = form.doj.data

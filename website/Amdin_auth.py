@@ -14,6 +14,7 @@ def admin_sign_up():
     if form.validate_on_submit():
         try:
             # Collect form data
+            user_name = form.user_name.data
             email = form.email.data
             first_name = form.first_name.data
             mobile = form.mobile.data
@@ -24,6 +25,11 @@ def admin_sign_up():
             confirm_password = form.confirm_password.data
             
             # Check if the email or employee ID already exists in the database
+
+            if Signup.query.filter_by(user_name=user_name).first():
+                flash("Username already exists")
+                return redirect(url_for("Admin_auth.admin_sign_up"))
+
             if Signup.query.filter_by(email=email).first():
                 flash('Email is already registered!', category='error')
                 return redirect(url_for('Admin_auth.admin_sign_up'))
@@ -39,6 +45,7 @@ def admin_sign_up():
 
             # Create a new Signup user and hash the password
             new_signup = Signup(
+                user_name=user_name,
                 email=email,
                 first_name=first_name,
                 mobile=mobile,

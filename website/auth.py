@@ -202,45 +202,35 @@ def load_admin(admin_id):
 @auth.route('/select_role', methods=['GET', 'POST'])
 @login_required
 def select_role():
-    form = SelectRoleForm()  # A form for selecting Emp_type and password
+    form = SelectRoleForm()
 
     if form.validate_on_submit():
-        selected_role = form.emp_type.data  # Get the selected Emp_type
-        entered_password = form.password.data  # Get the entered password  # Debugging print statement
-        user = current_user  # Get the current user
+        login_input = form.user_name.data.strip()
+        entered_password = form.password.data
 
-        # Debugging logs
-        current_app.logger.debug(f'User ID: {user.id}, Selected Role: {selected_role}')
-
-        # Get the current user's email ID
-        user_email = user.email  # Assuming the user model has an email attribute
-
-        # Query the admin/signup record based on the user's email
-        admin = Signup.query.filter_by(
-            email=user_email).first()  # Debugging print statement to check if admin is fetched correctly
+        # Detect if it's phone or username
+        if login_input.isdigit():
+            # Search by mobile number
+            admin = Signup.query.filter_by(mobile=login_input).first()
+        else:
+            # Search by username
+            admin = Signup.query.filter_by(user_name=login_input).first()
 
         if admin:
-            # Check if the Emp_type matches the selected role
-            if admin.emp_type == selected_role:
-                # If the role matches, check if the password is correct
-                if admin.check_password(entered_password):  # Assuming check_password is defined in the Signup model
-                    # If password matches, redirect to the homepage for that role
-                    return redirect(
-                        url_for('auth.E_homepage'))  # Assuming E_homepage is defined correctly in your auth blueprint
+            if admin.check_password(entered_password):
+                if admin.emp_type == 'Admin':
+                    return redirect(url_for('Admins_access.admin_dashboard'))
                 else:
-                    flash('Incorrect password. Please try again.', category='error')
-                    return redirect(url_for('auth.select_role'))  # Redirect to role selection page
+                    return redirect(url_for('auth.E_homepage'))
             else:
-                flash('The selected role does not match your assigned role. Please contact HR.', category='error')
-                return redirect(url_for('auth.select_role'))  # Redirect to role selection page
+                flash('Incorrect password. Please try again.', category='error')
         else:
-            flash('Your email is not found in the system. Please contact HR.', category='error')
-            return redirect(url_for('auth.select_role'))  # Redirect to role selection page
+            flash('No account found with that username or phone number.', category='error')
 
-    # Debugging template rendering
-    current_app.logger.debug('Rendering select_role.html')
+        return redirect(url_for('auth.select_role'))
 
     return render_template('employee/select_role.html', form=form)
+
 
 
 @auth.route('/E_homepage')

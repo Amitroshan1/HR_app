@@ -100,6 +100,10 @@ body {
     overflow-y: auto;
 }
 
+.cardintro-card1 {
+    overflow-y: auto;
+}
+
 /* Card 1 - Employee Intro */
 .cardintro-card1 .sub_intro p {
     margin-bottom: 8px;
@@ -172,7 +176,7 @@ body {
 }
 
 .attendance-summaryhome div {
-    margin: 6px 0;
+    margin: 10px 0;
 }
 
 /* News Feed Container */
@@ -278,3 +282,36 @@ body {
     height: 200px;
   }
 }
+
+
+
+.attendance-summaryhome-top {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+#timer {
+    font-weight: bold;
+    font-size: 18px;
+    color: #1E90FF;
+    padding: 4px 8px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+/* Active state to make timer more prominent */
+.active-timer {
+    color: white;
+    background: #FF4C4C; /* red highlight */
+    box-shadow: 0 0 10px #FF4C4C;
+    animation: pulse 1s infinite;
+}
+
+/* Pulse animation to show it's counting */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+

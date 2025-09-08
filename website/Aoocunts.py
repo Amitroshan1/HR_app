@@ -20,6 +20,9 @@ from zoneinfo import ZoneInfo
 import calendar
 from io import BytesIO
 import pandas as pd
+from datetime import datetime, date
+from .models.attendance import Punch
+
 
 Accounts = Blueprint('Accounts', __name__)
 
@@ -93,7 +96,6 @@ def search_results():
 @Accounts.route('/download_excel_acc', methods=['GET'])
 @login_required
 def download_excel_acc():
-    # ✅ Check for session data
     emails = session.get('admin_emails')
     circle = session.get('circle')
     emp_type = session.get('emp_type')
@@ -103,45 +105,132 @@ def download_excel_acc():
         flash('Session expired. Please search again.', category='error')
         return redirect(url_for('Accounts.search'))
 
-    # ✅ Fetch matching admins
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
-    # ✅ Get IST current year/month and total days in month
     ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
     year, month = ist_now.year, ist_now.month
     num_days = calendar.monthrange(year, month)[1]
 
-    # ✅ Prepare attendance records
-    records = []
-    for admin in admins:
-        result = attend_calc(year, month, num_days, admin.id) or {
-            "attendance": 0,
-            "work from home": 0
-        }
-
-        records.append({
-            'Employee ID': emp_id_map.get(admin.email, 'N/A'),
-            'Name': admin.first_name,
-            'Month': f"{year}-{month:02d}",
-            'Circle': circle,
-            'Employee Type': emp_type,
-            'Total Present Days': result['attendance']
-        })
-
-    # ✅ Convert records to Excel
     output = BytesIO()
-    df = pd.DataFrame(records)
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Attendance')
-    output.seek(0)
+        workbook = writer.book
+        worksheet = workbook.add_worksheet("Attendance")
+        writer.sheets["Attendance"] = worksheet
 
-    # ✅ Send Excel file to download
+        # 📌 Styles
+        border_fmt = workbook.add_format({'border': 1})
+        header_fmt = workbook.add_format({
+            'border': 1, 'bold': True, 'align': 'center',
+            'valign': 'vcenter', 'bg_color': '#D9E1F2'
+        })
+        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})
+        bold_fmt = workbook.add_format({'bold': True})
+
+        # 📌 Write emp_type and circle at the very top
+        worksheet.write(0, 0, "emp_type", bold_fmt)
+        worksheet.write(0, 1, emp_type)
+        worksheet.write(0, 3, "CIRCLE", bold_fmt)
+        worksheet.write(0, 4, circle)
+
+        # Generate weekday headers
+        days = []
+        for d in range(1, num_days + 1):
+            weekday = calendar.day_abbr[date(year, month, d).weekday()][0]  # M, T, W...
+            days.append(f"{d} {weekday}")
+
+        row = 2  # start after header
+        for admin in admins:
+            emp_code = emp_id_map.get(admin.email, 'N/A')
+            emp_name = admin.first_name
+
+            # employee details row
+            worksheet.write(row, 0, "Emp ID:", bold_fmt)
+            worksheet.write(row, 1, emp_code)
+            worksheet.write(row, 3, "Emp Name:", bold_fmt)
+            worksheet.write(row, 4, emp_name)
+            row += 1
+
+            # attendance punches
+            punch_records = Punch.query.filter(
+                Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
+                Punch.admin_id == admin.id
+            ).all()
+
+            punch_map = {p.punch_date.day: p for p in punch_records}
+
+            in_times, out_times, totals = [], [], []
+            for d in range(1, num_days + 1):
+                punch = punch_map.get(d)
+                if punch and punch.punch_in and punch.punch_out:
+                    in_times.append(punch.punch_in.strftime("%H:%M"))
+                    out_times.append(punch.punch_out.strftime("%H:%M"))
+
+                    # ✅ prefer today_work if stored, else calculate
+                    if punch.today_work:
+                        total_minutes = punch.today_work.hour * 60 + punch.today_work.minute
+                    else:
+                        delta = datetime.combine(date.min, punch.punch_out) - datetime.combine(date.min, punch.punch_in)
+                        total_minutes = delta.seconds // 60
+
+                    hours = total_minutes // 60
+                    minutes = total_minutes % 60
+
+                    if hours > 0 and minutes > 0:
+                        totals.append(f"{hours} hrs {minutes} min")
+                    elif hours > 0:
+                        totals.append(f"{hours} hrs")
+                    elif minutes > 0:
+                        totals.append(f"{minutes} min")
+                    else:
+                        totals.append("")
+                else:
+                    in_times.append("")
+                    out_times.append("")
+                    totals.append("")   # keep empty instead of 00:00
+
+            # write Days row
+            worksheet.write(row, 0, "Days", header_fmt)
+            for col, val in enumerate(days, start=1):
+                worksheet.write(row, col, val, header_fmt)
+            row += 1
+
+            # write InTime row
+            worksheet.write(row, 0, "InTime", header_fmt)
+            for col, val in enumerate(in_times, start=1):
+                fmt = absent_fmt if val == "" else border_fmt
+                worksheet.write(row, col, val, fmt)
+            row += 1
+
+            # write OutTime row
+            worksheet.write(row, 0, "OutTime", header_fmt)
+            for col, val in enumerate(out_times, start=1):
+                fmt = absent_fmt if val == "" else border_fmt
+                worksheet.write(row, col, val, fmt)
+            row += 1
+
+            # write Total row
+            worksheet.write(row, 0, "Total", header_fmt)
+            for col, val in enumerate(totals, start=1):
+                fmt = absent_fmt if val == "" else border_fmt
+                worksheet.write(row, col, val, fmt)
+            row += 2  # leave blank row between employees
+
+        # Adjust column width (more compact)
+        worksheet.set_column(0, num_days, 12)
+
+    output.seek(0)
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         download_name=f'Attendance_{circle}_{emp_type}_{month}_{year}.xlsx',
         as_attachment=True
     )
+
+
+
+
+
+
 
 
 
@@ -450,9 +539,63 @@ def close_query(query_id):
     return redirect(url_for('Accounts.create_query'))
 
 
-    
+# --- depart_close_query ---
+@Accounts.route('/delete_depart_query/<int:query_id>/<string:dept>', methods=['GET'])
+@login_required
+def close_depart_query(query_id, dept):
+    print("function is running")
+    print(f"got the id {query_id} department {dept}")
+    query = Query.query.filter_by(id=query_id).first()
 
+    if not query:
+        flash('Query not found you know very well.', 'error')
+        return redirect(url_for('Accounts.create_query'))
 
+    replies = QueryReply.query.filter_by(query_id=query_id).all()
+
+    # Construct email body
+    body_chat = f"Query Title: {query.title}\n"
+    body_chat += f"Departments: {query.emp_type}\n\n"
+    body_chat += "Chat History:\n"
+
+    for reply in replies:
+        admin = Admin.query.filter_by(id=reply.admin_id).first()
+        body_chat += f"{admin.first_name}: {reply.reply_text} (on {reply.created_at})\n"
+
+    body_chat += "\nIssue resolved. Closing this query."
+
+    # Sender = current user
+    sender_email = current_user.email
+    print(f"got the sender email {sender_email}")
+
+    # Receiver = query creator
+    receiver_email = query.admin.email
+    print(f"got the receiver email: {receiver_email}")
+
+    # CC handling: if HR is involved, CC Account; if Account is involved, CC HR
+    cc = []
+    if "Human Resource" in dept:
+        cc.append("chauguleshubham390@gmail.com")  # Account email
+    elif "Account" in dept:
+        cc.append("skchaugule@safotech.com")  # HR email
+
+    print(f"Final CC list: {cc}")
+
+    subject = f"Query Resolved: {query.title}"
+
+    # Send email
+    email_sent = verify_oauth2_and_send_email(
+        sender_email, subject, body_chat, receiver_email, cc
+    )
+
+    if email_sent:
+        db.session.delete(query)
+        db.session.commit()
+        flash('Query resolved and deleted successfully. Notification sent.', 'success')
+    else:
+        flash('Failed to send email. Query was not deleted.', 'error')
+
+    return redirect(url_for('Accounts.create_query'))
 
 
 

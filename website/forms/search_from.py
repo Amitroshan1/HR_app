@@ -30,7 +30,8 @@ class SearchForm(FlaskForm):
                                         ('TEC', 'TEC'),
                                      ('Certification', 'Certification'),
                                      ('Software Development', 'Software Development'),
-                                     ('IT Department', 'IT Department')],
+                                     ('IT Department', 'IT Department'),
+                                     ('Admin','Admin')],
                               validators=[DataRequired()])
     
     submit = SubmitField('Search')

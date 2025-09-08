@@ -1,0 +1,208 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Leave Management{% endblock %}
+{% block content %}
+
+<div class="admin_container">
+
+  <!-- Filters -->
+  <div class="admin_Access-filter-box">
+    <form id="filterForm" method="GET" action="{{ url_for('Admins_access.leave_employee') }}">
+
+      <!-- Employee Type -->
+      <label for="emp_type">Employee Type:</label>
+      <select id="emp_type" name="emp_leave">
+        <option value="">-- Select Employee Type --</option>
+        <option value="Engineering" {% if emp_type_leave=="Engineering" %}selected{% endif %}>Engineering</option>
+        <option value="Human Resource" {% if emp_type_leave=="Human Resource" %}selected{% endif %}>Human Resource</option>
+        <option value="Admin" {% if emp_type_leave=="Admin" %}selected{% endif %}>Admin</option>
+        <option value="Accounts" {% if emp_type_leave=="Accounts" %}selected{% endif %}>Accounts</option>
+        <option value="TEC" {% if emp_type_leave=="TEC" %}selected{% endif %}>TEC</option>
+        <option value="Certification" {% if emp_type_leave=="Certification" %}selected{% endif %}>Certification</option>
+        <option value="Software_Development" {% if emp_type_leave=="Software_Development" %}selected{% endif %}>Software Development</option>
+        <option value="It Department" {% if emp_type_leave=="It Department" %}selected{% endif %}>IT Department</option>
+      </select>
+
+      <!-- Circle -->
+      <label for="circle">Circle:</label>
+      <select id="circle" name="circle_leave">
+        <option value="">-- Select Circle --</option>
+        <option value="NHQ" {% if circle_leave=="NHQ" %}selected{% endif %}>NHQ</option>
+        <option value="Noida" {% if circle_leave=="Noida" %}selected{% endif %}>Noida</option>
+        <option value="Noida-Loire" {% if circle_leave=="Noida-Loire" %}selected{% endif %}>Noida-Loire</option>
+        <option value="Haryana" {% if circle_leave=="Haryana" %}selected{% endif %}>Haryana</option>
+        <option value="Haryana-Loyal" {% if circle_leave=="Haryana-Loyal" %}selected{% endif %}>Haryana-Loyal</option>
+        <option value="Gurugram" {% if circle_leave=="Gurugram" %}selected{% endif %}>Gurugram</option>
+        <option value="Gurugram-Awesome" {% if circle_leave=="Gurugram-Awesome" %}selected{% endif %}>Gurugram-Awesome</option>
+        <option value="Gurugram-Rabbit" {% if circle_leave=="Gurugram-Rabbit" %}selected{% endif %}>Gurugram-Rabbit</option>
+        <option value="Pune" {% if circle_leave=="Pune" %}selected{% endif %}>Pune</option>
+        <option value="Jaipur" {% if circle_leave=="Jaipur" %}selected{% endif %}>Jaipur</option>
+        <option value="Jaipur-Rabbit" {% if circle_leave=="Jaipur-Rabbit" %}selected{% endif %}>Jaipur-Rabbit</option>
+        <option value="Greater Noida" {% if circle_leave=="Greater Noida" %}selected{% endif %}>Greater Noida</option>
+        <option value="Mumbai" {% if circle_leave=="Mumbai" %}selected{% endif %}>Mumbai</option>
+        <option value="G.Noida-Rabbit" {% if circle_leave=="G.Noida-Rabbit" %}selected{% endif %}>G.Noida-Rabbit</option>
+        <option value="Mumbai-Bonita" {% if circle_leave=="Mumbai-Bonita" %}selected{% endif %}>Mumbai-Bonita</option>
+        <option value="Mumbai-Victory" {% if circle_leave=="Mumbai-Victory" %}selected{% endif %}>Mumbai-Victory</option>
+        <option value="Mumbai-Rabbit" {% if circle_leave=="Mumbai-Rabbit" %}selected{% endif %}>Mumbai-Rabbit</option>
+        <option value="Ahmedabad" {% if circle_leave=="Ahmedabad" %}selected{% endif %}>Ahmedabad</option>
+        <option value="Bangalore" {% if circle_leave=="Bangalore" %}selected{% endif %}>Bangalore</option>
+        <option value="Punjab" {% if circle_leave=="Punjab" %}selected{% endif %}>Punjab</option>
+        <option value="Punjab-Loyal" {% if circle_leave=="Punjab-Loyal" %}selected{% endif %}>Punjab-Loyal</option>
+        <option value="Hyderabad" {% if circle_leave=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
+        <option value="Chennai" {% if circle_leave=="Chennai" %}selected{% endif %}>Chennai</option>
+        <option value="Kolkata" {% if circle_leave=="Kolkata" %}selected{% endif %}>Kolkata</option>
+        <option value="Kolkata-Rabbit" {% if circle_leave=="Kolkata-Rabbit" %}selected{% endif %}>Kolkata-Rabbit</option>
+      </select>
+
+      <!-- Status -->
+      <label for="status">Status:</label>
+      <select id="status" name="status">
+        <option value="">-- Select Status --</option>
+        <option value="Pending" {% if status=="Pending" %}selected{% endif %}>Pending</option>
+        <option value="Approved" {% if status=="Approved" %}selected{% endif %}>Approved</option>
+        <option value="Rejected" {% if status=="Rejected" %}selected{% endif %}>Rejected</option>
+      </select>
+
+      <!-- Month -->
+      <label for="month">Month:</label>
+      <select id="month" name="month">
+        <option value="">-- Select Month --</option>
+        {% for m in range(1,13) %}
+          <option value="{{m}}" {% if month==m %}selected{% endif %}>{{m}}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Year -->
+      <label for="year">Year:</label>
+      <select id="year" name="year">
+        <option value="">-- Select Year --</option>
+        {% for y in range(2020, 2031) %}
+          <option value="{{y}}" {% if year==y %}selected{% endif %}>{{y}}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <!-- Pending Leaves -->
+  {% if pending_leaves %}
+  <div class="admin_table_box">
+    <h4 class="table-heading">Pending Leaves</h4>
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>Employee Name</th>
+          <th>Employee Type</th>
+          <th>Circle</th>
+          <th>Leave Type</th>
+          <th>Reason</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leave, emp_type, circle in pending_leaves %}
+        <tr>
+          <td>{{ leave.admin.first_name }}</td>
+          <td>{{ emp_type }}</td>
+          <td>{{ circle }}</td>
+          <td>{{ leave.leave_type }}</td>
+          <td>{{ leave.reason }}</td>
+          <td>{{ leave.start_date }}</td>
+          <td>{{ leave.end_date }}</td>
+          <td>{{ leave.status }}</td>
+          <td>
+            <a href="{{ url_for('Admins_access.reject_leave_admin', leave_id=leave.id) }}" class="leave-admin-reject">Reject</a>
+            <a href="{{ url_for('Admins_access.approve_leave_admin', leave_id=leave.id) }}" class="leave-admin-accept">Accept</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Approved Leaves -->
+  {% if approved_leaves %}
+  <div class="admin_table_box">
+    <h4 class="table-heading">Approved Leaves</h4>
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>Employee Name</th>
+          <th>Employee Type</th>
+          <th>Circle</th>
+          <th>Leave Type</th>
+          <th>Reason</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leave, emp_type, circle in approved_leaves %}
+        <tr>
+          <td>{{ leave.admin.first_name }}</td>
+          <td>{{ emp_type }}</td>
+          <td>{{ circle }}</td>
+          <td>{{ leave.leave_type }}</td>
+          <td>{{ leave.reason }}</td>
+          <td>{{ leave.start_date }}</td>
+          <td>{{ leave.end_date }}</td>
+          <td>{{ leave.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Rejected Leaves -->
+  {% if rejected_leaves %}
+  <div class="admin_table_box">
+    <h4 class="table-heading">Rejected Leaves</h4>
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>Employee Name</th>
+          <th>Employee Type</th>
+          <th>Circle</th>
+          <th>Leave Type</th>
+          <th>Reason</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leave, emp_type, circle in rejected_leaves %}
+        <tr>
+          <td>{{ leave.admin.first_name }}</td>
+          <td>{{ emp_type }}</td>
+          <td>{{ circle }}</td>
+          <td>{{ leave.leave_type }}</td>
+          <td>{{ leave.reason }}</td>
+          <td>{{ leave.start_date }}</td>
+          <td>{{ leave.end_date }}</td>
+          <td>{{ leave.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const form = document.getElementById("filterForm");
+  form.querySelectorAll("select").forEach(select => {
+    select.addEventListener("change", function() {
+      form.submit();
+    });
+  });
+});
+</script>
+
+{% endblock %}
