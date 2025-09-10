@@ -147,6 +147,51 @@
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const latInput = document.getElementById('lat');
+        const lonInput = document.getElementById('lon');
+        const form = document.querySelector('form');
+        const wfh = document.getElementById('wfh');
+        const loadingMsg = document.getElementById('loading-msg');
 
+        function checkLocationReady() {
+            const lat = localStorage.getItem('lat');
+            const lon = localStorage.getItem('lon');
+            const ready = localStorage.getItem('location_ready') === 'true';
+
+            if (ready && lat && lon) {
+                if (latInput) latInput.value = lat;
+                if (lonInput) lonInput.value = lon;
+                if (loadingMsg) loadingMsg.style.display = 'none';
+            } else {
+                if (loadingMsg) loadingMsg.style.display = 'block';
+            }
+            return ready;
+        }
+
+        // Initial check
+        let isReady = checkLocationReady();
+
+        // Retry every second until ready
+        if (!isReady) {
+            const interval = setInterval(() => {
+                if (checkLocationReady()) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        // Prevent submission if location is not ready (unless WFH checked)
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!checkLocationReady() && (!wfh || !wfh.checked)) {
+                    e.preventDefault();
+                    alert("Location is still loading. Please wait a moment or enable WFH.");
+                }
+            });
+        }
+    });
+</script>
 
 {% endblock %}
