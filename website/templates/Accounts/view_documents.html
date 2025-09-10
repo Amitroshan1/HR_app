@@ -1,0 +1,50 @@
+{% extends "Accounts/Acc_base.html" %}
+{% block title %}view Account{% endblock %}
+{% block content %}
+
+
+
+<div class="container">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for field, label in {
+            'aadhaar_front': 'Aadhaar Front',
+            'aadhaar_back': 'Aadhaar Back',
+            'pan_front': 'PAN Front',
+            'pan_back': 'PAN Back',
+            'appointment_letter': 'Appointment Letter',
+            'passbook_front': 'Passbook/Cheque Book',
+            
+            }.items() %}
+            <tr>
+                <td>{{ label }}</td>
+                <td>
+                    {% set file_value = upload_doc | attr(field) %}
+                    {% if file_value %}
+                    <a href="{{ url_for('Accounts.download_document', admin_id=admin.id, doc_field=field) }}">
+                        Download
+                    </a>
+                    |
+                    <a href="{{ url_for('static', filename='uploads/' ~ file_value) }}" target="_blank">
+                        View
+                    </a>
+                    {% else %}
+                    Not Uploaded
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('Accounts.search_results') }}" class="btn btn-primary search">Back to Search</a>
+
+
+</div>
+{% endblock %}

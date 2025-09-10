@@ -23,6 +23,7 @@ from urllib3.exceptions import NewConnectionError
 
 
 
+basedir = os.path.abspath(os.path.dirname(__file__))
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
 
@@ -272,7 +273,9 @@ def create_app():
     app.config['MICROSOFT_USER_INFO_URL'] = "https://graph.microsoft.com/v1.0/me"
 
     # Additional configurations
-    app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
+    # app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
+    app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
+
     app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'png', 'jpeg', 'pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'jfif'}
     app.config['WTF_CSRF_ENABLED'] = True
     app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024 

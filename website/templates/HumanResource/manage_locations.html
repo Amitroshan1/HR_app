@@ -7,11 +7,11 @@
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
 
     <!-- Add location form -->
@@ -31,10 +31,11 @@
         </div>
         {{ form.submit(class="btn btn-primary") }}
     </form>
+</div>
+<hr>
 
-    <hr>
-
-    <!-- Display all locations -->
+<!-- Display all locations -->
+<div class="containertable">
     <h3 class="centered-heading">Existing Locations</h3>
     <table class="table table-bordered">
         <thead>
@@ -54,9 +55,10 @@
                 <td>{{ loc.longitude }}</td>
                 <td>{{ loc.radius }}</td>
                 <td>
-                    <form id="actinbtn" method="POST" action="{{ url_for('profile.delete_location', location_id=loc.id) }}">
+                    <form id="actinbtn" method="POST"
+                        action="{{ url_for('profile.delete_location', location_id=loc.id) }}">
                         {{ form.hidden_tag() }}
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
 
                 </td>

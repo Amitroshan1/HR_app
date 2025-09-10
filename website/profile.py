@@ -274,28 +274,38 @@ def delete_education(education_id):
 @login_required
 def upload_docs():
     form = UploadDocForm()
-    upload_doc = UploadDoc.query.filter_by(admin_id=current_user.id).all()
+    upload_doc = UploadDoc.query.filter_by(admin_id=current_user.id).first()
 
     if form.validate_on_submit():
-        if form.doc_file.data:
-            filename = secure_filename(form.doc_file.data.filename)
-            form.doc_file.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        else:
-            filename = None
+        files = {}
 
-        new_upload_doc = UploadDoc(
-            admin_id=current_user.id,
-            doc_name=form.doc_name.data,
-            doc_number=form.doc_number.data,
-            issue_date=form.issue_date.data,
-            doc_file=filename
-        )
-        db.session.add(new_upload_doc)
+        # Iterate over all form fields
+        for field in ['aadhaar_front', 'aadhaar_back', 
+                      'pan_front', 'pan_back',
+                      'appointment_letter',
+                      'passbook_front']:
+            file_data = getattr(form, field).data
+            if file_data:
+                filename = secure_filename(file_data.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file_data.save(file_path)
+                files[field] = filename
+
+        if not upload_doc:
+            # Create new entry
+            upload_doc = UploadDoc(admin_id=current_user.id, **files)
+            db.session.add(upload_doc)
+            flash("Documents uploaded successfully!", "success")
+        else:
+            # Update existing entry
+            for field, filename in files.items():
+                setattr(upload_doc, field, filename)
+            flash("Documents updated successfully!", "success")
+
         db.session.commit()
-        flash('Document uploaded successfully!', 'success')
         return redirect(url_for('profile.upload_docs'))
 
-    return render_template('profile/upload_doc.html', form=form, upload_doc=upload_doc)
+    return render_template('profile/upload_doc.html', form=form, upload_doc=upload_doc, getattr=getattr  )
 
 
 
@@ -598,7 +608,7 @@ def submit_wfh():
     )
 
 
-@profile.route('/manage-location', methods=['GET', 'POST'])
+@profile.route('/manage-locations', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
     form = LocationForm()

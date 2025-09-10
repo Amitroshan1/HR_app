@@ -3,69 +3,88 @@
 {% block content %}
 
 <div class="container">
-    <h2 class="mt-5 centered-heading">Upload Document</h2>
+    <h2 class="mt-5 centered-heading">Upload Documents</h2>
+
     {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
-    <form method="POST" action="{{ url_for('profile.upload_docs') }}" enctype="multipart/form-data">
+
+    <form class="accountupdate" method="POST" action="{{ url_for('profile.upload_docs') }}"
+        enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-        <div class="form-group">
-            {{ form.doc_name.label }} {{ form.doc_name(class_='form-control') }}
+
+        <div class="form-groupacc">
+            {{ form.aadhaar_front.label }} {{ form.aadhaar_front(class_='form-control-file') }}
         </div>
-        <div class="form-group">
-            {{ form.doc_number.label }} {{ form.doc_number(class_='form-control') }}
+        <div class="form-groupacc">
+            {{ form.aadhaar_back.label }} {{ form.aadhaar_back(class_='form-control-file') }}
         </div>
-        <div class="form-group">
-            {{ form.issue_date.label }} {{ form.issue_date(class_='form-control') }}
+        <div class="form-groupacc">
+            {{ form.pan_front.label }} {{ form.pan_front(class_='form-control-file') }}
         </div>
-        <div class="form-group">
-            {{ form.doc_file.label }} {{ form.doc_file(class_='form-control-file') }}
+        <div class="form-groupacc">
+            {{ form.pan_back.label }} {{ form.pan_back(class_='form-control-file') }}
         </div>
-        <div class="form-group">
+        <div class="form-groupacc">
+            {{ form.appointment_letter.label }} {{ form.appointment_letter(class_='form-control-file') }}
+        </div>
+        <div class="form-groupacc">
+            {{ form.passbook_front.label }} {{ form.passbook_front(class_='form-control-file') }}
+        </div>
+        <div class="form-groupacc">
+            {{ form.passbook_back.label }} {{ form.passbook_back(class_='form-control-file') }}
+        </div>
+
+        <div class="form-group mt-3">
             {{ form.submit(class_='btn btn-primary') }}
         </div>
     </form>
 </div>
 
-<div class="container-details">
-    <h3 class = 'centered-heading'>Existing Uploaded Documents</h3>
+<div class="container-details mt-5">
+    <h3 class="centered-heading">Existing Uploaded Documents</h3>
+    {% if upload_doc %}
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Document Name</th>
-                <th>Document Number</th>
-                <th>Issue Date</th>
-                <th>Document</th>
-                <th>Actions</th>
+                <th>Document Type</th>
+                <th>File</th>
             </tr>
         </thead>
         <tbody>
-            {% for doc in upload_doc %}
+            {% for field, label in {
+            'aadhaar_front': 'Aadhaar Front',
+            'aadhaar_back': 'Aadhaar Back',
+            'pan_front': 'PAN Front',
+            'pan_back': 'PAN Back',
+            'appointment_letter': 'Appointment Letter',
+            'passbook_front': 'Passbook Front',
+            'passbook_back': 'Passbook Back'
+            }.items() %}
             <tr>
-                <td>{{ doc.doc_name }}</td>
-                <td>{{ doc.doc_number }}</td>
-                <td>{{ doc.issue_date }}</td>
+                <td>{{ label }}</td>
                 <td>
-                    {% if doc.doc_file %}
-                    <a href="{{ url_for('static', filename='uploads/' ~ doc.doc_file) }}" target="_blank">View Document</a>
+                    {% set file_value = getattr(upload_doc, field) %}
+                    {% if file_value %}
+                    <a href="{{ url_for('static', filename='uploads/' ~ file_value) }}" target="_blank">
+                        View File
+                    </a>
                     {% else %}
-                    No Document
+                    Not Uploaded
                     {% endif %}
-                </td>
-                <td>
-                    <form method="POST" action="{{ url_for('profile.delete_document', doc_id=doc.id) }}" style="display:inline;">
-                        {{ form.hidden_tag() }}
-                        <button type="submit" class="btn btn-danger">Delete</button>
-                    </form>
+
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+    <p>No documents uploaded yet.</p>
+    {% endif %}
 </div>
 
 {% endblock %}
