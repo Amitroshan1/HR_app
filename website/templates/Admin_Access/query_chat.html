@@ -1,0 +1,48 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Query Chat{% endblock %}
+{% block content %}
+<div class="chat-page-container" style="max-width: 900px; margin: 30px auto; font-family: Arial, sans-serif;">
+
+  <!-- Back Button -->
+  <div style="margin-bottom: 20px;">
+    <a href="{{ url_for('Admins_access.queries_admin') }}"
+       style="display: inline-block; padding: 8px 20px; background-color: #28a745; color: #fff; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 14px;">
+       ← Back to Queries
+    </a>
+  </div>
+
+  <!-- Query Title -->
+  <h2 style="text-align: center; margin-bottom: 20px;">Chat for Query: <span style="color: #007bff;">{{ query.title }}</span></h2>
+
+  <!-- Chat Container -->
+  <div class="chat-container" style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background-color: #f9f9f9; height: 600px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+
+    {% if replies %}
+      {% for reply in replies %}
+        <div style="
+            width: {% if reply.user_type == 'admin' %}95%{% else %}70%{% endif %};
+            padding: 12px 18px;
+            border-radius: 20px;
+            background-color: {% if reply.user_type == 'admin' %}#007bff{% else %}#e0e0e0{% endif %};
+            color: {% if reply.user_type == 'admin' %}#fff{% else %}#000{% endif %};
+            align-self: {% if reply.user_type == 'admin' %}flex-end{% else %}flex-start{% endif %};
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            word-wrap: break-word;
+          ">
+          <strong style="display: block; font-size: 14px; margin-bottom: 6px;">
+            {% if reply.user_type == 'admin' %}Admin {{ reply.admin.first_name }}{% else %}User{% endif %}
+          </strong>
+          <span style="font-size: 14px;">{{ reply.reply_text }}</span>
+          <div style="font-size: 10px; color: rgba(0,0,0,0.6); margin-top: 6px; text-align: right;">
+            {{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p style="text-align: center; color: #888;">No replies yet.</p>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

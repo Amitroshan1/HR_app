@@ -211,17 +211,15 @@ def select_role():
         # Detect if it's phone or username
         if login_input.isdigit():
             # Search by mobile number
-            admin = Signup.query.filter_by(mobile=login_input).first()
+            user = Signup.query.filter_by(mobile=login_input).first()
         else:
             # Search by username
-            admin = Signup.query.filter_by(user_name=login_input).first()
+            user = Signup.query.filter_by(user_name=login_input).first()
 
-        if admin:
-            if admin.check_password(entered_password):
-                if admin.emp_type == 'Admin':
-                    return redirect(url_for('Admins_access.admin_dashboard'))
-                else:
-                    return redirect(url_for('auth.E_homepage'))
+        if user:
+            if user.check_password(entered_password):
+                # Redirect everyone to the same homepage
+                return redirect(url_for('auth.E_homepage'))
             else:
                 flash('Incorrect password. Please try again.', category='error')
         else:
@@ -230,6 +228,7 @@ def select_role():
         return redirect(url_for('auth.select_role'))
 
     return render_template('employee/select_role.html', form=form)
+
 
 
 

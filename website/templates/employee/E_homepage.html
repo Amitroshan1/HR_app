@@ -121,7 +121,7 @@
                 <div class="attendance-summaryhome-bottom">
                     <strong>Working Days:</strong> {{ data.present_days }}
                 </div>
-                {% if resign_data %}
+                {% if resign_data.status=='Approved' %}
                 <div class="attendance-summaryhome-bottom">
                     <strong>Resignation Days Left: {{days}}</strong>
                 </div>

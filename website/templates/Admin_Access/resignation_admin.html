@@ -1,0 +1,113 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Resignations{% endblock %}
+
+{% block content %}
+<h2 class="text-center my-3">Employee Resignations</h2>
+
+<div class="admin_container">
+
+  <!-- Filters -->
+  <div class="admin_Access-filter-box mb-3">
+    <form id="resignationFilterForm" class="admin-box-form" method="GET">
+      <!-- Employee Type -->
+      <label for="emp_type">Employee Type:</label>
+      <select name="emp_type" id="emp_type">
+        <option value="">-- Select Employee Type --</option>
+        <option value="Engineering" {% if request.args.get('emp_type')=="Engineering" %}selected{% endif %}>Engineering</option>
+        <option value="Human Resource" {% if request.args.get('emp_type')=="Human Resource" %}selected{% endif %}>Human Resource</option>
+        <option value="Admin" {% if request.args.get('emp_type')=="Admin" %}selected{% endif %}>Admin</option>
+        <option value="Accounts" {% if request.args.get('emp_type')=="Accounts" %}selected{% endif %}>Accounts</option>
+        <option value="TEC" {% if request.args.get('emp_type')=="TEC" %}selected{% endif %}>TEC</option>
+        <option value="Certification" {% if request.args.get('emp_type')=="Certification" %}selected{% endif %}>Certification</option>
+        <option value="Software_Development" {% if request.args.get('emp_type')=="Software_Development" %}selected{% endif %}>Software Development</option>
+        <option value="It Department" {% if request.args.get('emp_type')=="It Department" %}selected{% endif %}>IT Department</option>
+      </select>
+
+      <!-- Circle -->
+      <label for="circle">Circle:</label>
+      <select name="circle" id="circle">
+        <option value="">-- Select Circle --</option>
+        <option value="NHQ" {% if request.args.get('circle')=="NHQ" %}selected{% endif %}>NHQ</option>
+        <option value="Noida" {% if request.args.get('circle')=="Noida" %}selected{% endif %}>Noida</option>
+        <option value="Haryana" {% if request.args.get('circle')=="Haryana" %}selected{% endif %}>Haryana</option>
+        <option value="Gurugram" {% if request.args.get('circle')=="Gurugram" %}selected{% endif %}>Gurugram</option>
+        <option value="Pune" {% if request.args.get('circle')=="Pune" %}selected{% endif %}>Pune</option>
+        <option value="Jaipur" {% if request.args.get('circle')=="Jaipur" %}selected{% endif %}>Jaipur</option>
+        <option value="Mumbai" {% if request.args.get('circle')=="Mumbai" %}selected{% endif %}>Mumbai</option>
+        <option value="Ahmedabad" {% if request.args.get('circle')=="Ahmedabad" %}selected{% endif %}>Ahmedabad</option>
+        <option value="Bangalore" {% if request.args.get('circle')=="Bangalore" %}selected{% endif %}>Bangalore</option>
+        <option value="Punjab" {% if request.args.get('circle')=="Punjab" %}selected{% endif %}>Punjab</option>
+        <option value="Hyderabad" {% if request.args.get('circle')=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
+        <option value="Chennai" {% if request.args.get('circle')=="Chennai" %}selected{% endif %}>Chennai</option>
+        <option value="Kolkata" {% if request.args.get('circle')=="Kolkata" %}selected{% endif %}>Kolkata</option>
+      </select>
+
+      <!-- Status -->
+      <label for="status">Status:</label>
+      <select name="status" id="status">
+        <option value="">-- All --</option>
+        <option value="Pending" {% if request.args.get('status')=="Pending" %}selected{% endif %}>Pending</option>
+        <option value="Approved" {% if request.args.get('status')=="Approved" %}selected{% endif %}>Approved</option>
+        <option value="Rejected" {% if request.args.get('status')=="Rejected" %}selected{% endif %}>Rejected</option>
+      </select>
+    </form>
+  </div>
+
+  <!-- Resignation Table -->
+  <div class="admin_table_box">
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Employee Type</th>
+          <th>Circle</th>
+          <th>Resignation Date</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for resignation, signup in resignations %}
+        <tr>
+          <td>{{ signup.first_name }}</td>
+          <td>{{ signup.emp_type }}</td>
+          <td>{{ signup.circle }}</td>
+          <td>{{ resignation.resignation_date }}</td>
+          <td>{{ resignation.reason }}</td>
+          <td>{{ resignation.status }}</td>
+          <td>
+            {% if resignation.status == 'Pending' %}
+              <form method="post" action="{{ url_for('Admins_access.update_resignation_status', resignation_id=resignation.id, action='approve') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit">Approve</button>
+              </form>
+              <form method="post" action="{{ url_for('Admins_access.update_resignation_status', resignation_id=resignation.id, action='reject') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit">Reject</button>
+              </form>
+            {% else %}
+              <span class="status-label">{{ resignation.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No resignations found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Auto-submit filter on change -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("resignationFilterForm");
+  form.querySelectorAll("select").forEach(select => {
+    select.addEventListener("change", function () {
+      form.submit();
+    });
+  });
+});
+</script>
+{% endblock %}

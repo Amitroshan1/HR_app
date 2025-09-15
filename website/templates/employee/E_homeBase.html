@@ -29,6 +29,12 @@
                         <ion-icon name="hourglass-outline" class="nav__icon"></ion-icon>
                         <span class="nav__name">Attendance</span>
                     </a>
+                    {% if emp_type == 'Admin' %}
+                    <a href="{{ url_for('Admins_access.admin_dashboard') }}" class="nav__link">
+                    <ion-icon name="shield-outline" class="nav__icon"></ion-icon>
+                    <span class="nav__name">Admin</span>
+                    </a>
+                    {% endif %}
 
                     {% if emp_type == 'Human Resource' %}
                     <a href="/hr_dashbord" class="nav__link">
@@ -78,7 +84,7 @@
                         <span class="nav__name">General</span>
                         <ion-icon name="chevron-down-outline" class="collapse__link"></ion-icon>
                         <ul class="collapse__menu">
-                            <a href="/policy_structure" class="collapse__sublink">Policy</a>
+<!--                            <a href="/policy_structure" class="collapse__sublink">Policy</a>-->
                             <a href="/create_query" class="collapse__sublink">Query</a>
                             <a href="/payslips" class="collapse__sublink">PaySlip</a>
                             <a href="/my_assets" class="collapse__sublink">Assets</a>

@@ -1,0 +1,167 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}View Queries{% endblock %}
+
+{% block content %}
+
+<h2 class="text-center my-3">Employee Queries</h2>
+
+<div class="admin_container">
+
+  <!-- Filters -->
+  <div class="admin_Access-filter-box mb-3">
+    <form id="queriesFilterForm" method="GET">
+      <!-- Employee Type -->
+      <label for="emp_type_queries">Employee Type:</label>
+      <select name="emp_type_queries" id="emp_type_queries">
+        <option value="">-- Select Employee Type --</option>
+        <option value="Engineering" {% if selected_emp_type=="Engineering" %}selected{% endif %}>Engineering</option>
+        <option value="Human Resource" {% if selected_emp_type=="Human Resource" %}selected{% endif %}>Human Resource</option>
+        <option value="Admin" {% if selected_emp_type=="Admin" %}selected{% endif %}>Admin</option>
+        <option value="Accounts" {% if selected_emp_type=="Accounts" %}selected{% endif %}>Accounts</option>
+        <option value="TEC" {% if selected_emp_type=="TEC" %}selected{% endif %}>TEC</option>
+        <option value="Certification" {% if selected_emp_type=="Certification" %}selected{% endif %}>Certification</option>
+        <option value="Software_Development" {% if selected_emp_type=="Software_Development" %}selected{% endif %}>Software Development</option>
+        <option value="It Department" {% if selected_emp_type=="It Department" %}selected{% endif %}>IT Department</option>
+      </select>
+
+      <!-- Circle -->
+      <label for="circle_queries">Circle:</label>
+      <select name="circle_queries" id="circle_queries">
+        <option value="">-- Select Circle --</option>
+        <option value="NHQ" {% if selected_circle=="NHQ" %}selected{% endif %}>NHQ</option>
+        <option value="Noida" {% if selected_circle=="Noida" %}selected{% endif %}>Noida</option>
+        <option value="Noida-Loire" {% if selected_circle=="Noida-Loire" %}selected{% endif %}>Noida-Loire</option>
+        <option value="Haryana" {% if selected_circle=="Haryana" %}selected{% endif %}>Haryana</option>
+        <option value="Haryana-Loyal" {% if selected_circle=="Haryana-Loyal" %}selected{% endif %}>Haryana-Loyal</option>
+        <option value="Gurugram" {% if selected_circle=="Gurugram" %}selected{% endif %}>Gurugram</option>
+        <option value="Pune" {% if selected_circle=="Pune" %}selected{% endif %}>Pune</option>
+        <option value="Mumbai" {% if selected_circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
+      </select>
+    </form>
+  </div>
+
+  <!-- New Queries Table -->
+  {% if new_queries %}
+  <h4 class="table-heading mt-4">New Queries</h4>
+  <div class="admin_table_box">
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Query Title</th>
+          <th>Query Sent To</th>
+          <th>Query Text</th>
+          <th>Created At</th>
+          <th>Status</th>
+          <th>Photo</th>
+          <th>Chat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for query in new_queries %}
+        <tr>
+          <td>{{ query.admin_name }}</td>
+          <td>{{ query.title }}</td>
+          <td>{{ query.sent_to }}</td>
+          <td>{{ query.query_text }}</td>
+          <td>{{ query.created_at.strftime('%Y-%m-%d %H:%M') if query.created_at else '' }}</td>
+          <td>{{ query.status }}</td>
+          <td>
+            {% if query.photo %}
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <img src="{{ url_for('static', filename='uploads/' ~ query.photo) }}"
+                     alt="Query Photo" width="60"
+                     style="border: 1px solid #ccc; border-radius: 4px; padding: 2px; background: #f9f9f9;">
+                <a href="{{ url_for('static', filename='uploads/' ~ query.photo) }}"
+                   target="_blank"
+                   style="display: inline-block; padding: 3px 8px; background-color: #28a745; color: #fff; font-size: 12px; border-radius: 12px; text-decoration: none;">
+                   👁 View
+                </a>
+              </div>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('Admins_access.view_query_chat', query_id=query.id) }}"
+               style="display: inline-block; padding: 3px 8px; background-color: #007bff; color: #fff; font-size: 12px; border-radius: 12px; text-decoration: none;">
+               💬 View Chat ({{ query.replies_count }})
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-muted">No new queries found.</p>
+  {% endif %}
+
+  <!-- Open Queries Table -->
+  {% if open_queries %}
+  <h4 class="table-heading mt-4">Open Queries</h4>
+  <div class="admin_table_box">
+    <table class="admin_table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Query Title</th>
+          <th>Query Sent To</th>
+          <th>Query Text</th>
+          <th>Created At</th>
+          <th>Status</th>
+          <th>Photo</th>
+          <th>Chat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for query in open_queries %}
+        <tr>
+          <td>{{ query.admin_name }}</td>
+          <td>{{ query.title }}</td>
+          <td>{{ query.sent_to }}</td>
+          <td>{{ query.query_text }}</td>
+          <td>{{ query.created_at.strftime('%Y-%m-%d %H:%M') if query.created_at else '' }}</td>
+          <td>{{ query.status }}</td>
+          <td>
+            {% if query.photo %}
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <img src="{{ url_for('static', filename='uploads/' ~ query.photo) }}"
+                     alt="Query Photo" width="60"
+                     style="border: 1px solid #ccc; border-radius: 4px; padding: 2px; background: #f9f9f9;">
+                <a href="{{ url_for('static', filename='uploads/' ~ query.photo) }}"
+                   target="_blank"
+                   style="display: inline-block; padding: 3px 8px; background-color: #28a745; color: #fff; font-size: 12px; border-radius: 12px; text-decoration: none;">
+                   👁 View
+                </a>
+              </div>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('Admins_access.view_query_chat', query_id=query.id) }}"
+               style="display: inline-block; padding: 3px 8px; background-color: #007bff; color: #fff; font-size: 12px; border-radius: 12px; text-decoration: none;">
+               💬 View Chat ({{ query.replies_count }})
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="text-muted">No open queries found.</p>
+  {% endif %}
+
+</div>
+
+<!-- Auto-submit on dropdown change -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("queriesFilterForm");
+  form.querySelectorAll("select").forEach(select => {
+    select.addEventListener("change", function () {
+      form.submit();
+    });
+  });
+});
+</script>
+
+{% endblock %}

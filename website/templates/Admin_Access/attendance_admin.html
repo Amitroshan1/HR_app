@@ -4,36 +4,39 @@
 
 <h2 class="text-center my-3">Attendance</h2>
 
-<div class="admin_Access-filter-box">
-  <form id="attendanceFilterForm" method="GET" action="{{ url_for('Admins_access.attendance_admin') }}">
-    <!-- Employee Type -->
-    <label for="emp_type">Employee Type:</label>
-    <select id="emp_type" name="emp_type_attendance">
-      <option value="">-- Select Employee Type --</option>
-      <option value="Engineering" {% if emp_type=="Engineering" %}selected{% endif %}>Engineering</option>
-      <option value="Human Resource" {% if emp_type=="Human Resource" %}selected{% endif %}>Human Resource</option>
-      <option value="Admin" {% if emp_type=="Admin" %}selected{% endif %}>Admin</option>
-      <option value="Accounts" {% if emp_type=="Accounts" %}selected{% endif %}>Accounts</option>
-      <option value="TEC" {% if emp_type=="TEC" %}selected{% endif %}>TEC</option>
-      <option value="Certification" {% if emp_type=="Certification" %}selected{% endif %}>Certification</option>
-      <option value="Software_Development" {% if emp_type=="Software_Development" %}selected{% endif %}>Software Development</option>
-      <option value="It Department" {% if emp_type=="It Department" %}selected{% endif %}>IT Department</option>
-    </select>
+<div class="admin_container">
+  <div class="admin_Access-filter-box">
+    <form id="attendanceFilterForm" method="GET" action="{{ url_for('Admins_access.attendance_admin') }}">
+      <!-- Employee Type -->
+      <label for="emp_type">Employee Type:</label>
+      <select id="emp_type" name="emp_type_attendance">
+        <option value="">-- Select Employee Type --</option>
+        <option value="Engineering" {% if emp_type=="Engineering" %}selected{% endif %}>Engineering</option>
+        <option value="Human Resource" {% if emp_type=="Human Resource" %}selected{% endif %}>Human Resource</option>
+        <option value="Admin" {% if emp_type=="Admin" %}selected{% endif %}>Admin</option>
+        <option value="Accounts" {% if emp_type=="Accounts" %}selected{% endif %}>Accounts</option>
+        <option value="TEC" {% if emp_type=="TEC" %}selected{% endif %}>TEC</option>
+        <option value="Certification" {% if emp_type=="Certification" %}selected{% endif %}>Certification</option>
+        <option value="Software_Development" {% if emp_type=="Software_Development" %}selected{% endif %}>Software Development</option>
+        <option value="It Department" {% if emp_type=="It Department" %}selected{% endif %}>IT Department</option>
+      </select>
 
-    <!-- Circle -->
-    <label for="circle">Circle:</label>
-    <select id="circle" name="circle_attendance">
-      <option value="">-- Select Circle --</option>
-      <option value="NHQ" {% if circle=="NHQ" %}selected{% endif %}>NHQ</option>
-      <option value="Noida" {% if circle=="Noida" %}selected{% endif %}>Noida</option>
-      <option value="Pune" {% if circle=="Pune" %}selected{% endif %}>Pune</option>
-      <option value="Mumbai" {% if circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
-      <option value="Chennai" {% if circle=="Chennai" %}selected{% endif %}>Chennai</option>
-      <option value="Hyderabad" {% if circle=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
-      <option value="Kolkata" {% if circle=="Kolkata" %}selected{% endif %}>Kolkata</option>
-    </select>
-  </form>
+      <!-- Circle -->
+      <label for="circle">Circle:</label>
+      <select id="circle" name="circle_attendance">
+        <option value="">-- Select Circle --</option>
+        <option value="NHQ" {% if circle=="NHQ" %}selected{% endif %}>NHQ</option>
+        <option value="Noida" {% if circle=="Noida" %}selected{% endif %}>Noida</option>
+        <option value="Pune" {% if circle=="Pune" %}selected{% endif %}>Pune</option>
+        <option value="Mumbai" {% if circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
+        <option value="Chennai" {% if circle=="Chennai" %}selected{% endif %}>Chennai</option>
+        <option value="Hyderabad" {% if circle=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
+        <option value="Kolkata" {% if circle=="Kolkata" %}selected{% endif %}>Kolkata</option>
+      </select>
+    </form>
+  </div>
 </div>
+
 
 
 
@@ -51,9 +54,7 @@
         <th>Status</th>
         <th>Punch In</th>
         <th>Punch Out</th>
-        <th>Work Duration</th>
-        <th>Holiday</th>
-        <th>WFH</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -72,9 +73,17 @@
         </td>
         <td>{{ emp.punch_in or "-" }}</td>
         <td>{{ emp.punch_out or "-" }}</td>
-        <td>{{ emp.today_work or "-" }}</td>
-        <td>{{ "Yes" if emp.is_holiday else "No" }}</td>
-        <td>{{ "Yes" if emp.is_wfh else "No" }}</td>
+        <td>
+  {% if emp.punch_id %}
+    <a href="{{ url_for('Admins_access.view_attendance', punch_id=emp.punch_id) }}"
+       class="btn btn-primary btn-sm">
+      View
+    </a>
+  {% else %}
+    <span class="text-muted">No Record</span>
+  {% endif %}
+</td>
+
       </tr>
       {% endfor %}
     </tbody>

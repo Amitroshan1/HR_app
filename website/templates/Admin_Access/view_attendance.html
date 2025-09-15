@@ -1,0 +1,79 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}View Attendance{% endblock %}
+{% block content %}
+
+<h2 class="text-center my-3">Attendance Details - {{ admin.first_name }}</h2>
+
+<!-- Filters -->
+<div class="admin_container">
+  <div class="admin_Access-filter-box mb-3">
+    <form id="attendanceDetailsFilterForm" method="GET">
+      <label for="month">Month:</label>
+      <select name="month" id="month">
+        <option value="">-- Select Month --</option>
+        {% for m in range(1, 13) %}
+          <option value="{{ m }}" {% if selected_month|int == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="year">Year:</label>
+      <select name="year" id="year">
+        <option value="">-- Select Year --</option>
+        {% for y in range(2023, 2031) %}
+          <option value="{{ y }}" {% if selected_year|int == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+
+<!-- Attendance Table -->
+{% if punch_records %}
+<div class="admin_table_box">
+  <h4 class="table-heading">Attendance Records</h4>
+  <table class="admin_table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Punch In</th>
+        <th>Punch Out</th>
+        <th>Work</th>
+        <th>Holiday</th>
+        <th>WFH</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in punch_records %}
+      <tr>
+        <td>{{ record.punch_date }}</td>
+        <td>{{ record.punch_in or "-" }}</td>
+        <td>{{ record.punch_out or "-" }}</td>
+        <td>{{ record.today_work or "-" }}</td>
+        <td>{{ "Yes" if record.is_holiday else "No" }}</td>
+        <td>{{ "Yes" if record.is_wfh else "No" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No attendance records found.</p>
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("attendanceDetailsFilterForm");
+  const selects = form.querySelectorAll("select");
+
+  selects.forEach(select => {
+    select.addEventListener("change", function () {
+      // preserve both month & year on change
+      const params = new URLSearchParams(new FormData(form));
+      window.location = window.location.pathname + "?" + params.toString();
+    });
+  });
+});
+</script>
+
+{% endblock %}

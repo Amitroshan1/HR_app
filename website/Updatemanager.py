@@ -222,8 +222,6 @@ def manager_access():
     else:
         leave_another = []
 
-
-    # ✅ Final Render
     return render_template(
         'Manager/manager.html',
         users_type_list=users_type_list,
@@ -244,6 +242,7 @@ def wfh_approval():
         (ManagerContact.l2_email == current_email) |
         (ManagerContact.l3_email == current_email)
     ).all()
+
 
     emp_type = [manager.user_type for manager in manager_data]
     circle_type = [manager.circle_name for manager in manager_data]
