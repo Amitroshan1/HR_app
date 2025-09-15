@@ -6,16 +6,16 @@
     <div class="punch-containerhome">
         {% if employee %}
         <div class="intro">
-            <p class="titles">Welcome, {{ employee.name |  title }}</p>
-            <p class="email">Email: {{ employee.email }}</p>
-            <p class="designation">{{ employee.designation | upper }}</p>
+            <p class="titles">Welcome, {{ employee.name | title if employee.name else 'N/A' }}</p>
+            <p class="email">Email: {{ employee.email if employee.email else 'N/A' }}</p>
+            <p class="designation">{{ employee.designation | upper if employee.designation else 'N/A' }}</p>
             <!-- <p class="doj">D.O.J: {{ DOJ.strftime('%Y-%m-%d') if DOJ else 'N/A' }}</p> -->
         </div>
 
         <div class="imagePhoto">
             {% if employee.photo_filename %}
-            <img src="{{ url_for('static', filename='uploads/' ~ employee.photo_filename) }}" alt="Employee Image"
-                class="img-thumbnail">
+            <img src="{{ url_for('static', filename='uploads/' ~ employee.photo_filename) }}" 
+                 alt="Employee Image" class="img-thumbnail">
             {% else %}
             <p class="no-photo">No photo available</p>
             {% endif %}
@@ -31,24 +31,23 @@
     <!-- Left Card: Employee Intro -->
     <div class="cardintro-card1">
         <div class="sub_intro">
-            <p class="Namemp"><strong>Name:</strong> {{ employee.name }}</p>
-            <p class="emp-id"><strong>EMP_ID:</strong> {{ employee.emp_id }}</p>
-            <p class="contacts"><strong>Mobile:</strong>{{ emp.mobile }}</p>
-            <p class="doj"><strong>D.O.J:</strong> {{ emp.doj }}</p>
-            {% if manager_contact %}
-            <p class="manager"><strong>Manager:</strong> {{ manager_contact.l2_name if manager_contact.l2_name else 'N/A' }}</p>
-            <p class="lead"><strong>Lead:</strong> {{ manager_contact.l3_name if manager_contact.l3_name else 'N/A' }}</p>
-            {% else %}
-            <p class="manager"><strong>Manager:</strong> N/A</p>
-            <p class="lead"><strong>Lead:</strong> N/A</p>
-            {% endif %}
+            <p class="Namemp"><strong>Name:</strong> {{ employee.name if employee else 'N/A' }}</p>
+            <p class="emp-id"><strong>EMP_ID:</strong> {{ employee.emp_id if employee else 'N/A' }}</p>
+            <p class="contacts"><strong>Mobile:</strong> {{ emp.mobile if emp else 'N/A' }}</p>
+            <p class="doj"><strong>D.O.J:</strong> {{ emp.doj if emp else 'N/A' }}</p>
 
+            {% if manager_contact %}
+                <p class="manager"><strong>Manager:</strong> {{ manager_contact.l2_name if manager_contact.l2_name else 'N/A' }}</p>
+                <p class="lead"><strong>Lead:</strong> {{ manager_contact.l3_name if manager_contact.l3_name else 'N/A' }}</p>
+            {% else %}
+                <p class="manager"><strong>Manager:</strong> N/A</p>
+                <p class="lead"><strong>Lead:</strong> N/A</p>
+            {% endif %}
         </div>
     </div>
 
     <!-- Right Card: Manager, Punch Time, Attendance -->
     <div class="cardinfo-card2">
-
         <div class="punchtime">
             {% if show_notification %}
             <div class="notification-inside-card">
@@ -61,81 +60,75 @@
             </div>
             {% endif %}
 
-            <form  class="puchclass" method="POST" action="{{ url_for('profile.punch') }}" id="punch-form">
+            <form class="puchclass" method="POST" action="{{ url_for('profile.punch') }}" id="punch-form">
                 {{ form.hidden_tag() }}
 
                 <div class="form-group text-center">
                     <!-- Punch In -->
                     {% if punch_in_time %}
-                    <p class="puchintop"><strong>Punch In:</strong> {{ punch_in_time }}</p>
+                        <p class="puchintop"><strong>Punch In:</strong> {{ punch_in_time }}</p>
                     {% else %}
-                    {{ form.punch_in(class_='btn btn-primary') }}
+                        {{ form.punch_in(class_='btn btn-primary') }}
                     {% endif %}
 
                     <!-- Punch Out -->
                     {% if punch_out_time %}
-                    <p class="punchoutbot"><strong>Punch Out:</strong> {{ punch_out_time }}</p>
+                        <p class="punchoutbot"><strong>Punch Out:</strong> {{ punch_out_time }}</p>
                     {% else %}
-                    {{ form.punch_out(class_='btn btn-secondary') }}
+                        {{ form.punch_out(class_='btn btn-secondary') }}
                     {% endif %}
                 </div>
             </form>
 
-
-
             <div class="attendance-summaryhome">
                 {% if punch_in_time_count and not punch_out_time %}
-    <div class="attendance-summaryhome-top">
-        <strong>Work Duration:</strong>
-        <span id="timer">00:00:00</span>
-    </div>
+                <div class="attendance-summaryhome-top">
+                    <strong>Work Duration:</strong>
+                    <span id="timer">00:00:00</span>
+                </div>
 
-    <script>
-        function startTimer(startTime) {
-            const start = new Date(startTime).getTime();
+                <script>
+                    function startTimer(startTime) {
+                        const start = new Date(startTime).getTime();
 
-            setInterval(function() {
-                const now = new Date().getTime();
-                let diff = Math.floor((now - start) / 1000);
+                        setInterval(function() {
+                            const now = new Date().getTime();
+                            let diff = Math.floor((now - start) / 1000);
 
-                let hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-                let minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-                let seconds = String(diff % 60).padStart(2, '0');
+                            let hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+                            let minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                            let seconds = String(diff % 60).padStart(2, '0');
 
-                document.getElementById('timer').textContent = `${hours}:${minutes}:${seconds}`;
-            }, 1000);
-        }
-        startTimer("{{ punch_in_time_count }}");
-    </script>
-{% endif %}
-
-
-
+                            document.getElementById('timer').textContent = `${hours}:${minutes}:${seconds}`;
+                        }, 1000);
+                    }
+                    startTimer("{{ punch_in_time_count }}");
+                </script>
+                {% endif %}
 
                 <div class="attendance-summaryhome-top">
-                    <strong>Privilage Leave:</strong> {{ data.privilege_leave_balance }}
+                    <strong>Privilage Leave:</strong> {{ data.privilege_leave_balance if data else 'N/A' }}
                 </div>
                 <div class="attendance-summaryhome-bottom">
-                    <strong>Casual Leave:</strong> {{ data.casual_leave_balance }}
+                    <strong>Casual Leave:</strong> {{ data.casual_leave_balance if data else 'N/A' }}
                 </div>
                 <div class="attendance-summaryhome-bottom">
-                    <strong>Working Days:</strong> {{ data.present_days }}
+                    <strong>Working Days:</strong> {{ data.present_days if data else 'N/A' }}
                 </div>
                 {% if resign_data.status=='Approved' %}
                 <div class="attendance-summaryhome-bottom">
-                    <strong>Resignation Days Left: {{days}}</strong>
+                    <strong>Resignation Days Left:</strong> {{ days if days else 'N/A' }}
                 </div>
                 {% endif %}
             </div>
         </div>
-
     </div>
 
     <!-- News Feed -->
-    <div class="news-feed-container-fixedhome" a>
+    <div class="news-feed-container-fixedhome">
         <h2 class="centered-heading">News Feed</h2>
-        <marquee class="marquee-scroll" behavior="scroll" direction="up" scrollamount="3" onmouseover="this.stop();"
-            onmouseout="this.start();">
+        <marquee class="marquee-scroll" behavior="scroll" direction="up" scrollamount="3" 
+                 onmouseover="this.stop();" onmouseout="this.start();">
             {% for news_feed in news_feeds %}
             <div class="news-feed-item">
                 <a href="{{ url_for('hr.view_news_feed', news_feed_id=news_feed.id) }}">
@@ -152,10 +145,53 @@
             {% endfor %}
         </marquee>
     </div>
-
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const latInput = document.getElementById('lat');
+        const lonInput = document.getElementById('lon');
+        const form = document.querySelector('form');
+        const wfh = document.getElementById('wfh');
+        const loadingMsg = document.getElementById('loading-msg');
 
+        function checkLocationReady() {
+            const lat = localStorage.getItem('lat');
+            const lon = localStorage.getItem('lon');
+            const ready = localStorage.getItem('location_ready') === 'true';
 
+            if (ready && lat && lon) {
+                if (latInput) latInput.value = lat;
+                if (lonInput) lonInput.value = lon;
+                if (loadingMsg) loadingMsg.style.display = 'none';
+            } else {
+                if (loadingMsg) loadingMsg.style.display = 'block';
+            }
+            return ready;
+        }
+
+        // Initial check
+        let isReady = checkLocationReady();
+
+        // Retry every second until ready
+        if (!isReady) {
+            const interval = setInterval(() => {
+                if (checkLocationReady()) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        // Prevent submission if location is not ready (unless WFH checked)
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!checkLocationReady() && (!wfh || !wfh.checked)) {
+                    e.preventDefault();
+                    alert("Location is still loading. Please wait a moment or enable WFH.");
+                }
+            });
+        }
+    });
+</script>
 
 {% endblock %}

@@ -4,6 +4,7 @@ from .forms.search_from import SearchForm,DetailForm
 from .forms.manager import PaySlipForm
 from .models.news_feed import PaySlip
 import os
+from .models.education import UploadDoc
 from werkzeug.utils import secure_filename
 from .models.Admin_models import Admin
 from .models.signup import Signup
@@ -28,47 +29,43 @@ Accounts = Blueprint('Accounts', __name__)
 
 
 
-@Accounts.route('/Acc_dashbord',methods=['GET','POST'])
+@Accounts.route('/Acc_dashbord', methods=['GET', 'POST'])
 @login_required
-def Acc_dashbord():
-    queries = Query.query.all()
-    return render_template('Accounts/Acc_dashboard.html', queries=queries)
- 
-@Accounts.route('/Acc_search', methods=['GET', 'POST'])
-@login_required
-def search():
-    form = SearchForm()
+def Acc_dashboard():
+    form = SearchForm() # existing data you already show
+    admins = []                   # search results placeholder
+
     if form.validate_on_submit():
         circle = form.circle.data
         emp_type = form.emp_type.data
 
-        # Query Signup model based on circle and emp_type
+        # Query Signup model
         signups = Signup.query.filter_by(circle=circle, emp_type=emp_type).all()
 
         if not signups:
             flash('No matching entries found', category='error')
-            return redirect(url_for('Accounts.search'))
+        else:
+            emails = [signup.email for signup in signups]
+            emp_map = {i.email: i.emp_id for i in signups}
 
-        # Get email addresses from Signup model
-        emails = [signup.email for signup in signups]
-        emp_map = {i.email: i.emp_id for i in signups}
+            admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
-        # Query Admin model based on email addresses
-        admins = Admin.query.filter(Admin.email.in_(emails)).all()
-
-
-        if not admins:
-            flash('No matching entries found in Admin records', category='error')
-            return redirect(url_for('Accounts.search'))
-
-        session['admin_emails'] = emails
-        session['circle'] = circle
-        session['emp_type'] = emp_type
-        session['emp_id_map'] = emp_map
-
+            if not admins:
+                flash('No matching entries found in Admin records', category='error')
+            else:
+                # Store search context in session if needed
+                session['admin_emails'] = emails
+                session['circle'] = circle
+                session['emp_type'] = emp_type
+                session['emp_id_map'] = emp_map
         return redirect(url_for('Accounts.search_results'))
+    return render_template(
+        'Accounts/search_form.html',
+        form=form,
+        
+        admins=admins   # pass search results
+    )
 
-    return render_template('Accounts/search_form.html', form=form)
 
 
 @Accounts.route('/Acc_search_results', methods=['GET'])
@@ -85,12 +82,68 @@ def search_results():
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
     data = [i.id for i in admins]
 
+  
     return render_template(
         'Accounts/search_result.html', 
         admins=admins, 
         circle=circle, 
         emp_type=emp_type
     )
+
+
+
+
+
+
+@Accounts.route('/view_documents/<int:admin_id>', methods=['GET'])
+@login_required
+def view_documents(admin_id):
+    # Find the admin
+    admin = Admin.query.get_or_404(admin_id)
+
+    # Get uploaded docs for this admin
+    upload_doc = UploadDoc.query.filter_by(admin_id=admin.id).first()
+
+    if not upload_doc:
+        flash("No documents uploaded for this employee.", "warning")
+        return redirect(url_for("Accounts.Acc_dashboard"))
+
+    # Pass admin + uploaded doc to template
+    return render_template(
+        "Accounts/view_documents.html",
+        admin=admin,
+        upload_doc=upload_doc
+    )
+
+
+@Accounts.route('/download_document/<int:admin_id>/<doc_field>', methods=['GET'])
+@login_required
+def download_document(admin_id, doc_field):
+    # Validate admin
+    admin = Admin.query.get_or_404(admin_id)
+    upload_doc = UploadDoc.query.filter_by(admin_id=admin.id).first()
+
+    if not upload_doc:
+        flash("No documents found.", "error")
+        return redirect(url_for("Accounts.view_documents", admin_id=admin.id))
+
+    # Check requested field exists
+    if not hasattr(upload_doc, doc_field):
+        flash("Invalid document type.", "error")
+        return redirect(url_for("Accounts.view_documents", admin_id=admin.id))
+
+    filename = getattr(upload_doc, doc_field)
+    if not filename:
+        flash("Document not uploaded.", "error")
+        return redirect(url_for("Accounts.view_documents", admin_id=admin.id))
+
+    # Serve file
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static', 'uploads'),
+        filename,
+        as_attachment=True  # set False for inline view
+    )
+
 
 
 @Accounts.route('/download_excel_acc', methods=['GET'])
@@ -250,15 +303,10 @@ def add_payslip(admin_id):
         return redirect(url_for('Accounts.search_results'))
 
     if request.method == 'POST':
-        print("==== INSIDE POST ====")
-        print("Request method:", request.method)
-        print("Form validated?", form.validate_on_submit())
-        print("Form errors:", form.errors)
-        print("Form data:", form.data)
+        
 
         file = request.files.get('payslip_file')
-        print("Uploaded file object:", file)
-        print("Uploaded file name:", file.filename if file else "No file uploaded")
+        
 
         file_path = None
         filename = None
@@ -304,7 +352,7 @@ def add_payslip(admin_id):
             return redirect(url_for('Accounts.add_payslip', admin_id=admin_id))
 
     # ✅ ALWAYS return something, even if form not submitted
-    return render_template('accounts/add_payslip.html', form=form, employee=employee)
+    return render_template('Accounts/add_payslip.html', form=form, employee=employee)
 
 
 
@@ -433,7 +481,7 @@ def chat_query(query_id):
         if reply_text:
             # Determine if current user is the one who created the query
             is_creator = emp_type_of_creator.emp_type == signups_data.emp_type
-            print(f"Is creator: {is_creator}")  # Debugging line
+            
 
             # Set user_type accordingly
             user_type = "User" if is_creator else "Team"
@@ -603,7 +651,7 @@ def close_depart_query(query_id, dept):
 @login_required
 def policy_structure():
     user_email = current_user.email
-    print(user_email)
+    
     signup_data  = Signup.query.filter_by(email=user_email).first()
     return render_template('policy/policy_structure.html',signup_data=signup_data)
 

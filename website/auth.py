@@ -227,7 +227,9 @@ def select_role():
 
         return redirect(url_for('auth.select_role'))
 
+    current_app.logger.debug("[SELECT_ROLE] Rendering select_role.html")
     return render_template('employee/select_role.html', form=form)
+
 
 
 
@@ -236,13 +238,11 @@ def select_role():
 @login_required
 def E_homepage():
     current_id = current_user.id
-    resign_data = Resignation.query.filter_by(admin_id = current_id).first()
+    resign_data = Resignation.query.filter_by(admin_id=current_id).first()
     if resign_data:
         days = get_remaining_resignation_days(resign_data.resignation_date)
     else:
         days = None
-
-
 
     emails_data = [
         email
@@ -260,75 +260,81 @@ def E_homepage():
     data =get_user_working_summary(current_user.id, datetime.now().year, datetime.now().month)
     
 
-    if not employee:
-        flash("No employee record found for the current user.")
-        return render_template("employee/E_homepage.html")
+    # Default values
+    emp, DOJ, emp_type, circle, manager_contact, news_feeds = None, None, None, None, None, []
+    count_new_queries, queries_for_emp_type, show_notification = 0, [], False
+    punch_in_time, punch_out_time, punch_in_time_count_str = None, None, None
 
-    # Get Signup record from email to get emp_type
-    emp = Signup.query.filter_by(email=employee.email).first()
-    if emp is None:
-        flash("offical mail is not same in employee details,Plz contact HR.", "danger")
-        return redirect(url_for('auth.logout'))
+    if employee:
+        # Get Signup record from email to get emp_type
+        emp = Signup.query.filter_by(email=employee.email).first()
+        if not emp:
+            flash("Official mail is not same in employee details, please contact HR.", "danger")
+            return redirect(url_for('auth.logout'))
 
+        DOJ = emp.doj
+        emp_type = emp.emp_type
+        circle = emp.circle
 
-    count_new_queries = Query.query.filter_by(emp_type=emp.emp_type, status='New').count()
+        count_new_queries = Query.query.filter_by(emp_type=emp.emp_type, status='New').count()
 
-    # Get DOJ from Signup model
-    DOJ = emp.doj if emp else None
+        # Manager contact
+        manager_contact = ManagerContact.query.filter_by(user_email=current_user.email).first()
 
+        # If not found, fallback to circle + emp_type
+        if not manager_contact:
+            manager_contact = ManagerContact.query.filter_by(
+                circle_name=circle,
+                user_type=emp_type
+            ).first()
+
+        # News feeds
+        news_feeds = NewsFeed.query.filter(
+            (NewsFeed.circle == circle) & (NewsFeed.emp_type == emp_type) |
+            (NewsFeed.circle == 'All') & (NewsFeed.emp_type == 'All') |
+            (NewsFeed.circle == circle) & (NewsFeed.emp_type == 'All') |
+            (NewsFeed.circle == 'All') & (NewsFeed.emp_type == emp_type)
+        ).order_by(NewsFeed.created_at.desc()).all()
+
+        # Queries relevant to emp_type
+        all_queries = Query.query.all()
+        queries_for_emp_type = [query for query in all_queries if emp_type in query.emp_type.split(',')]
+        show_notification = bool(queries_for_emp_type)
+
+        # Punch data
+        today = date.today()
+        punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
+        punch_in_time = punch.punch_in if punch else None
+        punch_out_time = punch.punch_out if punch else None
+
+        punch_in_count = punch_in_time_count()
+        punch_in_time_count_str = punch_in_count.isoformat() if punch_in_count else None
+    else:
+        flash("No employee record found for the current user.", "danger")
 
     form = PunchForm()
 
-    # Get today's punch-in and punch-out time
-    today = date.today()
-    punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
-    punch_in_time = punch.punch_in if punch else None
-    punch_out_time = punch.punch_out if punch else None
-
-    # Get emp_type and circle from Signup model
-    emp_type = emp.emp_type if emp else None
-    circle = emp.circle if emp else None
-
-
-    # Get manager contact information based on circle and emp_type
-    manager_contact = ManagerContact.query.filter_by(circle_name=circle, user_type=emp_type).first()
-
-    # Get news feeds based on circle and emp_type
-    news_feeds = NewsFeed.query.filter(
-        (NewsFeed.circle == circle) & (NewsFeed.emp_type == emp_type) |
-        (NewsFeed.circle == 'All') & (NewsFeed.emp_type == 'All') |
-        (NewsFeed.circle == circle) & (NewsFeed.emp_type == 'All') |
-        (NewsFeed.circle == 'All') & (NewsFeed.emp_type == emp_type)
-    ).order_by(NewsFeed.created_at.desc()).all()
-
-    # Get queries relevant to emp_type
-    all_queries = Query.query.all()
-    queries_for_emp_type = [query for query in all_queries if emp_type in query.emp_type.split(',')]
-
-    # Determine if there are any notifications for the current emp_type
-    show_notification = bool(queries_for_emp_type)
-
-    punch_in_count = punch_in_time_count()
-    punch_in_time_count_str = punch_in_count.isoformat() if punch_in_count else None
-
-    # Pass necessary data to the template
-    return render_template("employee/E_homepage.html",
-                           employee=employee,
-                           punch_in_time=punch_in_time,
-                           punch_out_time=punch_out_time,
-                           manager_contact=manager_contact,
-                           news_feeds=news_feeds,
-                           DOJ=DOJ,
-                           flag=flag,
-                           data=data,  # Pass the working summary data
-                           show_notification=show_notification,
-                           queries_for_emp_type=queries_for_emp_type,
-                           emp_type=emp_type, count_new_queries=count_new_queries,
-                           emp=emp,
-                           form=form,  # Pass emp_type to the template
-                           days=days,  # Pass emp_type to the template
-                           resign_data=resign_data,
-                           punch_in_time_count=punch_in_time_count_str)
+    # Always return employee (even if None)
+    return render_template(
+        "employee/E_homepage.html",
+        employee=employee,
+        punch_in_time=punch_in_time,
+        punch_out_time=punch_out_time,
+        manager_contact=manager_contact,
+        news_feeds=news_feeds,
+        DOJ=DOJ,
+        flag=flag,
+        data=data,
+        show_notification=show_notification,
+        queries_for_emp_type=queries_for_emp_type,
+        emp_type=emp_type,
+        count_new_queries=count_new_queries,
+        emp=emp,
+        form=form,
+        days=days,
+        resign_data=resign_data,
+        punch_in_time_count=punch_in_time_count_str
+    )
 
 
 @auth.route('/logout')

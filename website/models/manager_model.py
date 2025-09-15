@@ -10,6 +10,7 @@ class ManagerContact(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     circle_name = db.Column(db.String(50), nullable=False)
     user_type = db.Column(db.String(50), nullable=False)
+    user_email = db.Column(db.String(100), default=None,nullable=True)
     l1_name = db.Column(db.String(100), nullable=True)
     l1_mobile = db.Column(db.String(15), nullable=True)
     l1_email = db.Column(db.String(100), nullable=True)

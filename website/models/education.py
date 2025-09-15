@@ -30,12 +30,25 @@ class UploadDoc(db.Model, UserMixin):
     
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
-    doc_name = db.Column(db.String(100), nullable=False)
-    doc_number = db.Column(db.String(100), nullable=False)
-    issue_date = db.Column(db.Date, nullable=False)
-    doc_file = db.Column(db.String(200), nullable=True)
 
+    # Aadhaar
+    aadhaar_front = db.Column(db.String(200), nullable=True)
+    aadhaar_back = db.Column(db.String(200), nullable=True)
+
+    # PAN
+    pan_front = db.Column(db.String(200), nullable=True)
+    pan_back = db.Column(db.String(200), nullable=True)
+
+    # Appointment Letter
+    appointment_letter = db.Column(db.String(200), nullable=True)
+
+    # Passbook
+    passbook_front = db.Column(db.String(200), nullable=True)
+    
+
+    # Relationship
     admin = db.relationship('Admin', back_populates='document_details')
 
     def __repr__(self):
-        return f'<UploadDoc {self.doc_name} - {self.doc_number}>'
+        return f'<UploadDoc admin_id={self.admin_id}>'
+

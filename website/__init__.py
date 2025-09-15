@@ -23,6 +23,7 @@ from urllib3.exceptions import NewConnectionError
 
 
 
+basedir = os.path.abspath(os.path.dirname(__file__))
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
 
@@ -43,7 +44,7 @@ class Config:
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
-    test_url = urlparse(urljoin(request.host_url, target))
+    test_url = urlparse(urljoin(request.host_url, target)) 
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 
@@ -51,13 +52,12 @@ def is_safe_url(target):
 def update_leave_balances():
     """ Updates leave balances monthly for employees after 6 months of joining. """
     from .models.attendance import LeaveBalance
-    from .models.Admin_models import Admin
-    from .models.signup import Signup
+    from .models.Admin_models import Admin  
+    from .models.signup import Signup 
 
     with scheduler.app.app_context():
         leave_balances = LeaveBalance.query.all()
         if not leave_balances:
-            print("No leave balances found in the database.")
             return
 
         today = datetime.now().date()
@@ -66,7 +66,7 @@ def update_leave_balances():
             signup = Signup.query.filter_by(id=balance.signup_id).first()
             # print(f"Processing leave balance for signup ID: {balance.signup_id}, Admin ID: {signup.email if signup else 'None'}")
             admin = Admin.query.filter_by(email=signup.email).first() if signup else None
-            # print(f"Found admin: {admin.email if admin else 'None'} for signup ID: {signup.id if signup else 'None'}")
+            # print(f"Found admin: {admin.email if admin else 'None'} for signup ID: {signup.id if signup else 'None'}")  
             if not admin:
                 continue  # Skip if admin not found
 
@@ -98,7 +98,7 @@ def update_leave_balances():
 
         try:
             db.session.commit()
-            print("Leave balances updated successfully.")
+
         except Exception as e:
             print(f"Database commit failed: {str(e)}")
 
@@ -130,24 +130,24 @@ def send_reminder_emails():
 
             # Calculate time since last activity (query creation or reply)
             time_since_last_activity = now - last_activity_time
-
+            
 
             # If 3 days or more have passed since last activity, send reminder to that particular employee's
             if time_since_last_activity >= timedelta(days=3):
                 departments = query.emp_type.split(', ')
-
+                
 
                 # Assign department email (example)
                 if 'Human Resource' in departments:
-                    department_email = 'chauguleshubham390@gmail.com'
+                    department_email = 'hr@saffotech.com'
                 elif 'Accounts' in departments:
-                    department_email = 'skchaugule@saffotech.com'
-
+                    department_email = 'accounts@saffotech.com'
+               
 
                 cc = None
 
                 admin_email = query.admin.email
-
+                
 
                 subject = f"Reminder: No response to query '{query.title}' in 3 days"
                 body = f"""
@@ -169,7 +169,7 @@ def leave_reminder_email():
     from .models.manager_model import ManagerContact
     from .common import verify_oauth2_and_send_email
 
-
+   
 
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
@@ -222,9 +222,9 @@ def leave_reminder_email():
                 HR & Admin Team
                 """
                 verify_oauth2_and_send_email(user_email, subject, body, l3_leader, [cc])
-
-
-
+                
+                
+        
 
 def create_app():
     app = Flask(__name__)
@@ -248,10 +248,10 @@ def create_app():
 
 
 
-
-
+    
+  
     # OAuth2 Configuration
-    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_SECURE'] = True  
     app.config['SESSION_COOKIE_HTTPONLY'] = True
 
     app.config['OAUTH2_CLIENT_ID'] = os.getenv("OAUTH2_CLIENT_ID")
@@ -273,7 +273,9 @@ def create_app():
     app.config['MICROSOFT_USER_INFO_URL'] = "https://graph.microsoft.com/v1.0/me"
 
     # Additional configurations
-    app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
+    # app.config['UPLOAD_FOLDER'] = 'website/static/uploads'
+    app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'uploads')
+
     app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'png', 'jpeg', 'pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'jfif'}
     app.config['WTF_CSRF_ENABLED'] = True
     app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
@@ -285,37 +287,37 @@ def create_app():
     mail.init_app(app)
     csrf.init_app(app)
 
+    
+    # ⬇️ Add this block immediately after
+    from flask_wtf.csrf import CSRFError
+    from flask import redirect, url_for, flash, session
 
-    # # ⬇️ Add this block immediately after
-    # from flask_wtf.csrf import CSRFError
-    # from flask import redirect, url_for, flash, session
-    #
-    # @app.errorhandler(CSRFError)
-    # def handle_csrf_error(e):
-    #     session.clear()
-    #     flash('Your session has expired. Please log in again.', 'warning')
-    #     return redirect(url_for('auth.login'))  # make sure this route exists
-    #
-    #
-    #
-    # from requests.exceptions import RequestException
-    #
-    #
-    # @app.errorhandler(RequestException)
-    # @app.errorhandler(NewConnectionError)
-    # def handle_network_errors(e):
-    #     session.clear()
-    #     flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
-    #     return redirect(url_for('auth.login'))  # or your actual login route
-    #
-    #
-    # scheduler.init_app(app)
-    # Session.init_app(app)
-    #
-    # @app.errorhandler(413)
-    # def too_large(e):
-    #     flash("Upload failed: File size exceeds limit.", "warning")
-    #     return redirect(request.url)
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        session.clear()
+        flash('Your session has expired. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))  # make sure this route exists
+
+
+
+    from requests.exceptions import RequestException
+
+
+    @app.errorhandler(RequestException)
+    @app.errorhandler(NewConnectionError)
+    def handle_network_errors(e):
+        session.clear()
+        flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
+        return redirect(url_for('auth.login'))  # or your actual login route
+
+
+    scheduler.init_app(app)
+    Session.init_app(app)
+
+    @app.errorhandler(413)
+    def too_large(e):
+        flash("Upload failed: File size exceeds limit.", "warning")
+        return redirect(request.url)
 
 
 

@@ -164,8 +164,9 @@ header .logo img {
 
 .container {
     max-width: 600px;
-    margin: 0 auto;
+
     padding: 20px;
+    overflow-x:visible;
 }
 
 h2 {
@@ -594,10 +595,18 @@ button.btn-primary:hover {
     background-color: #0056b3;
 }
 
+
+
+.table {
+    width: 75%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
 /* Table styles */
 .table_details {
     width: 75%;
-    margin-left: 160px;
+    margin-left: 100px;
     border-collapse: collapse;
     margin-bottom: 20px;
 }
@@ -768,6 +777,81 @@ form {
     margin: 70px;        /* This will now apply */
 }
 
+/* Container styling */
+.containertable {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Heading */
+.containertable .centered-heading {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Table styling */
+.containertable table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    background: #fafafa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Table header */
+.containertable thead th {
+    background: #007bff;
+    color: #fff;
+    text-align: center;
+    padding: 12px;
+    font-weight: 600;
+}
+
+/* Table body */
+.containertable tbody td {
+    text-align: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    color: #444;
+}
+
+/* Zebra rows */
+.containertable tbody tr:nth-child(even) {
+    background: #f4f7fb;
+}
+
+/* Hover effect */
+.containertable tbody tr:hover {
+    background: #e9f2ff;
+}
+
+/* Delete button form */
+#actinbtn {
+    margin: 0;
+}
+
+/* Button styling */
+.containertable .btn-danger {
+    background: #dc3545;
+    border: none;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.containertable .btn-danger:hover {
+    background: #c82333;
+}
 .admin_Access-filter-container {
     display: flex;
     align-items: center;

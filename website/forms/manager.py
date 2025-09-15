@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField,FileField,PasswordField
+from wtforms import StringField, SubmitField, SelectField,FileField,PasswordField,EmailField
 from wtforms.validators import DataRequired, Email, Length, Optional,EqualTo
 from flask_wtf.file import FileAllowed
 
@@ -31,7 +31,7 @@ class ManagerContactForm(FlaskForm):
                                      ('Software Development', 'Software Development'),
                                      ('IT Department', 'IT Department')],
                               validators=[DataRequired()])
-    
+    user_email=EmailField('Lead/Manager', validators=[Optional(), Email()])
     l1_name = StringField('L1 Name', validators=[Optional()])
     l1_mobile = StringField('L1 Mobile', validators=[Optional(), Length(min=10, max=10)])
     l1_email = StringField('L1 Email', validators=[Optional(), Email()])

@@ -28,10 +28,22 @@ from .models.Admin_models import Admin
 from .models.signup import Signup
 from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
 from datetime import timedelta
-from .utility import punch_time
+from .utility import punch_time,add_comp_off
 from sqlalchemy.exc import SQLAlchemyError
 
+import logging
+
 profile=Blueprint('profile',__name__)
+
+
+
+
+# Configure logging for your app
+logging.basicConfig(
+    level=logging.DEBUG,  # <-- change to INFO in production
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 @profile.route('/emp_details',methods=['GET','POST'])
@@ -268,28 +280,38 @@ def delete_education(education_id):
 @login_required
 def upload_docs():
     form = UploadDocForm()
-    upload_doc = UploadDoc.query.filter_by(admin_id=current_user.id).all()
+    upload_doc = UploadDoc.query.filter_by(admin_id=current_user.id).first()
 
     if form.validate_on_submit():
-        if form.doc_file.data:
-            filename = secure_filename(form.doc_file.data.filename)
-            form.doc_file.data.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        else:
-            filename = None
+        files = {}
 
-        new_upload_doc = UploadDoc(
-            admin_id=current_user.id,
-            doc_name=form.doc_name.data,
-            doc_number=form.doc_number.data,
-            issue_date=form.issue_date.data,
-            doc_file=filename
-        )
-        db.session.add(new_upload_doc)
+        # Iterate over all form fields
+        for field in ['aadhaar_front', 'aadhaar_back',
+                      'pan_front', 'pan_back',
+                      'appointment_letter',
+                      'passbook_front']:
+            file_data = getattr(form, field).data
+            if file_data:
+                filename = secure_filename(file_data.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file_data.save(file_path)
+                files[field] = filename
+
+        if not upload_doc:
+            # Create new entry
+            upload_doc = UploadDoc(admin_id=current_user.id, **files)
+            db.session.add(upload_doc)
+            flash("Documents uploaded successfully!", "success")
+        else:
+            # Update existing entry
+            for field, filename in files.items():
+                setattr(upload_doc, field, filename)
+            flash("Documents updated successfully!", "success")
+
         db.session.commit()
-        flash('Document uploaded successfully!', 'success')
         return redirect(url_for('profile.upload_docs'))
 
-    return render_template('profile/upload_doc.html', form=form, upload_doc=upload_doc)
+    return render_template('profile/upload_doc.html', form=form, upload_doc=upload_doc, getattr=getattr  )
 
 
 
@@ -317,20 +339,41 @@ def delete_document(doc_id):
 
 
 
+def haversine(user_lat, user_lon, saved_lat, saved_lon):
+    """
+    Calculate distance between two (lat, lon) points in meters.
+    """
+    # Earth radius in meters
+    R = 6371000
+
+    logger.debug(f"[HAVERSINE INPUT] user=({user_lat}, {user_lon}), saved=({saved_lat}, {saved_lon})")
+
+    # Convert degrees to radians
+    dlat = radians(saved_lat - user_lat)
+    dlon = radians(saved_lon - user_lon)
+
+    a = sin(dlat / 2) ** 2 + cos(radians(user_lat)) * cos(radians(saved_lat)) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    distance = R * c
+
+    logger.debug(f"[HAVERSINE RESULT] Distance={distance:.2f}m")
+    return distance
+
+
 def is_near_saved_location(user_lat, user_lon, locations):
-    def haversine(lat1, lon1, lat2, lon2):
-        # Earth radius in meters  
-        R = 6371000  
-        dlat = radians(lat2 - lat1)
-        dlon = radians(lon2 - lon1)
-        a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
-        c = 2 * asin(sqrt(a))
-        return R * c
+    logger.debug(f"[DEBUG] User location: lat={user_lat}, lon={user_lon}")
 
     for loc in locations:
         distance = haversine(user_lat, user_lon, loc.latitude, loc.longitude)
+        logger.debug(f"[CHECK] Location(id={loc.id}, name={loc.name}) "
+                     f"Lat={loc.latitude}, Lon={loc.longitude}, "
+                     f"Radius={loc.radius}, Distance={distance:.2f}m")
+
         if distance <= loc.radius:
+            logger.info(f"✅ User is within radius of location {loc.name}")
             return True
+
+    logger.warning("❌ No matching location found")
     return False
 
 
@@ -378,6 +421,7 @@ def punch():
     selected_month = request.args.get('month', today.month, type=int)
     selected_year = request.args.get('year', today.year, type=int)
 
+
     calendar.setfirstweekday(calendar.MONDAY)
     first_day = date(selected_year, selected_month, 1)
     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
@@ -393,16 +437,20 @@ def punch():
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
-        # print(lat, lon, is_wfh)
-        # Load all saved locations from the DB
+
+        logger.debug(f"Punch attempt by user {current_user.email}: lat={lat}, lon={lon}, WFH={is_wfh}")
+
         locations = Location.query.all()
-        # print(locations)
-        # Check if the user is near any saved location
+        logger.debug(f"Loaded {len(locations)} saved locations from DB")
+
         is_near_location = False
         if lat is not None and lon is not None:
             is_near_location = is_near_saved_location(lat, lon, locations)
 
+        logger.debug(f"is_near_location result: {is_near_location}")
+
         if not is_near_location and not is_wfh:
+            logger.warning(f"User {current_user.email} tried punching outside location without WFH")
             flash("You are not near any authorized location and 'Work From Home' is not selected.", "danger")
             return redirect(url_for('profile.punch'))
 
@@ -410,7 +458,7 @@ def punch():
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
                 return redirect(request.url)  # Stop further execution
-            elif not check_wfh():
+            elif is_wfh and not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
             elif punch and punch.punch_in:
@@ -442,7 +490,7 @@ def punch():
 
                 return redirect(request.url)
 
-            elif not check_wfh():
+            elif is_wfh and not check_wfh():
 
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
 
@@ -457,11 +505,52 @@ def punch():
                 # Set punch-out time
 
                 punch.punch_out = datetime.now().time()
-                punch_time(current_user.id)
-
+                punch_time(current_user.id)  # Update today's work time
                 db.session.commit()
 
+                # ✅ Check if today is Sunday
+                if datetime.today().weekday() == 6:  # Sunday
+                    user = Signup.query.filter_by(email=current_user.email).first()
+                    add_comp_off(user.id)
+                    print("Comp Off added for Sunday work!")
                 flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
+
+
+    # Suppose punch.total_work is datetime.time (HH:MM:SS)
+    if punch and punch.today_work:
+        total_work_time = punch.today_work
+        total_work_td = timedelta(
+            hours=total_work_time.hour,
+            minutes=total_work_time.minute,
+            seconds=total_work_time.second
+        )
+        logger.debug(f"[WORK TIME] User {current_user.email} total work time today: {total_work_time}")
+        is_full_day = total_work_td >= timedelta(hours=8, minutes=10,seconds=10)  # 8 hours and 30 minutes
+        logger.debug(f"[WORK TIME] User {current_user.email} worked {total_work_td}, Full day: {is_full_day}")
+    else:
+        is_full_day = False
+
+
+
+    last_day = calendar.monthrange(selected_year, selected_month)[1]
+
+    leave_records = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == current_user.id,
+        LeaveApplication.start_date <= date(selected_year, selected_month, last_day),
+        LeaveApplication.end_date >= date(selected_year, selected_month, 1),
+        LeaveApplication.status == 'Approved'
+    ).all()
+
+
+    # Collect all leave days
+    leave_days = set()
+    for leave in leave_records:
+        current_day = leave.start_date
+        while current_day <= leave.end_date:
+            leave_days.add(current_day)
+            current_day += timedelta(days=1)
+
+
 
     return render_template(
         'profile/punch.html',
@@ -471,8 +560,11 @@ def punch():
         today=today,
         selected_month=selected_month,
         selected_year=selected_year,
-        calendar=calendar
+        calendar=calendar,
+        is_full_day=is_full_day,
+        leave_days=leave_days
     )
+
 
 
 @profile.route('/download_excel_emp', methods=['GET'])
@@ -660,7 +752,7 @@ def submit_wfh():
     )
 
 
-@profile.route('/manage-location', methods=['GET', 'POST'])
+@profile.route('/manage-locations', methods=['GET', 'POST'])
 @login_required
 def manage_locations():
     form = LocationForm()
@@ -726,14 +818,13 @@ def apply_leave():
 
      # Variable to track extra leave days
 
-
          # Still useful for alerts or UI
 
         # Privilege Leave
         if leave_type == 'Privilege Leave':
             if leave_days > leave_balance.privilege_leave_balance:
-                extra_leave = leave_days - float(leave_balance.privilege_leave_balance)
-                deducted_days = leave_days - extra_leave
+                extra_leave = leave_days - leave_balance.privilege_leave_balance
+                deducted_days = leave_balance.privilege_leave_balance
                 leave_balance.privilege_leave_balance = 0
             else:
                 deducted_days = leave_days
@@ -746,7 +837,7 @@ def apply_leave():
                 return redirect(url_for('profile.apply_leave'))
 
             if leave_days > leave_balance.casual_leave_balance:
-                flash('You do not have enough Casual Leave balance for the requested days. Please apply under Privilege Leave instead.', 'danger')
+                flash('Not enough Casual Leave. Please apply under Privilege Leave instead.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
 
             deducted_days = leave_days
@@ -758,24 +849,35 @@ def apply_leave():
                 flash('Half Day Leave can only be applied for one day.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
 
+            deducted_days = 0.5
             if leave_balance.casual_leave_balance >= 0.5:
-                deducted_days = 0.5
                 leave_balance.casual_leave_balance -= 0.5
             elif leave_balance.privilege_leave_balance >= 0.5:
-                deducted_days = 0.5
                 leave_balance.privilege_leave_balance -= 0.5
                 flash('0.5 day deducted from Privilege Leave due to insufficient Casual Leave.', 'info')
             else:
+                flash('Not enough balance. 0.5 day marked as Extra Leave.', 'warning')
                 extra_leave = 0.5
-                flash(f'Not enough Privilege Leave either. {extra_leave} day marked as Extra Leave.', 'warning')
 
+        # Compensatory Leave
+        elif leave_type == "Compensatory Leave":
+            if not leave_balance or leave_balance.compensatory_leave_balance <= 0:
+                flash('You do not have any Compensatory Leave balance available.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
 
-                if leave_type == "Compensatory Leave":
-                    if leave_days > 3:
-                        flash('Compensatory Leave can only be applied for Two days.', 'danger')
-                        return redirect(url_for('profile.apply_leave'))
+            if leave_days > 2:
+                flash('You can apply for a maximum of 2 Compensatory Leave days at once.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
 
-                    flash('Please ask Lead/manager for Approve Compensatory Leave.', 'danger')
+            if leave_days > leave_balance.compensatory_leave_balance:
+                flash(f'You only have {leave_balance.compensatory_leave_balance} Compensatory Leave days available.', 'danger')
+                return redirect(url_for('profile.apply_leave'))
+
+            leave_balance.compensatory_leave_balance -= leave_days
+            flash('Please ask Lead/Manager for approval of Compensatory Leave.', 'info')
+
+        db.session.commit()
+
 
 
         # Save leave application
@@ -793,8 +895,8 @@ def apply_leave():
         # Email notification
         manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle,
                                                          user_type=employee.emp_type).first()
-        department_email = 'singhroshan968@gmail.com'
-        cc_emails = ['singhroshan9688@gmail.com']
+        department_email = 'hr@saffotech.com'
+        cc_emails = []
         if manager_contact:
             cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
 

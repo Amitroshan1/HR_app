@@ -218,6 +218,39 @@ body {
 }
 
 
+
+/* Container for each field */
+.form-groupacc {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+/* Label styling */
+.form-groupacc label {
+    min-width: 180px;   /* fixed width so inputs line up nicely */
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+/* File input styling */
+.form-groupacc input[type="file"] {
+    flex: 1;   /* takes remaining space */
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f9f9f9;
+}
+
+/* Submit button styling */
+.form-group.mt-3 .btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+
+
 /* Responsive (optional) */
 
 

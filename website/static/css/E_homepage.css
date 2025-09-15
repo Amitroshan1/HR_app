@@ -403,6 +403,94 @@ form {
     }
 }
 
+
+
+
+/* ============================= */
+/* Media Queries only for Punch Form */
+/* ============================= */
+
+/* Tablet */
+
+
+
+
+
+.legend-box {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 15px;
+    font-family: Arial, sans-serif;
+    flex-wrap: wrap; /* allows wrapping on smaller screens */
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+/* Colors */
+.legend-color.present {
+    background-color: #4CAF50;
+}
+.legend-color.pending {
+    background-color: hsl(0, 100%, 51%);
+}
+.legend-color.halfday {
+    background-color: #fffb00;
+}
+.legend-color.leave {
+    background-color: #f5935b;
+}
+
+
+/* Tablet screens */
+@media (max-width: 992px) {
+    .legend-box {
+        gap: 15px;
+    }
+    .legend-item span:last-child {
+        font-size: 0.9em;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .legend-box {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .legend-item span:last-child {
+        font-size: 0.85em;
+    }
+    .legend-color {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .puch_form {
+        padding: 10px;
+    }
+    .form-grouppuch span {
+        font-size: 12px;
+        text-align: center;
+    }
+}
+
+
 img {
     width: 200px;
     height: 200px;
@@ -418,16 +506,55 @@ h3 {
 .container-details {
     width: 100%;
     margin: auto;
+    padding-top: 20px;
+}
 
+/* Tablet screens */
+@media (max-width: 992px) {
+    .container-details {
+        width: 95%;
+        padding-top: 15px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .container-details {
+        width: 100%;
+        padding-top: 10px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 }
 
 /* Table Styles */
 .table {
     width: 100%;
+    margin-top: 20px;
     border-collapse: collapse;
     margin: 10px 0;
     font-size: 1em;
     box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Tablet screens */
+@media (max-width: 992px) {
+    .table {
+        font-size: 0.9em;
+        margin: 8px 0;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .table {
+        
+        margin: 5px 0;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
 }
 
 .table thead tr {
@@ -489,7 +616,7 @@ h3 {
 
 .container {
     position: relative;
-    width: 50%;
+    width: 65%;
     padding: 20px;
     margin: auto;
     overflow: visible;
@@ -503,6 +630,26 @@ h3 {
     min-height: 150px;
     /* Optional: prevents collapse when content is small */
 }
+
+/* Tablet screens */
+@media (max-width: 992px) {
+    .container {
+        width: 145%;
+        padding: 15px;
+        border-radius: 20px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .container {
+        width: 106%;
+        padding: 8px;
+        border-radius: 15px;
+        min-height: 120px;
+    }
+}
+
 
 .row {
     display: flex;
@@ -532,9 +679,6 @@ h3 {
 }
 
 /* Additional padding for the details below the image */
-.container-details {
-    padding-top: 20px;
-}
 
 
 /* Style for Add Member button */
@@ -592,9 +736,7 @@ h3 {
 }
 
 /* Container Styles */
-.container {
-    margin: 20px auto;
-}
+
 
 /* Heading Styles */
 
@@ -609,11 +751,7 @@ h3 {
 }
 
 /* Calendar Styles */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
+
 
 .table th,
 .table td {
@@ -630,7 +768,7 @@ h3 {
 }
 
 .bg-warning {
-    background-color: #ffc107 !important;
+    background-color: hsl(0, 100%, 51%) !important;
     /* Yellow for missed punch out */
 }
 
@@ -647,6 +785,16 @@ h3 {
 .text-white {
     color: white !important;
     /* Ensure text is white on success */
+}
+
+.custom-red {
+    background-color: #fffb00 !important;
+    color: black !important;
+}
+
+.custom-blue {
+    background-color: #f5935b !important;
+    color: white !important;
 }
 
 /* Styles for Form Elements */
@@ -716,6 +864,57 @@ h3 {
     background-color: #0056b3;
 }
 
+.leave-balance2 {
+    display: flex;                  /* Arrange items side by side */
+    justify-content: space-between; /* Even spacing */
+    gap: 15px;                      /* Space between boxes */
+    margin: 20px 0;
+}
+
+.leave123 {
+    flex: 1;                        /* Equal width for all three */
+    text-align: center;
+    background-color: #78f578;      /* Light background */
+    border: 1px solid #ccc;         /* Subtle border */
+    border-radius: 8px;             /* Rounded corners */
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* Soft shadow */
+    transition: transform 0.2s ease;
+}
+
+.leave123:hover {
+    transform: translateY(-3px);    /* Small hover effect */
+}
+
+
+
+/* 📱 Tablet screens */
+@media (max-width: 992px) {
+    .leave-balance2 {
+        gap: 10px;
+    }
+
+    .leave123 {
+        font-size: 15px;
+        padding: 12px;
+    }
+}
+
+/* 📱 Mobile screens */
+@media (max-width: 576px) {
+    .leave-balance2 {
+          /* Stack boxes */
+        gap: 12px;
+    }
+
+    .leave123 {
+        width: 100%;             /* Full width */
+        font-size: 14px;
+        padding: 10px;
+    }
+}
 
 /* Content wrapper with padding */
 .punch-container {
@@ -978,6 +1177,28 @@ button[type="button"], .btn {
     .ms-button:active {
         background-color: #aff522;
     }
+
+    /* Tablet screens */
+@media (max-width: 992px) {
+    .ms-button {
+        font-size: 13px;
+        padding: 8px 18px;
+        margin-left: 20px;
+        border-radius: 8px;
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+    .ms-button {
+        display: block;        /* Stack instead of inline */
+        width: 60%;           /* Full width button */
+        margin: 10px 0;        /* Vertical spacing */
+        font-size: 14px;
+        padding: 10px;
+        text-align: center;
+    }
+}
 
 
     /* Main form container */

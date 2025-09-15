@@ -27,6 +27,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Bank Details</th>
                     <th>Update</th>
                 </tr>
             </thead>
@@ -35,6 +36,11 @@
                     <tr>
                         <td>{{ admin.first_name }}</td>
                         <td>{{ admin.email }}</td>
+                        <td>
+                            <a href="{{ url_for('Accounts.view_documents', admin_id=admin.id) }}">
+                        View
+                            </a>
+                        </td>
                         <td>
                             <a href="{{ url_for('Accounts.add_payslip', admin_id=admin.id) }}">Add PaySlip</a>
                         </td>
@@ -46,7 +52,7 @@
         <p>No matching entries found.</p>
     {% endif %}
 
-    <a href="{{ url_for('Accounts.search') }}" class="btn btn-primary search">Back to Search</a>
+    <a href="{{ url_for('Accounts.Acc_dashboard') }}" class="btn btn-primary search">Back to Search</a>
 
     <a href="{{ url_for('Accounts.download_excel_acc') }}"
        class="btn mt-3"

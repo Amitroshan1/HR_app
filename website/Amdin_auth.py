@@ -61,7 +61,7 @@ def admin_sign_up():
             db.session.commit()
 
             # Create a LeaveBalance record for the new signup
-            new_leave_balance = LeaveBalance(signup_id=new_signup.id, privilege_leave_balance=0.0, casual_leave_balance=0.0)
+            new_leave_balance = LeaveBalance(signup_id=new_signup.id, privilege_leave_balance=0.0, casual_leave_balance=0.0,compensatory_leave_balance=0.0)
 
             # Add leave balance to session and commit
             db.session.add(new_leave_balance)
