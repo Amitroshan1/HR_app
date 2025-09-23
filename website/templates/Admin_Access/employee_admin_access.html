@@ -1,0 +1,155 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Employee Details{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    <p>{{ message }}</p>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+
+<div class="emp-admin-vertical-wrapper">
+  <h2>Employee Details</h2>
+
+  <form id="emp-admin-form" method="POST" action="{{ url_for('Admins_access.employee_inline_update', emp_id=emp_data.id) }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <table class="emp-admin-vertical-table">
+      <tbody>
+        <tr>
+          <th>Photo</th>
+          <td>
+            {% if emp_data.photo_filename %}
+              <img src="{{ url_for('static', filename='uploads/' + emp_data.photo_filename) }}" alt="Photo" class="emp-photo">
+            {% else %}
+              <img src="{{ url_for('static', filename='default-user.png') }}" alt="Photo" class="emp-photo">
+            {% endif %}
+            <input type="file" name="photo_filename" class="inline-input" style="margin-top:5px;">
+
+          </td>
+        </tr>
+
+        <tr>
+          <th>Name</th>
+          <td><input type="text" name="name" value="{{ emp_data.name }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Email</th>
+          <td><input type="email" name="email" value="{{ emp_data.email }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Father Name</th>
+          <td><input type="text" name="father_name" value="{{ emp_data.father_name }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Mother Name</th>
+          <td><input type="text" name="mother_name" value="{{ emp_data.mother_name }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Marital Status</th>
+          <td><input type="text" name="marital_status" value="{{ emp_data.marital_status }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Spouse Name</th>
+          <td><input type="text" name="spouse_name" value="{{ emp_data.spouse_name }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Date of Birth</th>
+          <td><input type="date" name="dob" value="{{ emp_data.dob }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Employee ID</th>
+          <td><input type="text" name="emp_id" value="{{ emp_data.emp_id }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Mobile</th>
+          <td><input type="text" name="mobile" value="{{ emp_data.mobile }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Gender</th>
+          <td><input type="text" name="gender" value="{{ emp_data.gender }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Emergency Mobile</th>
+          <td><input type="text" name="emergency_mobile" value="{{ emp_data.emergency_mobile }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Caste</th>
+          <td><input type="text" name="caste" value="{{ emp_data.caste }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Nationality</th>
+          <td><input type="text" name="nationality" value="{{ emp_data.nationality }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Language</th>
+          <td><input type="text" name="language" value="{{ emp_data.language }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Religion</th>
+          <td><input type="text" name="religion" value="{{ emp_data.religion }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Blood Group</th>
+          <td><input type="text" name="blood_group" value="{{ emp_data.blood_group }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Designation</th>
+          <td><input type="text" name="designation" value="{{ emp_data.designation }}" class="inline-input"></td>
+        </tr>
+
+        <tr>
+          <th>Permanent Address</th>
+          <td>
+            <textarea name="permanent_address" class="inline-input">{{ emp_data.permanent_address_line1 }} {{ emp_data.permanent_address_line2 }} {{ emp_data.permanent_address_line3 }} {{ emp_data.permanent_district }} {{ emp_data.permanent_state }} {{ emp_data.permanent_pincode }}</textarea>
+          </td>
+        </tr>
+
+        <tr>
+          <th>Present Address</th>
+          <td>
+            <textarea name="present_address" class="inline-input">{{ emp_data.present_address_line1 }} {{ emp_data.present_address_line2 }} {{ emp_data.present_address_line3 }} {{ emp_data.present_district }} {{ emp_data.present_state }} {{ emp_data.present_pincode }}</textarea>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+
+    <div class="emp-admin-buttons">
+      <button type="submit" class="perticular-emp-btn save-btn">Save</button>
+      <button type="button" class="perticular-emp-btn delete-red" onclick="confirmDelete({{ emp_data.id }})">Delete</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function confirmDelete(empId) {
+    if(confirm("Are you sure you want to delete this employee?")) {
+      window.location.href = "/employee-delete/" + empId;
+    }
+  }
+</script>
+{% endblock %}

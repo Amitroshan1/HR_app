@@ -1,0 +1,98 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Education Details{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message {{ category }}">
+                <p>{{ message }}</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="asset-table-container">
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Qualification</th>
+        <th>Institution</th>
+        <th>Board</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Marks</th>
+        <th>Document</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for edu in education_data %}
+      <tr>
+        <th scope="row">{{ loop.index }}</th>
+        <td>{{ edu.qualification }}</td>
+        <td>{{ edu.institution }}</td>
+        <td>{{ edu.board }}</td>
+        <td>{{ edu.start }}</td>
+        <td>{{ edu.end }}</td>
+        <td>{{ edu.marks }}</td>
+        <td>
+          {% if edu.doc_file %}
+            <img src="{{ url_for('static', filename='uploads/' + edu.doc_file) }}"
+                 class="asset-thumb"
+                 width="60" height="60"
+                 onclick="openAssetImage(this.src)">
+          {% else %}
+            No document
+          {% endif %}
+        </td>
+        <td>
+          <div class="asset-btn-group">
+            <button class="asset-btn asset-btn-danger" onclick="confirmDelete({{ edu.id }})">Delete</button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Lightbox overlay (reuse asset image overlay) -->
+<div class="asset-img-overlay" id="assetImgOverlay" onclick="closeAssetImage()">
+  <img id="assetPreviewImg" src="">
+</div>
+
+<script>
+function confirmDelete(eduId) {
+  if(confirm("Are you sure you want to delete this record?")) {
+    fetch("/education-delete/" + eduId, { method: "POST" })
+    .then(response => response.json())
+    .then(data => {
+      if(data.status === "success") {
+        alert("Education record deleted successfully!");
+        location.reload();
+      } else {
+        alert("Error deleting record!");
+      }
+    });
+  }
+}
+
+// Image preview functions (same as asset)
+function openAssetImage(src) {
+  const overlay = document.getElementById('assetImgOverlay');
+  const img = document.getElementById('assetPreviewImg');
+  img.src = src;
+  overlay.style.display = 'flex';
+}
+
+function closeAssetImage() {
+  const overlay = document.getElementById('assetImgOverlay');
+  overlay.style.display = 'none';
+}
+</script>
+
+{% endblock %}

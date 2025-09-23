@@ -1,0 +1,165 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Expense Claims{% endblock %}
+
+{% block content %}
+
+<h2>Expense Claims for Admin ID: {{ admin_id }}</h2>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="claim-table-container">
+
+  {% for claim in claim_data %}
+  <div class="claim-card">
+    <div class="claim-header">
+      <span><strong>Employee:</strong> {{ claim.employee_name }}</span>
+      <span><strong>Project:</strong> {{ claim.project_name }}</span>
+      <span><strong>Travel:</strong> {{ claim.travel_from_date }} to {{ claim.travel_to_date }}</span>
+      <button class="btn-view" onclick="toggleClaim('{{ claim.id }}')">View Claim</button>
+    </div>
+
+    <div class="claim-body" id="claim-{{ claim.id }}">
+      {% set pending_items = claim.expenses|selectattr('status','equalto','Pending')|list %}
+      {% set approved_items = claim.expenses|selectattr('status','equalto','Approved')|list %}
+      {% set rejected_items = claim.expenses|selectattr('status','equalto','Rejected')|list %}
+
+      {% if pending_items %}
+      <h3 class="status-heading pending">Pending</h3>
+      <table class="line-item-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Purpose</th>
+            <th>Amount</th>
+            <th>Currency</th>
+            <th>Attachment</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pending_items %}
+          <tr>
+            <td>{{ item.sr_no }}</td>
+            <td>{{ item.date }}</td>
+            <td>{{ item.purpose }}</td>
+            <td>{{ item.amount }}</td>
+            <td>{{ item.currency }}</td>
+            <td>
+              {% if item.Attach_file %}
+                <a href="{{ url_for('static', filename='uploads/' + item.Attach_file) }}" target="_blank">View</a>
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('Admins_access.claim_line_item_status', item_id=item.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" name="status" value="Approved" class="btn-approve">Approve</button>
+                <button type="submit" name="status" value="Rejected" class="btn-reject">Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if approved_items %}
+      <h3 class="status-heading approved">Approved</h3>
+      <table class="line-item-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Purpose</th>
+            <th>Amount</th>
+            <th>Currency</th>
+            <th>Attachment</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in approved_items %}
+          <tr>
+            <td>{{ item.sr_no }}</td>
+            <td>{{ item.date }}</td>
+            <td>{{ item.purpose }}</td>
+            <td>{{ item.amount }}</td>
+            <td>{{ item.currency }}</td>
+            <td>
+              {% if item.Attach_file %}
+                <a href="{{ url_for('static', filename='uploads/' + item.Attach_file) }}" target="_blank">View</a>
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+            <td>{{ item.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if rejected_items %}
+      <h3 class="status-heading rejected">Rejected</h3>
+      <table class="line-item-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Purpose</th>
+            <th>Amount</th>
+            <th>Currency</th>
+            <th>Attachment</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in rejected_items %}
+          <tr>
+            <td>{{ item.sr_no }}</td>
+            <td>{{ item.date }}</td>
+            <td>{{ item.purpose }}</td>
+            <td>{{ item.amount }}</td>
+            <td>{{ item.currency }}</td>
+            <td>
+              {% if item.Attach_file %}
+                <a href="{{ url_for('static', filename='uploads/' + item.Attach_file) }}" target="_blank">View</a>
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+            <td>{{ item.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<script>
+function toggleClaim(claimId) {
+    const body = document.getElementById(`claim-${claimId}`);
+    body.style.display = (body.style.display === "block") ? "none" : "block";
+}
+</script>
+
+{% endblock %}
+
+
+
+

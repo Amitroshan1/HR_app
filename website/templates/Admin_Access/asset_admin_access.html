@@ -1,0 +1,109 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Asset Details{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message {{ category }}">
+                <p>{{ message }}</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="asset-table-container">
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Images</th>
+        <th>Issue Date</th>
+        <th>Return Date</th>
+        <th>Remark</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in asset_data %}
+      <tr>
+        <form id="asset-admin-form-{{ asset.id }}" method="POST"
+              action="{{ url_for('Admins_access.asset_inline_update', emp_id=asset.id) }}"
+              enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <th scope="row">{{ loop.index }}</th>
+          <td><input type="text" name="name" value="{{ asset.name }}"></td>
+          <td><textarea name="description">{{ asset.description }}</textarea></td>
+
+          <td>
+            {% if asset.image_files %}
+              {% for img in asset.image_files.split(',') %}
+                <img src="{{ url_for('static', filename='uploads/' + img) }}"
+                     class="asset-thumb"
+                     width="60" height="60"
+                     onclick="openAssetImage(this.src)">
+              {% endfor %}
+            {% else %}
+              <p>No images</p>
+            {% endif %}
+            <input type="file" name="image_files" multiple>
+          </td>
+
+          <td><input type="date" name="issue_date" value="{{ asset.issue_date }}"></td>
+          <td><input type="date" name="return_date" value="{{ asset.return_date }}"></td>
+          <td><textarea name="remark">{{ asset.remark }}</textarea></td>
+
+          <td>
+            <div class="asset-btn-group">
+              <button type="submit" class="asset-btn asset-btn-success">Save</button>
+              <button type="button" class="asset-btn asset-btn-danger" onclick="confirmDelete({{ asset.id }})">Delete</button>
+            </div>
+          </td>
+        </form>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Image preview overlay -->
+<div class="asset-img-overlay" id="assetImgOverlay" onclick="closeAssetImage()">
+  <img id="assetPreviewImg" src="">
+</div>
+
+<script>
+function confirmDelete(assetId) {
+  if(confirm("Are you sure you want to delete this asset?")) {
+    fetch("/asset-delete/" + assetId, { method: "POST" })
+    .then(response => response.json())
+    .then(data => {
+      if(data.status === "success") {
+        alert("Asset deleted successfully!");
+        location.reload();
+      } else {
+        alert("Error deleting asset!");
+      }
+    });
+  }
+}
+
+// Image preview functions
+function openAssetImage(src) {
+  const overlay = document.getElementById('assetImgOverlay');
+  const img = document.getElementById('assetPreviewImg');
+  img.src = src;
+  overlay.style.display = 'flex';
+}
+
+function closeAssetImage() {
+  const overlay = document.getElementById('assetImgOverlay');
+  overlay.style.display = 'none';
+}
+</script>
+
+{% endblock %}

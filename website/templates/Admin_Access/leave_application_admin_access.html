@@ -1,0 +1,82 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Leave Applications{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message {{ category }}">
+                <p>{{ message }}</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="asset-table-container">
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Leave Type</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Status</th>
+        <th>Reason</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for leave in leave_application_data %}
+      <tr>
+        <th scope="row">{{ loop.index }}</th>
+        <td>{{ leave.leave_type }}</td>
+        <td>{{ leave.start_date }}</td>
+        <td>{{ leave.end_date }}</td>
+        <td>{{ leave.status }}</td>
+        <td>{{ leave.reason }}</td>
+        <td>
+          <div class="asset-btn-group">
+            <button class="asset-btn asset-btn-danger" onclick="confirmDelete({{ leave.id }})">Delete</button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Lightbox overlay (reuse asset image overlay) -->
+<div class="asset-img-overlay" id="assetImgOverlay" onclick="closeAssetImage()">
+  <img id="assetPreviewImg" src="">
+</div>
+
+<script>
+function confirmDelete(leaveId) {
+  if(confirm("Are you sure you want to delete this leave application?")) {
+    const csrfToken = "{{ csrf_token() }}";  // Get token from template
+
+    fetch("/leave-application-delete/" + leaveId, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken  // Send token in header
+      },
+      body: JSON.stringify({})  // Can send empty body
+    })
+    .then(response => response.json())
+    .then(data => {
+      if(data.status === "success") {
+        alert("Leave application deleted successfully!");
+        location.reload();
+      } else {
+        alert("Error deleting leave application!");
+      }
+    });
+  }
+}
+
+</script>
+
+{% endblock %}

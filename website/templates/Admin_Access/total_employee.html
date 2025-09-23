@@ -2,90 +2,90 @@
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
 
-<!-- employees_list.html -->
-<!-- Employees Table -->
-
 <div class="admin_container">
 
   <!-- Filter -->
   <div class="admin_Access-filter-box">
-    <form method="GET" action="{{ url_for('Admins_access.total_employee') }}">
+    <form id="totalEmployeeFilterForm" method="GET" action="{{ url_for('Admins_access.total_employee') }}">
+      <!-- Employee Type -->
       <label for="emp_type">Employee Type:</label>
       <select id="emp_type" name="emp_type_employee">
         <option value="">-- Select Employee Type --</option>
-        <option value="Engineering">Engineering</option>
-        <option value="Human Resource">Human Resource</option>
-        <option value="Admin">Admin</option>
-        <option value="Accounts">Accounts</option>
-        <option value="TEC">TEC</option>
-        <option value="Certification">Certification</option>
-        <option value="Software_Development">Software Development</option>
-        <option value="It Department">IT Department</option>
+        <option value="Engineering" {% if emp_type=="Engineering" %}selected{% endif %}>Engineering</option>
+        <option value="Human Resource" {% if emp_type=="Human Resource" %}selected{% endif %}>Human Resource</option>
+        <option value="Admin" {% if emp_type=="Admin" %}selected{% endif %}>Admin</option>
+        <option value="Accounts" {% if emp_type=="Accounts" %}selected{% endif %}>Accounts</option>
+        <option value="TEC" {% if emp_type=="TEC" %}selected{% endif %}>TEC</option>
+        <option value="Certification" {% if emp_type=="Certification" %}selected{% endif %}>Certification</option>
+        <option value="Software_Development" {% if emp_type=="Software_Development" %}selected{% endif %}>Software Development</option>
+        <option value="It Department" {% if emp_type=="It Department" %}selected{% endif %}>IT Department</option>
       </select>
 
+      <!-- Circle -->
       <label for="circle">Circle:</label>
       <select id="circle" name="circle_employee">
         <option value="">-- Select Circle --</option>
-        <option value="NHQ">NHQ</option>
-        <option value="Noida">Noida</option>
-        <option value="Noida-Loire">Noida-Loire</option>
-        <option value="Haryana">Haryana</option>
-        <option value="Haryana-Loyal">Haryana-Loyal</option>
-        <option value="Gurugram">Gurugram</option>
-        <option value="Gurugram-Awesome">Gurugram-Awesome</option>
-        <option value="Gurugram-Rabbit">Gurugram-Rabbit</option>
-        <option value="Pune">Pune</option>
-        <option value="Jaipur">Jaipur</option>
-        <option value="Jaipur-Rabbit">Jaipur-Rabbit</option>
-        <option value="Greater Noida">Greater Noida</option>
-        <option value="Mumbai">Mumbai</option>
-        <option value="G.Noida-Rabbit">G.Noida-Rabbit</option>
-        <option value="Mumbai-Bonita">Mumbai-Bonita</option>
-        <option value="Mumbai-Victory">Mumbai-Victory</option>
-        <option value="Mumbai-Rabbit">Mumbai-Rabbit</option>
-        <option value="Ahmedabad">Ahmedabad</option>
-        <option value="Bangalore">Bangalore</option>
-        <option value="Punjab">Punjab</option>
-        <option value="Punjab-Loyal">Punjab-Loyal</option>
-        <option value="Hyderabad">Hyderabad</option>
-        <option value="Chennai">Chennai</option>
-        <option value="Kolkata">Kolkata</option>
-        <option value="Kolkata-Rabbit">Kolkata-Rabbit</option>
+        <option value="NHQ" {% if circle=="NHQ" %}selected{% endif %}>NHQ</option>
+        <option value="Noida" {% if circle=="Noida" %}selected{% endif %}>Noida</option>
+        <option value="Noida-Loire" {% if circle=="Noida-Loire" %}selected{% endif %}>Noida-Loire</option>
+        <option value="Haryana" {% if circle=="Haryana" %}selected{% endif %}>Haryana</option>
+        <option value="Haryana-Loyal" {% if circle=="Haryana-Loyal" %}selected{% endif %}>Haryana-Loyal</option>
+        <option value="Gurugram" {% if circle=="Gurugram" %}selected{% endif %}>Gurugram</option>
+        <option value="Gurugram-Awesome" {% if circle=="Gurugram-Awesome" %}selected{% endif %}>Gurugram-Awesome</option>
+        <option value="Gurugram-Rabbit" {% if circle=="Gurugram-Rabbit" %}selected{% endif %}>Gurugram-Rabbit</option>
+        <option value="Pune" {% if circle=="Pune" %}selected{% endif %}>Pune</option>
+        <option value="Jaipur" {% if circle=="Jaipur" %}selected{% endif %}>Jaipur</option>
+        <option value="Jaipur-Rabbit" {% if circle=="Jaipur-Rabbit" %}selected{% endif %}>Jaipur-Rabbit</option>
+        <option value="Greater Noida" {% if circle=="Greater Noida" %}selected{% endif %}>Greater Noida</option>
+        <option value="Mumbai" {% if circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
+        <option value="G.Noida-Rabbit" {% if circle=="G.Noida-Rabbit" %}selected{% endif %}>G.Noida-Rabbit</option>
+        <option value="Mumbai-Bonita" {% if circle=="Mumbai-Bonita" %}selected{% endif %}>Mumbai-Bonita</option>
+        <option value="Mumbai-Victory" {% if circle=="Mumbai-Victory" %}selected{% endif %}>Mumbai-Victory</option>
+        <option value="Mumbai-Rabbit" {% if circle=="Mumbai-Rabbit" %}selected{% endif %}>Mumbai-Rabbit</option>
+        <option value="Ahmedabad" {% if circle=="Ahmedabad" %}selected{% endif %}>Ahmedabad</option>
+        <option value="Bangalore" {% if circle=="Bangalore" %}selected{% endif %}>Bangalore</option>
+        <option value="Punjab" {% if circle=="Punjab" %}selected{% endif %}>Punjab</option>
+        <option value="Punjab-Loyal" {% if circle=="Punjab-Loyal" %}selected{% endif %}>Punjab-Loyal</option>
+        <option value="Hyderabad" {% if circle=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
+        <option value="Chennai" {% if circle=="Chennai" %}selected{% endif %}>Chennai</option>
+        <option value="Kolkata" {% if circle=="Kolkata" %}selected{% endif %}>Kolkata</option>
+        <option value="Kolkata-Rabbit" {% if circle=="Kolkata-Rabbit" %}selected{% endif %}>Kolkata-Rabbit</option>
       </select>
-
-      <button type="submit" class="admin_Access-btn">Apply Filter</button>
     </form>
   </div>
 
+</div>
 
+<!-- Employee Cards -->
+<div class="admin-card-container">
+  {% for emp in employees %}
+  <div class="admin-card">
+    <img src="{{ url_for('static', filename='uploads/' ~ emp.photo_filename) }}" class="admin-card-img" alt="Employee Photo">
+    <div class="admin-card-body">
+      <h5 class="admin-card-title">Name: {{ emp.name }}</h5>
+      <p class="admin-card-text">Emp ID: {{ emp.emp_id }}</p>
+      <a href="{{ url_for('Admins_access.view_employee_details', admin_id=emp.admin_id) }}" class="admin-btn">View Details</a>
+    </div>
+  </div>
+  {% endfor %}
 
-
-<div class="admin_table_box">
-  <h4 class="table-heading">All Employees</h4>
-  <table class="admin_table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Employee type</th>
-        <th>Circle</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for emp in employees %}
-      <tr>
-        <td>{{emp.emp_id}}</td>
-        <td>{{emp.first_name}}</td>
-        <td>{{emp.emp_type}}</td>
-        <td>{{emp.circle}}</td>
-        <td><a href="#" class="btn btn-primary">View</a></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
 </div>
 
 
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("totalEmployeeFilterForm");
+  const selects = form.querySelectorAll("select");
+
+  selects.forEach(select => {
+    select.addEventListener("change", function () {
+      const params = new URLSearchParams(new FormData(form));
+      window.location = form.action + "?" + params.toString();
+    });
+  });
+});
+</script>
 
 {% endblock %}
