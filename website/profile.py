@@ -1,11 +1,8 @@
 from io import BytesIO
-from zoneinfo import ZoneInfo
 from flask import send_file
 import pandas as pd
 from flask import render_template, flash, redirect, Blueprint, request, url_for, current_app as app, session, Response
 from flask_login import current_user, login_required
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Side, Border
 from werkzeug.utils import secure_filename
 import os
 from .models.family_models import FamilyDetails
@@ -23,13 +20,15 @@ from .models.prev_com import PreviousCompany
 from .models.attendance import Punch,LeaveApplication,LeaveBalance,Location,WorkFromHomeApplication
 from .forms.attendance import PunchForm,LeaveForm,LocationForm,WorkFromHomeForm
 from .models.manager_model import ManagerContact
-from .common import verify_oauth2_and_send_email, store_today_work
+from .common import verify_oauth2_and_send_email
 from .models.Admin_models import Admin
 from .models.signup import Signup
-from .common import is_within_allowed_location,send_wfh_approval_email_to_managers
+from .common import send_wfh_approval_email_to_managers
 from datetime import timedelta
 from .utility import punch_time,add_comp_off
 from sqlalchemy.exc import SQLAlchemyError
+
+
 
 import logging
 
@@ -40,10 +39,12 @@ profile=Blueprint('profile',__name__)
 
 # Configure logging for your app
 logging.basicConfig(
-    level=logging.DEBUG,  # <-- change to INFO in production
+    level=logging.DEBUG,  
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
 
 
 @profile.route('/emp_details',methods=['GET','POST'])
@@ -51,6 +52,8 @@ logger = logging.getLogger(__name__)
 def emp_profile():
     form=Employee_Details()
     return render_template("profile/emp_det.html",form=form)
+
+
 
 
 @profile.route('/emp_det2', methods=['GET', 'POST'])
@@ -888,7 +891,8 @@ def apply_leave():
             start_date=start_date,
             end_date=end_date,
             status='Pending',
-            deducted_days=deducted_days        )
+            deducted_days=deducted_days,
+            extra_days=extra_leave,        )
         db.session.add(leave_application)
         db.session.commit()
 

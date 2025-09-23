@@ -4,9 +4,9 @@ from .models.signup import Signup
 from calendar import monthrange
 from . import db
 from datetime import date, timedelta, datetime, time
-from datetime import date, timedelta,datetime
-from datetime import date, timedelta,datetime,time
-
+from datetime import datetime
+from sqlalchemy import extract, func
+from sqlalchemy import func, extract, and_
 
 
 def attend_calc(year, month, num_days, user_id):
@@ -171,3 +171,192 @@ def add_comp_off(signup_id):
         db.session.add(leave_balance)
 
     db.session.commit()
+
+
+
+
+
+def get_total_working_days(admin_id):
+    today = datetime.today()
+    year, month = today.year, today.month
+
+    # ✅ Count working days in Punch table for current month
+    working_days = (
+        db.session.query(func.count(Punch.id))
+        .filter(
+            Punch.admin_id == admin_id,
+            extract('year', Punch.punch_date) == year,
+            extract('month', Punch.punch_date) == month,
+            Punch.today_work.isnot(None)  # only count if today_work exists
+        )
+        .scalar()
+    )
+
+    # ✅ Get total extra_days from approved leave applications
+    extra_days = (
+        db.session.query(func.coalesce(func.sum(LeaveApplication.extra_days), 0))
+        .filter(
+            LeaveApplication.admin_id == admin_id,
+            extract('year', LeaveApplication.start_date) == year,
+            extract('month', LeaveApplication.start_date) == month,
+            LeaveApplication.status == 'Approved'
+        )
+        .scalar()
+    )
+
+    # ✅ Base total
+    total_days = working_days - extra_days
+
+    # ✅ Check weekends (till today only)
+    first_day = datetime(year, month, 1)
+    current_day = first_day
+    while current_day <= today:
+        if current_day.weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
+            # Check if already punched
+            punched = db.session.query(Punch.id).filter(
+                Punch.admin_id == admin_id,
+                Punch.punch_date == current_day.date(),
+                Punch.today_work.isnot(None)
+            ).first()
+
+            # Check if on leave
+            on_leave = db.session.query(LeaveApplication.id).filter(
+                LeaveApplication.admin_id == admin_id,
+                LeaveApplication.status == 'Approved',
+                LeaveApplication.start_date <= current_day.date(),
+                LeaveApplication.end_date >= current_day.date()
+            ).first()
+
+            if not punched and not on_leave:
+                total_days += 1
+
+        current_day += timedelta(days=1)
+
+    return max(total_days, 0)
+  # avoid negative values
+
+
+
+
+# utils/tally.py (recommended place)
+import re
+
+def clean_text(text):
+    """Remove invalid XML characters from a string."""
+    if not text:
+        return ""
+    return re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', str(text))
+
+# def build_tally_xml(employees, company_name, period_start="20250901", period_end="20250930"):
+#     attendance_entries = ""
+#     for emp in employees:
+#         print(emp)
+#         # Clean data to avoid XML exceptions
+#         emp_name = clean_text(emp.get('name'))
+#         emp_id = clean_text(emp.get('emp_id'))
+#         working_days = emp.get('working_days', 0)
+#         attendance_entries += f"""
+#         <ATTENDANCEENTRIES.LIST>
+#             <EMPLOYEENAME>{emp_name}</EMPLOYEENAME>
+#             <EMPLOYEENUMBER>{emp_id}</EMPLOYEENUMBER>
+#             <ATTENDANCETYPE>Total Present Days</ATTENDANCETYPE>
+#             <VALUE>{int(working_days)}</VALUE>
+#         </ATTENDANCEENTRIES.LIST>
+#         """
+
+#     xml_payload = f"""
+#     <ENVELOPE>
+#         <HEADER>
+#             <TALLYREQUEST>Import Data</TALLYREQUEST>
+#         </HEADER>
+#         <BODY>
+#             <IMPORTDATA>
+#                 <REQUESTDESC>
+#                     <REPORTNAME>Vouchers</REPORTNAME>
+#                     <STATICVARIABLES>
+#                         <SVCURRENTCOMPANY>{company_name}</SVCURRENTCOMPANY>
+#                     </STATICVARIABLES>
+#                 </REQUESTDESC>
+#                 <REQUESTDATA>
+#                     <TALLYMESSAGE xmlns:UDF="TallyUDF">
+#                         <VOUCHER VCHTYPE="Attendance" ACTION="Create">
+#                             <DATE>{period_start}</DATE>
+#                             <EFFECTIVEDATE>{period_end}</EFFECTIVEDATE>
+#                             <VOUCHERTYPENAME>Attendance</VOUCHERTYPENAME>
+#                             <NARRATION>Attendance pushed from HRMS</NARRATION>
+#                             {attendance_entries}
+#                         </VOUCHER>
+#                     </TALLYMESSAGE>
+#                 </REQUESTDATA>
+#             </IMPORTDATA>
+#         </BODY>
+#     </ENVELOPE>
+#     """
+#     return clean_text(xml_payload).strip()
+
+
+def build_tally_xml(employees, company_name, period_start="20250901", period_end="20250930"):
+    """
+    Build a Tally-compliant XML payload for Attendance vouchers.
+    Creates one voucher per employee to ensure Tally recognizes the date.
+    """
+    from datetime import datetime
+
+    vouchers_xml = ""
+
+    for emp in employees:
+        emp_name = clean_text(emp.get('name'))
+        emp_id = clean_text(emp.get('emp_id'))
+        working_days = emp.get('working_days', 0)
+
+        # Use period_end as the voucher date to match the period
+        voucher_number = f"ATT-{period_end}-{emp_id}"  # unique per employee
+
+        attendance_entry = f"""
+        <ATTENDANCEENTRIES.LIST>
+            <EMPLOYEENAME>{emp_name}</EMPLOYEENAME>
+            <EMPLOYEENUMBER>{emp_id}</EMPLOYEENUMBER>
+            <ATTENDANCETYPE>Total Present Days</ATTENDANCETYPE>
+            <VALUE>{int(working_days)}</VALUE>
+        </ATTENDANCEENTRIES.LIST>
+        """
+
+        vouchers_xml += f"""
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+            <VOUCHER VCHTYPE="Attendance" ACTION="Create" OBJVIEW="Attendance Voucher View">
+                <DATE>{period_end}</DATE>
+                <VOUCHERTYPENAME>Attendance</VOUCHERTYPENAME>
+                <VOUCHERNUMBER>{voucher_number}</VOUCHERNUMBER>
+                <NARRATION>Attendance pushed from HRMS</NARRATION>
+                <PERIODBEGIN>{period_start}</PERIODBEGIN>
+                <PERIODEND>{period_end}</PERIODEND>
+                <ATTENDANCEPERIODBEGIN>{period_start}</ATTENDANCEPERIODBEGIN>
+                <ATTENDANCEPERIODEND>{period_end}</ATTENDANCEPERIODEND>
+                {attendance_entry}
+            </VOUCHER>
+        </TALLYMESSAGE>
+        """
+
+    xml_payload = f"""
+    <ENVELOPE>
+        <HEADER>
+            <TALLYREQUEST>Import Data</TALLYREQUEST>
+        </HEADER>
+        <BODY>
+            <IMPORTDATA>
+                <REQUESTDESC>
+                    <REPORTNAME>Vouchers</REPORTNAME>
+                    <STATICVARIABLES>
+                        <SVCURRENTCOMPANY>{company_name}</SVCURRENTCOMPANY>
+                    </STATICVARIABLES>
+                </REQUESTDESC>
+                <REQUESTDATA>
+                    {vouchers_xml}
+                </REQUESTDATA>
+            </IMPORTDATA>
+        </BODY>
+    </ENVELOPE>
+    """
+
+    return clean_text(xml_payload).strip()
+

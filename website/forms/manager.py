@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField,FileField,PasswordField,EmailField
+from wtforms import StringField, SubmitField, SelectField,FileField,PasswordField,EmailField,MultipleFileField
 from wtforms.validators import DataRequired, Email, Length, Optional,EqualTo
 from flask_wtf.file import FileAllowed
 
@@ -61,6 +61,25 @@ class PaySlipForm(FlaskForm):
     payslip_file = FileField('Upload PaySlip', validators=[FileAllowed(['pdf', 'doc', 'docx', 'jpg', 'png'], 'Files only!')])
     submit = SubmitField('Add PaySlip')
 
+class MultiPaySlipForm(FlaskForm):
+    month = SelectField('Month', choices=[
+        ('January', 'January'), ('February', 'February'), ('March', 'March'), 
+        ('April', 'April'), ('May', 'May'), ('June', 'June'),
+        ('July', 'July'), ('August', 'August'), ('September', 'September'),
+        ('October', 'October'), ('November', 'November'), ('December', 'December')
+    ], validators=[DataRequired()])
+    
+    year = SelectField('Year', choices=[(str(year), str(year)) for year in range(2024, 2036)],
+                       validators=[DataRequired()])
+    
+    # ✅ allow multiple files
+    payslip_files = MultipleFileField(
+        'Upload PaySlips',
+        validators=[FileAllowed(['pdf', 'doc', 'docx', 'jpg', 'png'], 'Files only!')],
+        render_kw={"multiple": True}  # <-- enables multiple file selection
+    )
+
+    submit = SubmitField('Upload PaySlips')
 
 
 class ChangePasswordForm(FlaskForm):

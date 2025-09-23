@@ -1,64 +1,82 @@
-{% extends "Accounts/Acc_base.html" %} 
-{% block title %}Accounts Search_result{% endblock %} 
+{% extends "Accounts/Acc_base.html" %}
+{% block title %}Accounts Search_result{% endblock %}
 {% block content %}
 
 <div class="container">
     {% with errors = get_flashed_messages(category_filter=["error","success"]) %}
     {% if errors %}
-        <div class="alert alert-danger">
-            <ul>
-                {%- for msg in errors %}
-                <h3>{{ msg }}</h3>
-                {% endfor -%}
-            </ul>
-        </div>
+    <div class="alert alert-danger">
+        <ul>
+            {%- for msg in errors %}
+            <h3>{{ msg }}</h3>
+            {% endfor -%}
+        </ul>
+    </div>
     {% endif %}
     {% endwith %}
 
     <h2 class="centered-heading">Circle: {{ circle | upper }} and Employee Type: {{ emp_type | upper }}</h2>
 
-    {% if admins %}
-        <div class="d-flex justify-content-between mb-3">
-            <h4>Search Results:</h4>
-        </div>
+    {% if admin_data %}
+    <div class="d-flex justify-content-between mb-3">
+        <h4>Search Results:</h4>
+    </div>
 
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Bank Details</th>
-                    <th>Update</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for admin in admins %}
-                    <tr>
-                        <td>{{ admin.first_name }}</td>
-                        <td>{{ admin.email }}</td>
-                        <td>
-                            <a href="{{ url_for('Accounts.view_documents', admin_id=admin.id) }}">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Bank Details</th>
+                <th>Update</th>
+                <th>Total Working Days</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in admin_data %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.email }}</td>
+                <td>
+                    <a href="{{ url_for('Accounts.view_documents', admin_id=item.id) }}">
                         View
-                            </a>
-                        </td>
-                        <td>
-                            <a href="{{ url_for('Accounts.add_payslip', admin_id=admin.id) }}">Add PaySlip</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </a>
+                </td>
+                <td>
+                    <a href="{{ url_for('Accounts.add_payslip', admin_id=item.id) }}">Add PaySlip</a>
+                </td>
+                <td>{{ item.total_days }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
     {% else %}
-        <p>No matching entries found.</p>
+    <p>No matching entries found.</p>
     {% endif %}
+
 
     <a href="{{ url_for('Accounts.Acc_dashboard') }}" class="btn btn-primary search">Back to Search</a>
 
-    <a href="{{ url_for('Accounts.download_excel_acc') }}"
-       class="btn mt-3"
-       style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
-       📥 Download Attendance Excel File
+    <a href="{{ url_for('Accounts.download_excel_acc') }}" class="btn mt-3"
+        style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
+        📥 Download Attendance Excel File
     </a>
+
+    <a href="{{ url_for('Accounts.upload_payslips') }}" class="btn mt-3"
+        style="background-color: #d8ad10; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
+        Upload Payslips In Bulk
+    </a>
+
+    <form action="{{ url_for('Accounts.push_to_tally') }}" method="post">
+        {{ form.hidden_tag() }} <!-- ⚡ CSRF token included automatically -->
+
+        {% for admin in admin_data %}
+        <input type="hidden" name="emails" value="{{ admin.email }}">
+        {% endfor %}
+
+        {{ form.submit() }}
+    </form>
 </div>
 
 {% endblock %}

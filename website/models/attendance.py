@@ -82,6 +82,7 @@ class LeaveApplication(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Pending')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     deducted_days = db.Column(db.Float, default=0.0)
+    extra_days=db.Column(db.Float, default=0.0)
 
     admin = db.relationship('Admin', back_populates='leave_applications')
 
