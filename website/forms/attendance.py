@@ -13,7 +13,8 @@ class PunchForm(FlaskForm):
     lon = HiddenField()
     wfh = BooleanField('Work From Home')
 
-
+class PushToTallyForm(FlaskForm):
+    submit = SubmitField("Push to Tally")
 
 class LocationForm(FlaskForm):
     name = StringField('Location Name', validators=[DataRequired()])

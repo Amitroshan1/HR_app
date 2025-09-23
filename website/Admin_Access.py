@@ -14,6 +14,9 @@ from .models.attendance import LeaveApplication, Punch
 from .models.Admin_models import Admin
 from flask_wtf import CSRFProtect
 
+
+
+
 Admins_access = Blueprint('Admins_access', __name__)
 @Admins_access.route('/Admin-dashboard',methods=['GET','POST'])
 @login_required

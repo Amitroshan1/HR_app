@@ -40,7 +40,7 @@ Session = Session()
 
 
 class Config:
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=20)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
@@ -169,61 +169,65 @@ def leave_reminder_email():
     from .models.manager_model import ManagerContact
     from .common import verify_oauth2_and_send_email
 
-   
-
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
 
     with scheduler.app.app_context():
         leaves = LeaveApplication.query.filter_by(status="Pending").all()
         print(f"Found {len(leaves)} leaves..")
-        for leave in leaves:
 
+        for leave in leaves:
             if leave.created_at.tzinfo is None:
                 last_activity_query_time = ist.localize(leave.created_at)
             else:
-                last_activity_query_time = leave.created_at.astimezone(ist) #when qyery is create that time will store
+                last_activity_query_time = leave.created_at.astimezone(ist)
 
             time_since_last_query_activity = now - last_activity_query_time
-            # print(f"The leave_app id is {leave.id} and age since last activity: {time_since_last_query_activity}")
+
             if time_since_last_query_activity >= timedelta(days=3):
                 user_email = leave.admin.email
-                # print(f"successful get the user email {user_email}")
+
                 signup_data = Signup.query.filter_by(email=user_email).first()
-                # print(f"Successful got the signup data {signup_data}")
                 if signup_data:
                     emp_type = signup_data.emp_type
                     circle = signup_data.circle
-                    # print(f"Employee Type: {emp_type}")
-                    # print(f"Circle: {circle}")
                 else:
                     print("No signup data found.")
                     emp_type = None
                     circle = None
-                manager_data = ManagerContact.query.filter_by(circle_name = circle,user_type=emp_type,).first()
+
+                # Initialize defaults
+                l2_leader = None
+                l3_leader = None
+
+                manager_data = ManagerContact.query.filter_by(
+                    circle_name=circle,
+                    user_type=emp_type,
+                ).first()
+
                 if manager_data:
                     l2_leader = manager_data.l2_email
                     l3_leader = manager_data.l3_email
-                    # print(f"Get the data of l2 {l2_leader}")
-                    # print(f"Get the data of l3 {l3_leader}")
 
-                cc = l2_leader
-                subject = f"Reminder: No response to leave application ' in 3 days"
-                body = f"""
+                cc = [l2_leader] if l2_leader else []  # always a list
+                to_address = l3_leader if l3_leader else user_email  # fallback to user
+
+                subject = "Reminder: No response to leave application in 3 days"
+                body = """
                 Hello,
 
                 This is a reminder that a leave application has been pending without any response or update for the past 3 days.
 
-                Timely action on such requests ensures smooth workflow and employesatisfaction. Please review and take the necessary action as soon as possible.
+                Timely action on such requests ensures smooth workflow and employee satisfaction. Please review and take the necessary action as soon as possible.
 
                 If you have already addressed this, kindly ignore this message.
 
                 Thank you,
                 HR & Admin Team
                 """
-                verify_oauth2_and_send_email(user_email, subject, body, l3_leader, [cc])
-                
-                
+
+                verify_oauth2_and_send_email(user_email, subject, body, to_address, cc)
+
         
 
 def create_app():
@@ -296,7 +300,7 @@ def create_app():
     def handle_csrf_error(e):
         session.clear()
         flash('Your session has expired. Please log in again.', 'warning')
-        return redirect(url_for('auth.login'))  # make sure this route exists
+        return redirect(url_for('auth.E_homepage'))  # make sure this route exists
 
 
 
@@ -308,7 +312,7 @@ def create_app():
     def handle_network_errors(e):
         session.clear()
         flash('Network error occurred while contacting Microsoft services. Please log in again.', 'danger')
-        return redirect(url_for('auth.login'))  # or your actual login route
+        return redirect(url_for('auth.E_homepage'))  # or your actual login route
 
 
     scheduler.init_app(app)

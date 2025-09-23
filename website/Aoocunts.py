@@ -1,7 +1,9 @@
 from flask import *
 from flask_login import login_required,current_user
+
+from .forms.attendance import PushToTallyForm
 from .forms.search_from import SearchForm,DetailForm
-from .forms.manager import PaySlipForm
+from .forms.manager import PaySlipForm,MultiPaySlipForm
 from .models.news_feed import PaySlip
 import os
 from .models.education import UploadDoc
@@ -16,7 +18,7 @@ from .common import verify_oauth2_and_send_email,Company_verify_oauth2_and_send_
 import pytz
 from datetime import datetime
 from flask import current_app
-from .utility import attend_calc
+from .utility import get_total_working_days,build_tally_xml
 from zoneinfo import ZoneInfo
 import calendar
 from io import BytesIO
@@ -68,27 +70,120 @@ def Acc_dashboard():
 
 
 
+
+
 @Accounts.route('/Acc_search_results', methods=['GET'])
 @login_required
 def search_results():
-    if 'admin_emails' not in session:
+    form = PushToTallyForm()
+    # 🟢 If session expired, redirect gracefully
+    if not session.get('admin_emails'):
         flash('Session expired. Please search again.', category='error')
-        return redirect(url_for('Accounts.search'))
+        return redirect(url_for('Accounts.Acc_dashboard'))
 
     emails = session['admin_emails']
-    circle = session['circle']
-    emp_type = session['emp_type']
-    # Retrieve Admin details based on email
-    admins = Admin.query.filter(Admin.email.in_(emails)).all()
-    data = [i.id for i in admins]
+    circle = session.get('circle', '')
+    emp_type = session.get('emp_type', '')
 
-  
+    # ✅ Refresh session (extend life)
+    session['admin_emails'] = emails
+    session['circle'] = circle
+    session['emp_type'] = emp_type
+    session.permanent = True
+
+    # ✅ Retrieve Admin details
+    admins = Admin.query.filter(Admin.email.in_(emails)).all()
+
+    # ✅ Prepare data for template
+    admin_data = []
+    for admin in admins:
+        total_days = get_total_working_days(admin.id)
+        admin_data.append({
+            "id": admin.id,
+            "name": admin.first_name,
+            "email": admin.email,
+            "total_days": total_days
+        })
+
     return render_template(
-        'Accounts/search_result.html', 
-        admins=admins, 
-        circle=circle, 
-        emp_type=emp_type
-    )
+        'Accounts/search_result.html',
+        admin_data=admin_data,
+        circle=circle,
+        emp_type=emp_type,
+        form=form 
+    ) # your form with csrf=False or regular CSRF
+
+
+
+import re
+def clean_xml(xml_str):
+    return re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', xml_str)
+
+
+@Accounts.route('/push_to_tally', methods=['POST'])
+@login_required
+def push_to_tally():
+    form = PushToTallyForm()
+
+    if not form.validate_on_submit():
+        flash("Form submission invalid or CSRF token missing.", "error")
+        return redirect(url_for('Accounts.search_results'))
+
+    emails = session.get('admin_emails') or request.form.getlist("emails")
+
+    if not emails:
+        flash("Session expired or no employees selected. Please search again.", "error")
+        return redirect(url_for('Accounts.Acc_dashboard'))
+
+    # Fetch admins and signup data
+    admins = Admin.query.filter(Admin.email.in_(emails)).all()
+    signups = {s.email: s for s in Signup.query.filter(Signup.email.in_(emails)).all()}
+
+    employees = []
+    for admin in admins:
+        total_days = get_total_working_days(admin.id)
+        signup = signups.get(admin.email)
+        if not signup:
+            continue
+        employees.append({
+            "name": admin.first_name,
+            "emp_id": signup.emp_id,
+            "working_days": total_days
+        })
+
+    if not employees:
+        flash("No employee data found to push.", "error")
+        return redirect(url_for('Accounts.search_results'))
+
+    # Build XML payload (now creates one voucher per employee)
+    xml_payload = clean_xml(build_tally_xml(
+        employees,
+        company_name="Saffo Solution Technology LLP (Payrol)",
+        period_start="20250901",
+        period_end="20250930"
+    ))
+
+    # Send to Tally
+    import requests
+    try:
+        response = requests.post(
+            "http://localhost:9000",
+            data=xml_payload.encode("utf-8"),
+            headers={"Content-Type": "text/xml"},
+            timeout=100
+        )
+
+        # Check response for errors
+        if "<LINEERROR>" in response.text or "<CREATED>0</CREATED>" in response.text:
+            flash("❌ Error pushing data to Tally. Response: " + response.text, "error")
+        else:
+            flash("✅ Attendance pushed successfully to Tally!", "success")
+
+    except Exception as e:
+        flash(f"⚠️ Could not connect to Tally: {str(e)}", "error")
+
+    return redirect(url_for('Accounts.search_results'))
+
 
 
 
@@ -355,6 +450,90 @@ def add_payslip(admin_id):
     return render_template('Accounts/add_payslip.html', form=form, employee=employee)
 
 
+
+@Accounts.route('/upload_payslips', methods=['GET', 'POST'])
+@login_required
+def upload_payslips():
+    form = MultiPaySlipForm()
+
+    if form.validate_on_submit():
+        month = form.month.data
+        year = form.year.data
+        uploaded_files = form.payslip_files.data
+
+        saved_slips = []   # store (admin, file_path, filename) for later email sending
+
+        for file in uploaded_files:
+            if not file or file.filename.strip() == "":
+                continue
+
+            filename = secure_filename(file.filename)
+            employee_name = os.path.splitext(filename)[0]
+
+            # 🔎 Match employee (by email OR first_name)
+            admin = Admin.query.filter(
+                (Admin.email.ilike(f"%{employee_name}%")) |
+                (Admin.first_name.ilike(f"%{employee_name}%"))
+            ).first()
+
+            if not admin:
+                flash(f"⚠ No match found for {filename}", "error")
+                continue
+
+            # 💾 Save file
+            save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            file.save(save_path)
+
+            # 📝 Add payslip record
+            slip = PaySlip(
+                admin_id=admin.id,
+                month=month,
+                year=year,
+                file_path=save_path
+            )
+            db.session.add(slip)
+            saved_slips.append((admin, save_path, filename))
+
+        # ✅ Commit all at once
+        db.session.commit()
+
+        # 📧 Now send emails
+        for admin, save_path, filename in saved_slips:
+            try:
+                with open(save_path, "rb") as f:
+                    import base64
+                    attachment = [{
+                        "@odata.type": "#microsoft.graph.fileAttachment",
+                        "name": filename,
+                        "contentBytes": base64.b64encode(f.read()).decode("utf-8")
+                    }]
+
+                subject = f"Payslip for {month} {year}"
+                body = f"""
+                <p>Dear {admin.first_name},</p>
+                <p>Please find attached your payslip for <b>{month} {year}</b>.</p>
+                <p>Regards,<br>HR Team</p>
+                """
+
+                success = verify_oauth2_and_send_email(
+                    user=admin,
+                    subject=subject,
+                    body=body,
+                    recipient_email=admin.email,
+                    attachments=attachment
+                )
+
+                if success:
+                    flash(f"✅ Payslip sent to {admin.email}", "success")
+                else:
+                    flash(f"❌ Failed to send payslip to {admin.email}", "error")
+
+            except Exception as e:
+                flash(f"❌ Error sending {filename} to {admin.email}: {str(e)}", "error")
+
+        return redirect(url_for('Accounts.upload_payslips'))
+
+    return render_template('Accounts/upload_payslip.html', form=form)
 
 
 
