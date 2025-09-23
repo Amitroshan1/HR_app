@@ -1,0 +1,95 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Employee Details{% endblock %}
+{% block content %}
+
+<div class="container">
+    <h2>Employee Details</h2>
+
+    <!-- ✅ Only one form for Update -->
+    <form method="POST" action="{{ url_for('Admins_access.employee_details_admin', admin_id=employee.admin_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <table class="table table-bordered table-striped">
+            <tbody>
+                <tr>
+                    <th>Photo</th>
+                    <td>
+                        {% if employee.photo_filename %}
+                            <img src="{{ url_for('static', filename='uploads/' + employee.photo_filename) }}" alt="Photo" width="100">
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <tr><th>Name</th><td><input type="text" name="name" value="{{ employee.name }}" class="form-control"></td></tr>
+                <tr><th>Email</th><td><input type="email" name="email" value="{{ employee.email }}" class="form-control"></td></tr>
+                <tr><th>Father Name</th><td><input type="text" name="father_name" value="{{ employee.father_name }}" class="form-control"></td></tr>
+                <tr><th>Mother Name</th><td><input type="text" name="mother_name" value="{{ employee.mother_name }}" class="form-control"></td></tr>
+
+                <tr>
+                    <th>Marital Status</th>
+                    <td>
+                        <select name="marital_status" class="form-control">
+                            <option value="Single" {% if employee.marital_status == "Single" %}selected{% endif %}>Single</option>
+                            <option value="Married" {% if employee.marital_status == "Married" %}selected{% endif %}>Married</option>
+                        </select>
+                    </td>
+                </tr>
+
+                <tr><th>Spouse Name</th><td><input type="text" name="spouse_name" value="{{ employee.spouse_name or '' }}" class="form-control"></td></tr>
+                <tr><th>DOB</th><td><input type="date" name="dob" value="{{ employee.dob }}" class="form-control"></td></tr>
+                <tr><th>Employee ID</th><td><input type="text" name="emp_id" value="{{ employee.emp_id }}" class="form-control" readonly></td></tr>
+                <tr><th>Mobile</th><td><input type="text" name="mobile" value="{{ employee.mobile }}" class="form-control"></td></tr>
+                <tr><th>Emergency Mobile</th><td><input type="text" name="emergency_mobile" value="{{ employee.emergency_mobile }}" class="form-control"></td></tr>
+
+                <tr>
+                    <th>Gender</th>
+                    <td>
+                        <select name="gender" class="form-control">
+                            <option value="Male" {% if employee.gender == "Male" %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if employee.gender == "Female" %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if employee.gender == "Other" %}selected{% endif %}>Other</option>
+                        </select>
+                    </td>
+                </tr>
+
+                <tr><th>Caste</th><td><input type="text" name="caste" value="{{ employee.caste }}" class="form-control"></td></tr>
+                <tr><th>Nationality</th><td><input type="text" name="nationality" value="{{ employee.nationality }}" class="form-control"></td></tr>
+                <tr><th>Language</th><td><input type="text" name="language" value="{{ employee.language }}" class="form-control"></td></tr>
+                <tr><th>Religion</th><td><input type="text" name="religion" value="{{ employee.religion }}" class="form-control"></td></tr>
+                <tr><th>Blood Group</th><td><input type="text" name="blood_group" value="{{ employee.blood_group }}" class="form-control"></td></tr>
+                <tr><th>Designation</th><td><input type="text" name="designation" value="{{ employee.designation }}" class="form-control"></td></tr>
+
+                <tr>
+                    <th>Permanent Address</th>
+                    <td>
+                        <input type="text" name="permanent_address_line1" value="{{ employee.permanent_address_line1 }}" class="form-control mb-1">
+                        <input type="text" name="permanent_pincode" value="{{ employee.permanent_pincode }}" class="form-control mb-1">
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Present Address</th>
+                    <td>
+                        <input type="text" name="present_address_line1" value="{{ employee.present_address_line1 }}" class="form-control mb-1">
+                        <input type="text" name="present_pincode" value="{{ employee.present_pincode }}" class="form-control mb-1">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ✅ Update button inside the same form -->
+        <button type="submit" class="btn btn-success">Update</button>
+    </form>
+
+    <!-- ✅ Delete is a separate form -->
+    <form method="POST" action="{{ url_for('Admins_access.delete_employee', admin_id=employee.admin_id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this employee?');">
+            Delete
+        </button>
+    </form>
+
+    <a href="{{ url_for('Admins_access.total_employee') }}" class="btn btn-secondary">Back</a>
+</div>
+
+{% endblock %}

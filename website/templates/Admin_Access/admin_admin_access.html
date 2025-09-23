@@ -1,0 +1,55 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Employee Details{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    <p>{{ message }}</p>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+
+
+
+<div class="emp-admin-vertical-wrapper">
+  <h2>Admin Details</h2>
+
+  <table class="emp-admin-vertical-table">
+    <tbody>
+      <tr>
+        <th>First Name</th>
+        <td>{{ admin_data.first_name }}</td>
+      </tr>
+
+      <tr>
+        <th>Email</th>
+        <td>{{ admin_data.email }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="emp-admin-buttons">
+    <button type="button" class="perticular-emp-btn delete-red" onclick="confirmDelete({{ admin_data.id }})">
+      Delete
+    </button>
+  </div>
+</div>
+
+<script>
+  function confirmDelete(adminId) {
+    if(confirm("Are you sure you want to delete this admin?")) {
+      window.location.href = "/admin-delete/" + adminId;
+    }
+  }
+</script>
+
+
+
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "Admin_Access/admin_base.html" %}
+
+{% block title %}Leave Balance Details{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+        {{ msg }}
+        <button type="button" class="close" onclick="this.parentElement.style.display='none';">×</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+<div class="asset-table-wrapper">
+  <h2>Leave Balance Details</h2>
+
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Privilege Leave</th>
+        <th>Casual Leave</th>
+        <th>Compensatory Leave</th>
+        <th>Last Updated</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for balance in leave_balance_data %}
+      <tr>
+        <form id="leave-balance-form-{{ balance.id }}" method="POST"
+              action="{{ url_for('Admins_access.leave_balance_inline_update', balance_id=balance.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <td>{{ balance.id }}</td>
+          <td><input type="number" step="0.1" name="privilege_leave_balance" value="{{ balance.privilege_leave_balance }}" class="asset-input"></td>
+          <td><input type="number" step="0.1" name="casual_leave_balance" value="{{ balance.casual_leave_balance }}" class="asset-input"></td>
+          <td><input type="number" step="0.1" name="compensatory_leave_balance" value="{{ balance.compensatory_leave_balance }}" class="asset-input"></td>
+          <td>
+  <input type="date" name="last_updated"
+         value="{{ balance.last_updated.strftime('%Y-%m-%d') if balance.last_updated else '' }}"
+         class="asset-input">
+</td>
+
+
+          <td>
+            <button type="submit" class="asset-btn save-btn">Save</button>
+            <button type="button" class="asset-btn delete-btn" onclick="confirmDelete({{ balance.id }})">Delete</button>
+          </td>
+        </form>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function confirmDelete(balanceId) {
+  if (confirm("Are you sure you want to delete this Leave Balance?")) {
+    fetch("/leave-balance-delete/" + balanceId, { method: "POST" })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === "success") {
+        alert("Leave Balance deleted successfully!");
+        location.reload();
+      } else {
+        alert("Error deleting Leave Balance!");
+      }
+    });
+  }
+}
+</script>
+{% endblock %}
