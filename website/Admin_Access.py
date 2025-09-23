@@ -156,8 +156,6 @@ def leave_employee():
 
 
 
-
-
 @Admins_access.route('/approve-leave-admin/<int:leave_id>', methods=['GET'])
 def approve_leave_admin(leave_id):
     # Fetch leave application by ID
