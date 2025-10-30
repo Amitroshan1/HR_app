@@ -401,7 +401,7 @@ def send_resignation_email(user, resignation,signup_date
 
 
     # Primary recipient (e.g., HR)
-    recipient_email = "hr@saffotech.com"
+    recipient_email = "skchaugule@saffotech.com"
 
     # Add L2 and L3 manager emails to CC if available
     cc_emails = []

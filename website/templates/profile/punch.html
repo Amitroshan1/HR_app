@@ -2,16 +2,15 @@
 {% block title %}Punch In/Out{% endblock %}
 {% block content %}
 
-
-
 <div class="container">
     <h2 class="centered-heading">Punch In/Out</h2>
+
     {% with messages = get_flashed_messages(with_categories=True) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
-    {% endif %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
     <form class="puch_form" method="POST" action="{{ url_for('profile.punch') }}">
@@ -37,76 +36,58 @@
             <span>{{ punch.punch_out if punch else 'Not Punched Out' }}</span>
         </div>
     </form>
-    <br>
 
+    <br>
     <h2 class="centered-heading">Calendar</h2>
 
     <form method="GET" action="{{ url_for('profile.punch') }}" class="mb-4">
-    <div class="form-group-cal">
-        <label for="month">Select Month:</label>
-        <select name="month" id="month" class="form-control-cal">
-            {% for month in range(1, 13) %}
-            <option value="{{ month }}" {% if month==selected_month %}selected{% endif %}>
-                {{ calendar.month_name[month] }}
-            </option>
-            {% endfor %}
-        </select>
+        <div class="form-group-cal">
+            <label for="month">Select Month:</label>
+            <select name="month" id="month" class="form-control-cal">
+                {% for month in range(1, 13) %}
+                    <option value="{{ month }}" {% if month == selected_month %}selected{% endif %}>
+                        {{ calendar.month_name[month] }}
+                    </option>
+                {% endfor %}
+            </select>
 
-        <label for="year">Select Year:</label>
-        <select name="year" id="year" class="form-control-cal">
-            {% for year in range(today.year - 5, today.year + 6) %}
-            <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>
-                {{ year }}
-            </option>
-            {% endfor %}
-        </select>
+            <label for="year">Select Year:</label>
+            <select name="year" id="year" class="form-control-cal">
+                {% for year in range(today.year - 5, today.year + 6) %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
+                        {{ year }}
+                    </option>
+                {% endfor %}
+            </select>
 
-        <button type="submit" class="btn btn-primary">Show Calendar</button>
+            <button type="submit" class="btn btn-primary">Show Calendar</button>
 
-        <!-- ✅ This submits month+year directly to download_excel_emp -->
-        <button formaction="{{ url_for('profile.download_excel_emp') }}"
-                formmethod="GET"
-                class="btn btn-success">
-            Download Excel File
-        </button>
+            <!-- ✅ Download Excel -->
+            <button formaction="{{ url_for('profile.download_excel_emp') }}"
+                    formmethod="GET"
+                    class="btn btn-success">
+                Download Excel File
+            </button>
 
-        <a href="/apply-leave" class="apply-leave-button">Apply for Leave</a>
-    </div>
-</form>
+            <a href="/apply-leave" class="apply-leave-button">Apply for Leave</a>
+        </div>
+    </form>
 
-
-
+    <!-- ✅ Updated Calendar Section -->
     <div class="container-details mt-5">
-        <h3 class="centered-heading">Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
+        <h3 class="centered-heading">
+            Punch Calendar for {{ calendar.month_name[selected_month] }} {{ selected_year }}
         </h3>
 
+        <!-- ✅ Legend Section -->
         <div class="legend-box">
-            <!-- Green Indicator -->
-            <div class="legend-item">
-                <span class="legend-color present"></span>
-                <span>Present (Punch In/Out Done)</span>
-            </div>
-
-            <!-- Yellow Indicator -->
-            <div class="legend-item">
-                <span class="legend-color pending"></span>
-                <span>Pending (No Punch Out)</span>
-            </div>
-
-            <!-- Red Indicator -->
-            <div class="legend-item">
-                <span class="legend-color halfday"></span>
-                <span>Half-Day / less than 9 hours</span>
-            </div>
-
-            <!-- Blue Indicator -->
-            <div class="legend-item">
-                <span class="legend-color leave"></span>
-                <span>Leave</span>
-            </div>
+            <div class="legend-item"><span class="legend-color present"></span> Present (Full Day)</div>
+            <div class="legend-item"><span class="legend-color pending"></span> Pending (No Punch Out)</div>
+            <div class="legend-item"><span class="legend-color halfday"></span> Half-Day</div>
+            <div class="legend-item"><span class="legend-color leave"></span> Leave</div>
         </div>
 
-
+        <!-- ✅ Calendar Table -->
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -124,43 +105,95 @@
                 {% for week in cal.monthdatescalendar(selected_year, selected_month) %}
                 <tr>
                     {% for day in week %}
-                    {% set punch = punch_data.get(day) %}
-                    {% set is_leave_day = leave_days and (day in leave_days) %}
-                    <td class="
-            {% if day.month != selected_month %}
-                bg-light
-            {% elif is_leave_day %}
-                custom-blue text-white  {# Leave day #}
-            {% elif punch %}
-                {% if punch.is_holiday %}
-                    bg-white
-                {% elif punch.punch_in and punch.punch_out %}
-                    {% if is_full_day %}
-                        bg-success text-white  {# Full day #}
-                    {% else %}
-                        custom-red text-white  {# Present but not full day #}
-                    {% endif %}
-                {% else %}
-                    bg-warning  {# Absent #}
-                {% endif %}
-            {% else %}
-                bg-white
-            {% endif %}
-        ">
-                        {{ day.day }} <br>
-                        <small>{{ day.strftime('%A') }}</small>
-                    </td>
+                        {% set punch = punch_data.get(day) %}
+                        {% set is_leave_day = leave_days and (day in leave_days) %}
+
+                        {% if day.month != selected_month %}
+                            {% set color = 'bg-light' %}
+                        {% elif is_leave_day %}
+                            {% set color = 'leave' %}
+                        {% elif punch %}
+                            {% set color = punch.color %}
+                        {% else %}
+                            {% set color = 'bg-white' %}
+                        {% endif %}
+
+                        {% if is_leave_day %}
+                            {% set tooltip = 'Leave Day' %}
+                        {% elif punch and punch.punch.today_work %}
+                            {% set tooltip = 'Worked: ' ~ punch.punch.today_work|string %}
+                        {% else %}
+                            {% set tooltip = '' %}
+                        {% endif %}
+
+                        {% set tooltip = '' %}
+                        {% if punch and punch.punch.today_work %}
+                            {% set tooltip = 'Worked: ' ~ punch.punch.today_work|string %}
+                        {% elif is_leave_day %}
+                            {% set tooltip = 'Leave Day' %}
+                        {% endif %}
+
+                        <td class="{{ color }}" title="{{ tooltip }}">
+                            {{ day.day }}<br>
+                            <small>{{ day.strftime('%A') }}</small>
+                        </td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
-
         </table>
     </div>
 </div>
 
+<!-- ✅ Color Legend Styling -->
+<style>
+    .legend-box {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 15px;
+    }
 
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
 
+    .legend-color {
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+        border-radius: 3px;
+    }
+
+    /* ✅ Color Mapping */
+    .present { background-color: #28a745 !important; color: white; }  /* Green */
+    .pending { background-color: #dc3545 !important; color: white; }  /* Red */
+    .halfday { background-color: #ffc107 !important; color: black; }  /* Yellow */
+    .leave { background-color: #FF7F50 !important; color: white; }    /* Coral */
+
+    /* ✅ Calendar styling */
+    td {
+        text-align: center;
+        vertical-align: middle;
+        height: 80px;
+        width: 100px;
+        cursor: pointer;
+    }
+
+    td.bg-light {
+        background-color: #f8f9fa !important;
+        color: #aaa;
+    }
+
+    td:hover {
+        filter: brightness(0.9);
+        transition: 0.2s;
+    }
+</style>
+
+<!-- ✅ Location Handling Script -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const latInput = document.getElementById('lat');
@@ -184,10 +217,7 @@
             return ready;
         }
 
-        // Initial check
         let isReady = checkLocationReady();
-
-        // Retry every second until ready
         if (!isReady) {
             const interval = setInterval(() => {
                 if (checkLocationReady()) {
@@ -196,7 +226,6 @@
             }, 1000);
         }
 
-        // Prevent submission if location is not ready (unless WFH checked)
         if (form) {
             form.addEventListener('submit', function (e) {
                 if (!checkLocationReady() && (!wfh || !wfh.checked)) {
@@ -207,7 +236,5 @@
         }
     });
 </script>
-
-
 
 {% endblock %}

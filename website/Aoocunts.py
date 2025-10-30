@@ -18,7 +18,7 @@ from .common import verify_oauth2_and_send_email,Company_verify_oauth2_and_send_
 import pytz
 from datetime import datetime
 from flask import current_app
-from .utility import get_total_working_days,build_tally_xml
+from .utility import get_total_working_days_bulk,build_tally_xml
 from zoneinfo import ZoneInfo
 import calendar
 from io import BytesIO
@@ -76,7 +76,8 @@ def Acc_dashboard():
 @login_required
 def search_results():
     form = PushToTallyForm()
-    # 🟢 If session expired, redirect gracefully
+
+    # Session check
     if not session.get('admin_emails'):
         flash('Session expired. Please search again.', category='error')
         return redirect(url_for('Accounts.Acc_dashboard'))
@@ -85,24 +86,26 @@ def search_results():
     circle = session.get('circle', '')
     emp_type = session.get('emp_type', '')
 
-    # ✅ Refresh session (extend life)
+    # Refresh session
     session['admin_emails'] = emails
     session['circle'] = circle
     session['emp_type'] = emp_type
     session.permanent = True
 
-    # ✅ Retrieve Admin details
+    # Fetch Admin records
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
-    # ✅ Prepare data for template
+    # ✅ Get total working days for all admins in bulk
+    total_days_map = get_total_working_days_bulk(admins)
+
+    # Prepare admin_data for template
     admin_data = []
     for admin in admins:
-        total_days = get_total_working_days(admin.id)
         admin_data.append({
             "id": admin.id,
             "name": admin.first_name,
             "email": admin.email,
-            "total_days": total_days
+            "total_days": total_days_map.get(admin.id, 0)
         })
 
     return render_template(
@@ -110,8 +113,8 @@ def search_results():
         admin_data=admin_data,
         circle=circle,
         emp_type=emp_type,
-        form=form 
-    ) # your form with csrf=False or regular CSRF
+        form=form
+    )
 
 
 
@@ -244,128 +247,160 @@ def download_document(admin_id, doc_field):
 @Accounts.route('/download_excel_acc', methods=['GET'])
 @login_required
 def download_excel_acc():
+    # 1️⃣ Get session data
     emails = session.get('admin_emails')
     circle = session.get('circle')
     emp_type = session.get('emp_type')
     emp_id_map = session.get('emp_id_map', {})
 
+    # 2️⃣ Check if session expired
     if not emails:
         flash('Session expired. Please search again.', category='error')
         return redirect(url_for('Accounts.search'))
 
+    # 3️⃣ Fetch admin objects
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
+    # 4️⃣ Get current IST month and year
     ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
     year, month = ist_now.year, ist_now.month
     num_days = calendar.monthrange(year, month)[1]
 
+    # 5️⃣ Prepare Excel output
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         workbook = writer.book
         worksheet = workbook.add_worksheet("Attendance")
         writer.sheets["Attendance"] = worksheet
 
-        # 📌 Styles
+        # 6️⃣ Define cell styles
         border_fmt = workbook.add_format({'border': 1})
         header_fmt = workbook.add_format({
             'border': 1, 'bold': True, 'align': 'center',
             'valign': 'vcenter', 'bg_color': '#D9E1F2'
         })
-        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})
+        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})  # Yellow for missing
         bold_fmt = workbook.add_format({'bold': True})
 
-        # 📌 Write emp_type and circle at the very top
+        # 7️⃣ Write emp_type and circle at top
         worksheet.write(0, 0, "emp_type", bold_fmt)
         worksheet.write(0, 1, emp_type)
         worksheet.write(0, 3, "CIRCLE", bold_fmt)
         worksheet.write(0, 4, circle)
 
-        # Generate weekday headers
-        days = []
-        for d in range(1, num_days + 1):
-            weekday = calendar.day_abbr[date(year, month, d).weekday()][0]  # M, T, W...
-            days.append(f"{d} {weekday}")
+        # 8️⃣ Generate weekday headers (e.g., "1 M", "2 T", ...)
+        days = [f"{d} {calendar.day_abbr[date(year, month, d).weekday()][0]}" for d in range(1, num_days + 1)]
 
-        row = 2  # start after header
+        # 9️⃣ Fetch all punches for the month for all admins
+        start_date = date(year, month, 1)
+        end_date = date(year, month, num_days)
+        punches = Punch.query.filter(
+            Punch.admin_id.in_([a.id for a in admins]),
+            Punch.punch_date >= start_date,
+            Punch.punch_date <= end_date
+        ).all()
+
+        # 🔟 Map punches by admin_id and day
+        punch_map_by_admin = {}
+        for p in punches:
+            punch_map_by_admin.setdefault(p.admin_id, {})[p.punch_date.day] = p
+
+        # 11️⃣ Start writing rows
+        row = 2
         for admin in admins:
             emp_code = emp_id_map.get(admin.email, 'N/A')
             emp_name = admin.first_name
 
-            # employee details row
+            # 12️⃣ Employee info
             worksheet.write(row, 0, "Emp ID:", bold_fmt)
             worksheet.write(row, 1, emp_code)
             worksheet.write(row, 3, "Emp Name:", bold_fmt)
             worksheet.write(row, 4, emp_name)
             row += 1
 
-            # attendance punches
-            punch_records = Punch.query.filter(
-                Punch.punch_date.between(f'{year}-{month:02d}-01', f'{year}-{month:02d}-{num_days}'),
-                Punch.admin_id == admin.id
-            ).all()
+            # 13️⃣ Get this admin’s punches
+            admin_punch_map = punch_map_by_admin.get(admin.id, {})
 
-            punch_map = {p.punch_date.day: p for p in punch_records}
-
+            # 14️⃣ Prepare InTime, OutTime, Total lists
             in_times, out_times, totals = [], [], []
+
             for d in range(1, num_days + 1):
-                punch = punch_map.get(d)
-                if punch and punch.punch_in and punch.punch_out:
-                    in_times.append(punch.punch_in.strftime("%H:%M"))
-                    out_times.append(punch.punch_out.strftime("%H:%M"))
+                punch = admin_punch_map.get(d)
+                if punch:
+                    # 🕒 AM/PM format for times (if present)
+                    in_time = punch.punch_in.strftime("%I:%M %p") if punch.punch_in else ""
+                    out_time = punch.punch_out.strftime("%I:%M %p") if punch.punch_out else ""
 
-                    # ✅ prefer today_work if stored, else calculate
-                    if punch.today_work:
-                        total_minutes = punch.today_work.hour * 60 + punch.today_work.minute
-                    else:
-                        delta = datetime.combine(date.min, punch.punch_out) - datetime.combine(date.min, punch.punch_in)
-                        total_minutes = delta.seconds // 60
+                    in_times.append(in_time)
+                    out_times.append(out_time)
 
-                    hours = total_minutes // 60
-                    minutes = total_minutes % 60
+                    # ⏱ Compute total using today_work if available, else compute from in/out
+                    total_text = ""
 
-                    if hours > 0 and minutes > 0:
-                        totals.append(f"{hours} hrs {minutes} min")
-                    elif hours > 0:
-                        totals.append(f"{hours} hrs")
-                    elif minutes > 0:
-                        totals.append(f"{minutes} min")
-                    else:
-                        totals.append("")
+                    # 1) use today_work if present and non-zero
+                    if getattr(punch, "today_work", None):
+                        tw = punch.today_work
+                        # compute seconds from time object (handles hour/minute/second)
+                        tw_seconds = (tw.hour * 3600) + (tw.minute * 60) + getattr(tw, "second", 0)
+                        if tw_seconds > 0:
+                            th, rem = divmod(tw_seconds, 3600)
+                            tm, _ = divmod(rem, 60)
+                            if th and tm:
+                                total_text = f"{th:02d} hrs {tm:02d} min"
+                            elif th:
+                                total_text = f"{th:02d} hrs"
+                            elif tm:
+                                total_text = f"{tm:02d} min"
+
+                    # 2) fallback to punch_in & punch_out if today_work missing/zero
+                    if not total_text and punch.punch_in and punch.punch_out:
+                        # combine times and compute delta; handle overnight by adding 24h if negative
+                        d_in = datetime.combine(date.min, punch.punch_in)
+                        d_out = datetime.combine(date.min, punch.punch_out)
+                        delta = d_out - d_in
+                        total_seconds = int(delta.total_seconds())
+                        if total_seconds < 0:
+                            # assume punch_out is next day -> add 24h
+                            total_seconds += 24 * 3600
+                        if total_seconds > 0:
+                            th, rem = divmod(total_seconds, 3600)
+                            tm, _ = divmod(rem, 60)
+                            if th and tm:
+                                total_text = f"{th:02d} hrs {tm:02d} min"
+                            elif th:
+                                total_text = f"{th:02d} hrs"
+                            elif tm:
+                                total_text = f"{tm:02d} min"
+
+                    # 3) Append empty string if no total_text (so cell shows yellow missing)
+                    totals.append(total_text)
                 else:
+                    # ❌ No punch record for this date
                     in_times.append("")
                     out_times.append("")
-                    totals.append("")   # keep empty instead of 00:00
+                    totals.append("")
 
-            # write Days row
+            # 15️⃣ Write header row for days
             worksheet.write(row, 0, "Days", header_fmt)
             for col, val in enumerate(days, start=1):
                 worksheet.write(row, col, val, header_fmt)
             row += 1
 
-            # write InTime row
-            worksheet.write(row, 0, "InTime", header_fmt)
-            for col, val in enumerate(in_times, start=1):
-                fmt = absent_fmt if val == "" else border_fmt
-                worksheet.write(row, col, val, fmt)
+            # 16️⃣ Write InTime, OutTime, Total rows
+            for label, data in [("InTime", in_times), ("OutTime", out_times), ("Total", totals)]:
+                worksheet.write(row, 0, label, header_fmt)
+                for col, val in enumerate(data, start=1):
+                    # show derived value; highlight if missing
+                    worksheet.write(row, col, val, absent_fmt if not val else border_fmt)
+                row += 1
+
+            # 17️⃣ Blank row between employees
             row += 1
 
-            # write OutTime row
-            worksheet.write(row, 0, "OutTime", header_fmt)
-            for col, val in enumerate(out_times, start=1):
-                fmt = absent_fmt if val == "" else border_fmt
-                worksheet.write(row, col, val, fmt)
-            row += 1
+        # 18️⃣ Adjust column widths (slightly wider for AM/PM and totals)
+        worksheet.set_column(0, num_days + 1, 16)
 
-            # write Total row
-            worksheet.write(row, 0, "Total", header_fmt)
-            for col, val in enumerate(totals, start=1):
-                fmt = absent_fmt if val == "" else border_fmt
-                worksheet.write(row, col, val, fmt)
-            row += 2  # leave blank row between employees
-
-        # Adjust column width (more compact)
-        worksheet.set_column(0, num_days, 12)
-
+    # 19️⃣ Return Excel file
     output.seek(0)
     return send_file(
         output,
@@ -373,6 +408,10 @@ def download_excel_acc():
         download_name=f'Attendance_{circle}_{emp_type}_{month}_{year}.xlsx',
         as_attachment=True
     )
+
+
+
+
 
 
 

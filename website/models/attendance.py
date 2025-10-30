@@ -29,7 +29,7 @@ class Location(db.Model):
     name = db.Column(db.String(100), nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
-    radius = db.Column(db.Float, default=100)  # in meters
+    radius = db.Column(db.Float, default=100)
 
 
 
@@ -75,7 +75,7 @@ class LeaveApplication(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
-    leave_type = db.Column(db.String(50), nullable=False) 
+    leave_type = db.Column(db.String(50), nullable=False)
     reason = db.Column(db.String(255), nullable=False)  
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)  

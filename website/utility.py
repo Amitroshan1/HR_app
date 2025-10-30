@@ -1,3 +1,5 @@
+from flask_login import current_user
+
 from .models.attendance import Punch, LeaveBalance, LeaveApplication
 from .models.Admin_models import Admin
 from .models.signup import Signup
@@ -52,40 +54,6 @@ def attend_calc(year, month, num_days, user_id):
         "leave days": leave_days
     }
 
-
-
-
-def get_user_working_summary(user_id, year, month):
-    
-
-    # 1. Get number of days in the given month
-    num_days = monthrange(year, month)[1]
-
-    # 2. Attendance and WFH calculation
-    attendance_data = attend_calc(year, month, num_days, user_id)
-
-    # 3. Get user email from Admin and find corresponding Signup
-    admin = Admin.query.get(user_id)
-    signup = Signup.query.filter_by(email=admin.email).first()
-
-    # 4. Fetch PL and CL using signup_id
-    leave_balance = LeaveBalance.query.filter_by(signup_id=signup.id).first() if signup else None
-
-    # 5. Safe default values
-    pl_balance = leave_balance.privilege_leave_balance if leave_balance else 0.0
-    cl_balance = leave_balance.casual_leave_balance if leave_balance else 0.0
-
-    
-
-    return {
-        "present_days": attendance_data["attendance"],
-        "work_from_home_days": attendance_data["work from home"],
-        "privilege_leave_balance": pl_balance,
-        "casual_leave_balance": cl_balance,
-        "total_working_days": num_days
-    }
-
-
 def punch_time(user_id):
     """
     Get today's punch in, punch out, and total worked time as a `time` object.
@@ -128,7 +96,6 @@ def get_remaining_resignation_days(resignation_date, notice_period_days=90):
 
     today = date.today()
     last_working_day = resignation_date + timedelta(days=notice_period_days)
-    print(last_working_day)
 
     if resignation_date <= today <= last_working_day:
         days = (last_working_day - today).days
@@ -139,8 +106,6 @@ def get_remaining_resignation_days(resignation_date, notice_period_days=90):
         return None, "Notice period has not started yet."
 
     return None, None
-
-
 
 
 @staticmethod
@@ -173,67 +138,114 @@ def add_comp_off(signup_id):
     db.session.commit()
 
 
+def get_total_working_days_bulk(admins=None):
+    """
+    Calculates total working days for each admin (or current user if no admins provided)
+    with defined rules.
+    """
 
-
-
-def get_total_working_days(admin_id):
     today = datetime.today()
     year, month = today.year, today.month
 
-    # ✅ Count working days in Punch table for current month
-    working_days = (
-        db.session.query(func.count(Punch.id))
-        .filter(
-            Punch.admin_id == admin_id,
-            extract('year', Punch.punch_date) == year,
-            extract('month', Punch.punch_date) == month,
-            Punch.today_work.isnot(None)  # only count if today_work exists
+    # --- Handle current user ---
+    if admins is None or len(admins) == 0:
+        admins = [current_user]
+
+    # --- Fetch data ---
+    admin_ids = [a.id for a in admins]
+
+    signup_map = {
+        s.id: s.emp_type
+        for s in Signup.query.filter(Signup.id.in_(admin_ids)).all()
+    }
+
+    punches = db.session.query(Punch).filter(
+        Punch.admin_id.in_(admin_ids),
+        extract('year', Punch.punch_date) == year,
+        extract('month', Punch.punch_date) == month
+    ).all()
+
+    leaves = db.session.query(LeaveApplication).filter(
+        LeaveApplication.admin_id.in_(admin_ids),
+        LeaveApplication.status == 'Approved',
+        extract('year', LeaveApplication.start_date) == year,
+        extract('month', LeaveApplication.start_date) == month
+    ).all()
+
+    # --- Prepare lookup maps ---
+    punch_map = {}
+    for p in punches:
+        punch_map.setdefault(p.admin_id, []).append(p)
+
+    leave_map = {}
+    for l in leaves:
+        leave_map.setdefault(l.admin_id, []).append(l)
+
+    total_days_map = {}
+
+    # --- Calculate for each admin ---
+    for admin in admins:
+        emp_type = signup_map.get(admin.id, '')
+        total_days = 0.0
+        current_day = datetime(year, month, 1)
+
+        while current_day <= today:
+            weekday = current_day.weekday()  # Monday=0 ... Sunday=6
+            is_weekend = weekday in (5, 6)
+            is_sunday = weekday == 6
+
+            punches_for_day = [
+                p for p in punch_map.get(admin.id, [])
+                if p.punch_date == current_day.date()
+            ]
+            leave_for_day = None
+
+            # --- Check leave ---
+            for l in leave_map.get(admin.id, []):
+                if l.start_date <= current_day.date() <= l.end_date:
+                    leave_for_day = l
+                    break
+
+            # --- Punch value ---
+            punch_value = 0
+            if punches_for_day:
+                p = punches_for_day[0]
+                if p.punch_in and p.punch_out:
+                    punch_value = 1
+                elif p.punch_in or p.punch_out:
+                    punch_value = 0.5
+
+            # --- Rules ---
+            if emp_type in ('Engineering', 'Software Development'):
+                if is_weekend:  # Sat or Sun always working
+                    total_days += 1
+                elif punch_value > 0 or leave_for_day:
+                    total_days += punch_value if punch_value > 0 else 1
+            else:  # Other departments (Accounts, HR, etc.)
+                if is_sunday:  # Sunday counted for everyone
+                    total_days += 1
+                elif weekday == 5:  # Saturday
+                    if punch_value > 0 or leave_for_day:
+                        total_days += punch_value if punch_value > 0 else 1
+                else:
+                    if punch_value > 0 or leave_for_day:
+                        total_days += punch_value if punch_value > 0 else 1
+
+            current_day += timedelta(days=1)
+
+        # --- Adjust with extra_days ---
+        leaves_for_admin = leave_map.get(admin.id, [])
+        extra_days_total = sum(
+            l.extra_days for l in leaves_for_admin if l.status == 'Approved'
         )
-        .scalar()
-    )
 
-    # ✅ Get total extra_days from approved leave applications
-    extra_days = (
-        db.session.query(func.coalesce(func.sum(LeaveApplication.extra_days), 0))
-        .filter(
-            LeaveApplication.admin_id == admin_id,
-            extract('year', LeaveApplication.start_date) == year,
-            extract('month', LeaveApplication.start_date) == month,
-            LeaveApplication.status == 'Approved'
-        )
-        .scalar()
-    )
+        total_days -= extra_days_total
+        total_days = max(total_days, 0)
+        total_days_map[admin.id] = round(total_days, 1)
 
-    # ✅ Base total
-    total_days = working_days - extra_days
+    return total_days_map
 
-    # ✅ Check weekends (till today only)
-    first_day = datetime(year, month, 1)
-    current_day = first_day
-    while current_day <= today:
-        if current_day.weekday() in (5, 6):  # 5 = Saturday, 6 = Sunday
-            # Check if already punched
-            punched = db.session.query(Punch.id).filter(
-                Punch.admin_id == admin_id,
-                Punch.punch_date == current_day.date(),
-                Punch.today_work.isnot(None)
-            ).first()
 
-            # Check if on leave
-            on_leave = db.session.query(LeaveApplication.id).filter(
-                LeaveApplication.admin_id == admin_id,
-                LeaveApplication.status == 'Approved',
-                LeaveApplication.start_date <= current_day.date(),
-                LeaveApplication.end_date >= current_day.date()
-            ).first()
-
-            if not punched and not on_leave:
-                total_days += 1
-
-        current_day += timedelta(days=1)
-
-    return max(total_days, 0)
-  # avoid negative values
 
 
 
@@ -359,4 +371,3 @@ def build_tally_xml(employees, company_name, period_start="20250901", period_end
     """
 
     return clean_text(xml_payload).strip()
-

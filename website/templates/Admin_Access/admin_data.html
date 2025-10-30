@@ -1,13 +1,14 @@
 {% extends "Admin_Access/admin_base.html" %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Admin Data{% endblock %}
+
 {% block content %}
 
 <div class="admin_container">
-
-  <!-- Filter -->
   <div class="admin_Access-filter-box">
     <form id="totalEmployeeFilterForm" method="GET" action="{{ url_for('Admins_access.admin_data') }}">
-      <!-- Employee Type -->
+      <input type="hidden" name="view" value="{{ view_type }}">
+
+      <!-- Employee Type Filter -->
       <label for="emp_type">Employee Type:</label>
       <select id="emp_type" name="emp_type_employee">
         <option value="">-- Select Employee Type --</option>
@@ -21,65 +22,111 @@
         <option value="It Department" {% if emp_type=="It Department" %}selected{% endif %}>IT Department</option>
       </select>
 
-      <!-- Circle -->
+      <!-- Circle Filter -->
       <label for="circle">Circle:</label>
       <select id="circle" name="circle_employee">
         <option value="">-- Select Circle --</option>
         <option value="NHQ" {% if circle=="NHQ" %}selected{% endif %}>NHQ</option>
         <option value="Noida" {% if circle=="Noida" %}selected{% endif %}>Noida</option>
-        <option value="Noida-Loire" {% if circle=="Noida-Loire" %}selected{% endif %}>Noida-Loire</option>
-        <option value="Haryana" {% if circle=="Haryana" %}selected{% endif %}>Haryana</option>
-        <option value="Haryana-Loyal" {% if circle=="Haryana-Loyal" %}selected{% endif %}>Haryana-Loyal</option>
-        <option value="Gurugram" {% if circle=="Gurugram" %}selected{% endif %}>Gurugram</option>
-        <option value="Gurugram-Awesome" {% if circle=="Gurugram-Awesome" %}selected{% endif %}>Gurugram-Awesome</option>
-        <option value="Gurugram-Rabbit" {% if circle=="Gurugram-Rabbit" %}selected{% endif %}>Gurugram-Rabbit</option>
         <option value="Pune" {% if circle=="Pune" %}selected{% endif %}>Pune</option>
-        <option value="Jaipur" {% if circle=="Jaipur" %}selected{% endif %}>Jaipur</option>
-        <option value="Jaipur-Rabbit" {% if circle=="Jaipur-Rabbit" %}selected{% endif %}>Jaipur-Rabbit</option>
-        <option value="Greater Noida" {% if circle=="Greater Noida" %}selected{% endif %}>Greater Noida</option>
         <option value="Mumbai" {% if circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
-        <option value="G.Noida-Rabbit" {% if circle=="G.Noida-Rabbit" %}selected{% endif %}>G.Noida-Rabbit</option>
-        <option value="Mumbai-Bonita" {% if circle=="Mumbai-Bonita" %}selected{% endif %}>Mumbai-Bonita</option>
-        <option value="Mumbai-Victory" {% if circle=="Mumbai-Victory" %}selected{% endif %}>Mumbai-Victory</option>
-        <option value="Mumbai-Rabbit" {% if circle=="Mumbai-Rabbit" %}selected{% endif %}>Mumbai-Rabbit</option>
-        <option value="Ahmedabad" {% if circle=="Ahmedabad" %}selected{% endif %}>Ahmedabad</option>
-        <option value="Bangalore" {% if circle=="Bangalore" %}selected{% endif %}>Bangalore</option>
-        <option value="Punjab" {% if circle=="Punjab" %}selected{% endif %}>Punjab</option>
-        <option value="Punjab-Loyal" {% if circle=="Punjab-Loyal" %}selected{% endif %}>Punjab-Loyal</option>
-        <option value="Hyderabad" {% if circle=="Hyderabad" %}selected{% endif %}>Hyderabad</option>
-        <option value="Chennai" {% if circle=="Chennai" %}selected{% endif %}>Chennai</option>
-        <option value="Kolkata" {% if circle=="Kolkata" %}selected{% endif %}>Kolkata</option>
-        <option value="Kolkata-Rabbit" {% if circle=="Kolkata-Rabbit" %}selected{% endif %}>Kolkata-Rabbit</option>
+        <!-- Add other circle options as needed -->
       </select>
     </form>
   </div>
-
 </div>
 
-<!-- Employee Cards -->
 <div class="admin-card-container">
-  {% for emp in employees %}
-  <div class="admin-card">
-    <img src="{{ url_for('static', filename='uploads/' ~ emp.photo_filename) }}" class="admin-card-img" alt="Employee Photo">
-    <div class="admin-card-body">
-      <h5 class="admin-card-title">Name: {{ emp.name }}</h5>
-      <p class="admin-card-text">Emp ID: {{ emp.emp_id }}</p>
-      <a href="{{ url_for('Admins_access.view_employee_details', admin_id=emp.admin_id) }}" class="admin-btn">View Details</a>
-    </div>
+  {% if view_type == 'employees' %}
+    {% for emp in employees %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ emp.photo_filename) }}" class="admin-card-img">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">Name: {{ emp.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ emp.emp_id }}</p>
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=emp.admin_id) }}"
+        class="admin-btn">View Details</a>
+
+        </div>
+      </div>
+    {% endfor %}
+
+  {% elif view_type == 'leaves' %}
+    {% for leave_wrapper in todays_leaves %}
+      {% if leave_wrapper.emp_obj %}
+        <div class="admin-card">
+          <img src="{{ url_for('static', filename='uploads/' ~ leave_wrapper.emp_obj.photo_filename) }}" class="admin-card-img">
+          <div class="admin-card-body">
+            <h5 class="admin-card-title">{{ leave_wrapper.emp_obj.name }}</h5>
+            <p class="admin-card-text">Emp ID: {{ leave_wrapper.emp_obj.emp_id }}</p>
+
+            <!-- Pass module to the dynamic route -->
+            <a href="{{ url_for('Admins_access.view_employee_details', admin_id=leave_wrapper.emp_obj.admin_id, mode='leave') }}"
+          class="admin-btn">View Leave Status</a>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+{% if view_type == 'punches' %}
+  <div class="admin-card-container">
+    {% for emp in todays_attendance %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ emp.photo_filename) }}" class="admin-card-img">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">Name: {{ emp.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ emp.emp_id }}</p>
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=emp.admin_id, mode='punches') }}"
+             class="admin-btn">View Attendance</a>
+        </div>
+      </div>
+    {% endfor %}
   </div>
+{% endif %}
+
+  {% if view_type == 'queries' %}
+  {% for query in employee_queries %}
+    {% if query.emp_obj %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ query.emp_obj.photo_filename) }}" class="admin-card-img">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">{{ query.emp_obj.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ query.emp_obj.emp_id }}</p>
+
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=query.emp_obj.admin_id, mode='queries') }}"
+             class="admin-btn">View Query</a>
+        </div>
+      </div>
+    {% endif %}
   {% endfor %}
+{% endif %}
+
+{% if view_type == 'resignations' %}
+  {% for resignation in resignations %}
+    {% if resignation.emp_obj %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ resignation.emp_obj.photo_filename) }}"
+             class="admin-card-img" alt="Employee Photo">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">{{ resignation.emp_obj.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ resignation.emp_obj.emp_id }}</p>
+
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=resignation.emp_obj.admin_id, mode='resignations') }}"
+             class="admin-btn">View Resignation</a>
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
 
 </div>
-
-
-
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("totalEmployeeFilterForm");
-  const selects = form.querySelectorAll("select");
-
-  selects.forEach(select => {
+  form.querySelectorAll("select").forEach(select => {
     select.addEventListener("change", function () {
       const params = new URLSearchParams(new FormData(form));
       window.location = form.action + "?" + params.toString();
