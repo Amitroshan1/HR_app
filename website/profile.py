@@ -55,7 +55,6 @@ def emp_profile():
 
 
 
-
 @profile.route('/emp_det2', methods=['GET', 'POST'])
 @login_required
 def empl_det():
@@ -64,76 +63,90 @@ def empl_det():
 
     if form.validate_on_submit():
         try:
-            # Check if a file is uploaded
+            # ✅ If user uploads a new photo
             if form.Photo.data:
                 file = form.Photo.data
-                file_size = file.content_length
 
-                # Validate file size
-                if file_size and file_size > 10240000:  # 100 KB
-                    flash('File size exceeds 100 KB. Please upload a smaller file.', 'warning')
+                # Get file size
+                file.seek(0, os.SEEK_END)  # move cursor to end
+                file_size = file.tell()     # get size in bytes
+                file.seek(0)                # reset cursor to beginning
+
+                size_kb = round(file_size / 1024, 2)
+                flash(f'File size: {size_kb} KB', 'info')
+
+                # Validate file size (max 100 KB)
+                if file_size > 102400:
+                    flash('⚠️ File size exceeds 100 KB. Please upload a smaller photo.', 'warning')
+                    return redirect(url_for('profile.empl_det'))
+
+                filename = secure_filename(file.filename)
+                upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+                # Save file safely
+                try:
+                    file.save(upload_path)
+                except PermissionError:
+                    flash('Permission denied: Cannot save uploaded Photo. Please rename the photo.', 'danger')
+                    return redirect(url_for('profile.empl_det'))
+                except Exception as e:
+                    flash(f'Unexpected error saving file: {str(e)}', 'danger')
+                    return redirect(url_for('profile.empl_det'))
+
+                # Save or update employee data
+                if employee:
+                    form.populate_obj(employee)
+                    employee.photo_filename = filename
+                    db.session.commit()
+                    flash('Employee details updated successfully (new photo uploaded)!', 'success')
                 else:
-                    filename = secure_filename(file.filename)
-                    upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    new_employee = Employee(
+                        admin_id=current_user.id,
+                        photo_filename=filename,
+                        name=form.name.data,
+                        email=form.email.data,
+                        father_name=form.father_name.data,
+                        mother_name=form.mother_name.data,
+                        marital_status=form.marital_status.data,
+                        spouse_name=form.spouse_name.data,
+                        dob=form.dob.data,
+                        emp_id=form.emp_id.data,
+                        designation=form.designation.data,
+                        mobile=form.mobile.data,
+                        gender=form.gender.data,
+                        emergency_mobile=form.emergency_mobile.data,
+                        caste=form.caste.data,
+                        nationality=form.nationality.data,
+                        language=form.language.data,
+                        religion=form.religion.data,
+                        blood_group=form.blood_group.data,
+                        permanent_address_line1=form.permanent_address_line1.data,
+                        permanent_address_line2=form.permanent_address_line2.data,
+                        permanent_address_line3=form.permanent_address_line3.data,
+                        permanent_pincode=form.permanent_pincode.data,
+                        permanent_district=form.permanent_district.data,
+                        permanent_state=form.permanent_state.data,
+                        present_address_line1=form.present_address_line1.data,
+                        present_address_line2=form.present_address_line2.data,
+                        present_address_line3=form.present_address_line3.data,
+                        present_pincode=form.present_pincode.data,
+                        present_district=form.present_district.data,
+                        present_state=form.present_state.data
+                    )
+                    db.session.add(new_employee)
+                    db.session.commit()
+                    flash('Employee details saved successfully!', 'success')
 
-                    # Save file safely
-                    try:
-                        file.save(upload_path)
-                    except PermissionError:
-                        flash('Permission denied: Cannot save uploaded Photo. Please rename the photo.', 'danger')
-                        return redirect(url_for('profile.empl_det'))
-                    except Exception as e:
-                        flash(f'Unexpected error saving file: {str(e)}', 'danger')
-                        return redirect(url_for('profile.empl_det'))
-
-                    # Save or update employee data
-                    if employee:
-                        form.populate_obj(employee)
-                        employee.photo_filename = filename
-                        db.session.commit()
-                        flash('Employee details updated successfully!', 'success')
-                    else:
-                        new_employee = Employee(
-                            admin_id=current_user.id,
-                            photo_filename=filename,
-                            name=form.name.data,
-                            email=form.email.data,
-                            father_name=form.father_name.data,
-                            mother_name=form.mother_name.data,
-                            marital_status=form.marital_status.data,
-                            spouse_name=form.spouse_name.data,
-                            dob=form.dob.data,
-                            emp_id=form.emp_id.data,
-                            designation=form.designation.data,
-                            mobile=form.mobile.data,
-                            gender=form.gender.data,
-                            emergency_mobile=form.emergency_mobile.data,
-                            caste=form.caste.data,
-                            nationality=form.nationality.data,
-                            language=form.language.data,
-                            religion=form.religion.data,
-                            blood_group=form.blood_group.data,
-                            permanent_address_line1=form.permanent_address_line1.data,
-                            permanent_address_line2=form.permanent_address_line2.data,
-                            permanent_address_line3=form.permanent_address_line3.data,
-                            permanent_pincode=form.permanent_pincode.data,
-                            permanent_district=form.permanent_district.data,
-                            permanent_state=form.permanent_state.data,
-                            present_address_line1=form.present_address_line1.data,
-                            present_address_line2=form.present_address_line2.data,
-                            present_address_line3=form.present_address_line3.data,
-                            present_pincode=form.present_pincode.data,
-                            present_district=form.present_district.data,
-                            present_state=form.present_state.data
-                        )
-                        db.session.add(new_employee)
-                        db.session.commit()
-                        flash('Employee details saved successfully!', 'success')
             else:
-                flash('No photo was uploaded. Please upload a photo.', 'warning')
+                # ✅ If no photo uploaded
+                if not employee:
+                    flash('Photo is required for new employee.', 'warning')
+                else:
+                    form.populate_obj(employee)
+                    db.session.commit()
+                    flash('Employee details updated successfully (photo unchanged).', 'success')
 
         except Exception as e:
-            # Catch-all error handler for anything unexpected
             flash(f"Something went wrong: {str(e)}", 'danger')
 
         return redirect(url_for('profile.empl_det'))
@@ -144,7 +157,6 @@ def empl_det():
                 flash(f"Error in {getattr(form, field).label.text}: {error}", category='error')
 
     return render_template('profile/emp_det.html', form=form)
-
 
 
 
@@ -897,12 +909,30 @@ def apply_leave():
         db.session.commit()
 
         # Email notification
-        manager_contact = ManagerContact.query.filter_by(circle_name=employee.circle,
-                                                         user_type=employee.emp_type).first()
+        manager_contact = None  # ✅ Initialize before use
+
+    # Try match with user_email first
+        if current_user.email:
+            manager_contact = ManagerContact.query.filter_by(
+                circle_name=employee.circle,
+                user_type=employee.emp_type,
+                user_email=current_user.email
+            ).first()
+
+        # Fallback if no match found
+        if not manager_contact:
+            manager_contact = ManagerContact.query.filter_by(
+                circle_name=employee.circle,
+                user_type=employee.emp_type
+            ).first()
+
         department_email = 'hr@saffotech.com'
         cc_emails = []
+
         if manager_contact:
-            cc_emails += [manager_contact.l2_email, manager_contact.l3_email]
+            cc_emails.extend(filter(None, [manager_contact.l2_email, manager_contact.l3_email]))
+
+
 
         subject = f"New Leave Application: {leave_type}"
         body = f"""

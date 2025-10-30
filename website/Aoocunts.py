@@ -201,7 +201,7 @@ def view_documents(admin_id):
 
     if not upload_doc:
         flash("No documents uploaded for this employee.", "warning")
-        return redirect(url_for("Accounts.Acc_dashboard"))
+        return redirect(url_for("Accounts.search_results"))
 
     # Pass admin + uploaded doc to template
     return render_template(

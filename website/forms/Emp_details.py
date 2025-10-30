@@ -7,7 +7,11 @@ from flask_wtf.file import FileAllowed
 
 
 class Employee_Details(FlaskForm):
-    Photo = FileField('Employee Image ', validators=[FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')])
+    Photo = FileField(
+    'Employee Image',
+    validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'jfif'], 'Images only!')]
+)
+    
     name = StringField('Full_Name *', 
                          validators=[DataRequired()], 
                          render_kw={"placeholder": "Enter your Name"})

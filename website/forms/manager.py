@@ -5,14 +5,17 @@ from flask_wtf.file import FileAllowed
 
 class ManagerContactForm(FlaskForm):
     circle_name = SelectField('Circle', 
-                              choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
+                                choices=[('', 'Choose Your Circle'), ('NHQ', 'NHQ'),
                                         ('Noida', 'Noida'), 
                                         ('Noida-Loire','Noida-Loire'),('Haryana', 'Haryana'),
                                         ('Haryana-Loyal', 'Haryana-Loyal'),
+                                        ('Bangalore-Xray', 'Bangalore-Xray'),
+                                        
                                        ('Gurugram', 'Gurugram'), ('Gurugram-Awesome','Gurugram-Awesome'),
                                        ('Gurugram-Rabbit','Gurugram-Rabbit'),('Pune', 'Pune'), 
-                                       ('Jaipur', 'Jaipur'),('Jaipur-Rabbit', 'Jaipur-Rabbit'), ('Greater Noida', 'Greater Noida'), 
-                                        ('Mumbai', 'Mumbai'),('G.Noida-Rabbit','G.Noida-Rabbit'),
+                                       ('Jaipur', 'Jaipur'), ('Jaipur-Rabbit', 'Jaipur-Rabbit'), ('Greater Noida', 'Greater Noida'), 
+                                        ('Mumbai', 'Mumbai'),
+                                        ('NaviMumbai-Jingle', 'NaviMumbai-Jingle'),('G.Noida-Rabbit','G.Noida-Rabbit'),
                                         ('Mumbai-Bonita','Mumbai-Bonita'),('Mumbai-Victory','Mumbai-Victory'), ('Mumbai-Rabbit','Mumbai-Rabbit'), 
                                         ('Ahmedabad', 'Ahmedabad'), 
                                        ('Bangalore', 'Bangalore'), ('Punjab', 'Punjab'),

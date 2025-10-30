@@ -191,7 +191,7 @@ def get_total_working_days(admin_id):
         )
         .scalar()
     )
-
+   
     # ✅ Get total extra_days from approved leave applications
     extra_days = (
         db.session.query(func.coalesce(func.sum(LeaveApplication.extra_days), 0))
@@ -203,10 +203,10 @@ def get_total_working_days(admin_id):
         )
         .scalar()
     )
-
+    
     # ✅ Base total
     total_days = working_days - extra_days
-
+    
     # ✅ Check weekends (till today only)
     first_day = datetime(year, month, 1)
     current_day = first_day
@@ -231,7 +231,7 @@ def get_total_working_days(admin_id):
                 total_days += 1
 
         current_day += timedelta(days=1)
-
+    print(total_days)
     return max(total_days, 0)
   # avoid negative values
 
