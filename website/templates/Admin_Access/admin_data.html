@@ -1,0 +1,138 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Admin Data{% endblock %}
+
+{% block content %}
+
+<div class="admin_container">
+  <div class="admin_Access-filter-box">
+    <form id="totalEmployeeFilterForm" method="GET" action="{{ url_for('Admins_access.admin_data') }}">
+      <input type="hidden" name="view" value="{{ view_type }}">
+
+      <!-- Employee Type Filter -->
+      <label for="emp_type">Employee Type:</label>
+      <select id="emp_type" name="emp_type_employee">
+        <option value="">-- Select Employee Type --</option>
+        <option value="Engineering" {% if emp_type=="Engineering" %}selected{% endif %}>Engineering</option>
+        <option value="Human Resource" {% if emp_type=="Human Resource" %}selected{% endif %}>Human Resource</option>
+        <option value="Admin" {% if emp_type=="Admin" %}selected{% endif %}>Admin</option>
+        <option value="Accounts" {% if emp_type=="Accounts" %}selected{% endif %}>Accounts</option>
+        <option value="TEC" {% if emp_type=="TEC" %}selected{% endif %}>TEC</option>
+        <option value="Certification" {% if emp_type=="Certification" %}selected{% endif %}>Certification</option>
+        <option value="Software_Development" {% if emp_type=="Software_Development" %}selected{% endif %}>Software Development</option>
+        <option value="It Department" {% if emp_type=="It Department" %}selected{% endif %}>IT Department</option>
+      </select>
+
+      <!-- Circle Filter -->
+      <label for="circle">Circle:</label>
+      <select id="circle" name="circle_employee">
+        <option value="">-- Select Circle --</option>
+        <option value="NHQ" {% if circle=="NHQ" %}selected{% endif %}>NHQ</option>
+        <option value="Noida" {% if circle=="Noida" %}selected{% endif %}>Noida</option>
+        <option value="Pune" {% if circle=="Pune" %}selected{% endif %}>Pune</option>
+        <option value="Mumbai" {% if circle=="Mumbai" %}selected{% endif %}>Mumbai</option>
+        <!-- Add other circle options as needed -->
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="admin-card-container">
+  {% if view_type == 'employees' %}
+    {% for emp in employees %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ emp.photo_filename) }}" class="admin-card-img">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">Name: {{ emp.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ emp.emp_id }}</p>
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=emp.admin_id) }}"
+        class="admin-btn">View Details</a>
+
+        </div>
+      </div>
+    {% endfor %}
+
+  {% elif view_type == 'leaves' %}
+    {% for leave_wrapper in todays_leaves %}
+      {% if leave_wrapper.emp_obj %}
+        <div class="admin-card">
+          <img src="{{ url_for('static', filename='uploads/' ~ leave_wrapper.emp_obj.photo_filename) }}" class="admin-card-img">
+          <div class="admin-card-body">
+            <h5 class="admin-card-title">{{ leave_wrapper.emp_obj.name }}</h5>
+            <p class="admin-card-text">Emp ID: {{ leave_wrapper.emp_obj.emp_id }}</p>
+
+            <!-- Pass module to the dynamic route -->
+            <a href="{{ url_for('Admins_access.view_employee_details', admin_id=leave_wrapper.emp_obj.admin_id, mode='leave') }}"
+          class="admin-btn">View Leave Status</a>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+{% if view_type == 'punches' %}
+  <div class="admin-card-container">
+    {% for emp in todays_attendance %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ emp.photo_filename) }}" class="admin-card-img">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">Name: {{ emp.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ emp.emp_id }}</p>
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=emp.admin_id, mode='punches') }}"
+             class="admin-btn">View Attendance</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+  {% if view_type == 'queries' %}
+  {% for query in employee_queries %}
+    {% if query.emp_obj %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ query.emp_obj.photo_filename) }}" class="admin-card-img">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">{{ query.emp_obj.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ query.emp_obj.emp_id }}</p>
+
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=query.emp_obj.admin_id, mode='queries') }}"
+             class="admin-btn">View Query</a>
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% if view_type == 'resignations' %}
+  {% for resignation in resignations %}
+    {% if resignation.emp_obj %}
+      <div class="admin-card">
+        <img src="{{ url_for('static', filename='uploads/' ~ resignation.emp_obj.photo_filename) }}"
+             class="admin-card-img" alt="Employee Photo">
+        <div class="admin-card-body">
+          <h5 class="admin-card-title">{{ resignation.emp_obj.name }}</h5>
+          <p class="admin-card-text">Emp ID: {{ resignation.emp_obj.emp_id }}</p>
+
+          <a href="{{ url_for('Admins_access.view_employee_details', admin_id=resignation.emp_obj.admin_id, mode='resignations') }}"
+             class="admin-btn">View Resignation</a>
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("totalEmployeeFilterForm");
+  form.querySelectorAll("select").forEach(select => {
+    select.addEventListener("change", function () {
+      const params = new URLSearchParams(new FormData(form));
+      window.location = form.action + "?" + params.toString();
+    });
+  });
+});
+</script>
+
+{% endblock %}

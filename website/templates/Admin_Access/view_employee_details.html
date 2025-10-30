@@ -1,0 +1,546 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Employee Details{% endblock %}
+
+{% block content %}
+
+<div class="container mt-3">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+        <ul class="flash-messages">
+        {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    {% endwith %}
+</div>
+
+<div class="view-emp-admin-container">
+
+  <!-- Employee Profile -->
+  <div class="view-emp-admin-profile-card">
+    <img src="{{ url_for('static', filename='uploads/' ~ data.emp.photo_filename) }}"
+         class="view-emp-admin-profile-img" alt="Profile Photo">
+
+    <div class="view-emp-admin-profile-info">
+      <h2>{{ data.emp.name }}</h2>
+      <p><i class="fa-solid fa-id-badge"></i>  {{ data.emp.emp_id }}</p>
+      <p><i class="fa-solid fa-envelope"></i>  {{ data.emp.email }}</p>
+      <p><i class="fa-solid fa-briefcase"></i>  {{ data.emp.designation }}</p>
+      <p><i class="fa-solid fa-phone"></i>  {{ data.emp.mobile }}</p>
+      <p><i class="fa-solid fa-venus-mars"></i>  {{ data.emp.gender }}</p>
+      <p><i class="fa-solid fa-cake-candles"></i>  {{ data.emp.dob }}</p>
+      <p><i class="fa-solid fa-location-dot"></i>
+        {{ data.emp.permanent_address_line1 }}
+        {% if data.emp.permanent_address_line2 %}, {{ data.emp.permanent_address_line2 }}{% endif %}
+        {% if data.emp.permanent_address_line3 %}, {{ data.emp.permanent_address_line3 }}{% endif %},
+        {{ data.emp.permanent_district }}, {{ data.emp.permanent_state }} - {{ data.emp.permanent_pincode }}
+      </p>
+    </div>
+  </div>
+
+<!-- Tabs -->
+<div class="view-emp-admin-tabs">
+  <button class="view-emp-admin-tab-button {% if active_tab == 'leaves' %}active{% endif %}" onclick="openTab(event, 'leaves')">Leaves</button>
+  <button class="view-emp-admin-tab-button {% if active_tab == 'punches' %}active{% endif %}" onclick="openTab(event, 'punches')">Punches</button>
+  <button class="view-emp-admin-tab-button {% if active_tab == 'payslips' %}active{% endif %}" onclick="openTab(event, 'payslips')">Payslips</button>
+  <button class="view-emp-admin-tab-button {% if active_tab == 'assets' %}active{% endif %}" onclick="openTab(event, 'assets')">Assets</button>
+  <button class="view-emp-admin-tab-button {% if active_tab == 'claims' %}active{% endif %}" onclick="openTab(event, 'claims')">Claims</button>
+  <button class="view-emp-admin-tab-button {% if active_tab == 'queries' %}active{% endif %}" onclick="openTab(event, 'queries')">Queries</button>
+  <button class="view-emp-admin-tab-button {% if active_tab == 'resignations' %}active{% endif %}" onclick="openTab(event, 'resignations')">Resignations</button>
+</div>
+
+
+
+  <!-- Leaves Table -->
+  <div id="leaves" class="view-emp-admin-tab-content active">
+    <!-- Leave Filter Buttons -->
+    <div class="leave-filters" id="leaveFilters">
+      <button class="leave-filter-view-btn active" data-status="all">All</button>
+      <button class="leave-filter-view-btn" data-status="Pending">Pending</button>
+      <button class="leave-filter-view-btn" data-status="Approved">Approved</button>
+      <button class="leave-filter-view-btn" data-status="Rejected">Rejected</button>
+    </div>
+
+    <table class="view-emp-admin-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Type</th>
+      <th>Status</th>
+      <th>Start</th>
+      <th>End</th>
+      <th class="action-col" style="display:none;">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="leaveTableBody">
+    {% for leave in data.leaves %}
+    <tr data-status="{{ leave.status }}">
+      <td>{{ leave.id }}</td>
+      <td>{{ leave.leave_type }}</td>
+      <td>{{ leave.status }}</td>
+      <td>{{ leave.start_date }}</td>
+      <td>{{ leave.end_date }}</td>
+      <td class="action-cell" style="display:none;">
+        <a href="{{ url_for('Admins_access.update_status', model_name='LeaveApplication', record_id=leave.id, column='status', value='Approved') }}"
+           class="btn-leave-approve">Approve</a>
+        <a href="{{ url_for('Admins_access.update_status', model_name='LeaveApplication', record_id=leave.id, column='status', value='Rejected') }}"
+           class="btn-leave-reject">Reject</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+  </div>
+
+  <!-- Punches Table -->
+  <div id="punches" class="view-emp-admin-tab-content">
+    <table class="view-emp-admin-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Punch In</th>
+          <th>Punch Out</th>
+          <th>Hours</th>
+          <th>Holiday</th>
+          <th>WFH</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for punch in data.punches %}
+        <tr>
+          <td>{{ punch.punch_date }}</td>
+          <td>{{ punch.punch_in or "-" }}</td>
+          <td>{{ punch.punch_out or "-" }}</td>
+          <td>{{ punch.today_work or "-" }}</td>
+          <td>{{ "Yes" if punch.is_holiday else "No" }}</td>
+          <td>{{ "Yes" if punch.is_wfh else "No" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Payslips Table -->
+  <div id="payslips" class="view-emp-admin-tab-content">
+    <table class="view-emp-admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Month</th>
+                <th>Year</th>
+                <th>Salary</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for slip in data.payslips %}
+            <tr>
+                <td>{{ slip.id }}</td>
+                <td>{{ slip.month }}</td>
+                <td>{{ slip.year }}</td>
+                <td>{{ slip.amount }}</td>
+                <td>
+                    {% if slip.file_path %}
+                    <a href="{{ url_for('static', filename='uploads/' ~ slip.file_path) }}" target="_blank"
+                       class="btn btn-sm btn-success">View</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+  </div>
+
+  <!-- Assets Table -->
+  <div id="assets" class="view-emp-admin-tab-content">
+    <table class="view-emp-admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Images</th>
+          <th>Issue Date</th>
+          <th>Return Date</th>
+          <th>Remark</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in data.assets %}
+        <tr>
+          <td>{{ asset.id }}</td>
+          <td>{{ asset.name }}</td>
+          <td>{{ asset.description or '-' }}</td>
+          <td>
+            {% if asset.image_files %}
+              {% for img in asset.image_files.split(',') %}
+                <a href="{{ url_for('static', filename='uploads/' ~ img.strip()) }}" target="_blank">
+                  <img src="{{ url_for('static', filename='uploads/' ~ img.strip()) }}"
+                       alt="Asset Image"
+                       style="width:50px; height:50px; margin-right:5px; border-radius:5px; cursor:pointer;">
+                </a>
+              {% endfor %}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ asset.issue_date }}</td>
+          <td>{{ asset.return_date or '-' }}</td>
+          <td>{{ asset.remark or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Claims Tab -->
+<div id="claims" class="view-emp-admin-tab-content">
+  <h3 style="margin:10px 0;">Expense Claims</h3>
+
+  <table class="view-emp-admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Employee</th>
+        <th>Designation</th>
+        <th>Email</th>
+        <th>Emp ID</th>
+        <th>Project</th>
+        <th>Travel From</th>
+        <th>Travel To</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="claimTableBody">
+      {% for claim in data.claims %}
+      <!-- Claim Header Row -->
+      <tr>
+        <td>{{ claim.id }}</td>
+        <td>{{ claim.employee_name }}</td>
+        <td>{{ claim.designation }}</td>
+        <td>{{ claim.email }}</td>
+        <td>{{ claim.emp_id }}</td>
+        <td>{{ claim.project_name }}</td>
+        <td>{{ claim.travel_from_date }}</td>
+        <td>{{ claim.travel_to_date }}</td>
+        <td>
+          <button class="claim-toggle-btn" onclick="toggleClaimItems({{ claim.id }})">
+    View
+</button>
+        </td>
+      </tr>
+
+      <!-- Line Items (hidden initially) -->
+      <tr id="claim-items-{{ claim.id }}" style="display:none; background:#fafafa;">
+        <td colspan="9">
+          <table class="view-emp-admin-table" style="margin:0;">
+            <thead>
+              <tr>
+                <th>Sr No</th>
+                <th>Date</th>
+                <th>Purpose</th>
+                <th>Amount</th>
+                <th>Currency</th>
+                <th>File</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if claim.expenses %}
+                {% for item in claim.expenses %}
+                <tr data-status="{{ item.status }}" {% if item.status=='Pending' %}style="background-color:#fff9e6;"{% endif %}>
+                  <td>{{ item.sr_no }}</td>
+                  <td>{{ item.date }}</td>
+                  <td>{{ item.purpose }}</td>
+                  <td>{{ item.amount }}</td>
+                  <td>{{ item.currency }}</td>
+                  <td>
+                    {% if item.Attach_file %}
+                      <a href="{{ url_for('static', filename='uploads/' ~ item.Attach_file) }}" target="_blank">
+                        View File
+                      </a>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ item.status }}</td>
+                  <td>
+                    {% if item.status == 'Pending' %}
+                      <a href="{{ url_for('Admins_access.update_status', model_name='claim_item', record_id=item.id, column='status', value='Approved') }}"
+                         class="btn-leave-approve">Approve</a>
+                    <a href="{{ url_for('Admins_access.update_status', model_name='claim_item', record_id=item.id, column='status', value='Rejected') }}"
+                       class="btn-leave-reject">Reject</a>
+
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="8" style="text-align:center;">No line items found.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+  <!-- ============================
+     Queries Tab Content
+=============================== -->
+<div id="queries" class="view-emp-admin-tab-content" style="display:none;">
+  <table class="queries-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Employee Type</th>
+        <th>Query</th>
+        <th>Status</th>
+        <th>Replies</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="queryTableBody">
+      {% for query in data.queries %}
+      <tr class="query-row">
+        <td>{{ query.title }}</td>
+        <td>{{ query.emp_type }}</td>
+        <td>{{ query.query_text }}</td>
+        <td class="status {{ query.status|lower }}">{{ query.status }}</td>
+        <td>
+          <button class="btn-view-replies" onclick="toggleReplies({{ query.id }})">
+            View Replies
+          </button>
+        </td>
+        <td>
+          <div class="reply-box">
+            <input type="text" id="reply-input-{{ query.id }}" placeholder="Write reply..." class="reply-input">
+            <button class="btn-reply" onclick="submitReply({{ query.id }})">Reply</button>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Hidden replies row -->
+      <tr id="query-replies-{{ query.id }}" class="replies-row" style="display:none;">
+        <td colspan="6">
+          <ul id="replies-list-{{ query.id }}" class="replies-list">
+            {% for reply in query.replies %}
+              <li class="reply-item">{{ reply.reply_text }} <span class="reply-user">({{ reply.user_type }})</span></li>
+            {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+  <!-- ============================
+     Resignations Tab Content
+=============================== -->
+<div id="resignations" class="view-emp-admin-tab-content" style="display:none;">
+  <table class="view-emp-admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Resignation Date</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Applied On</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for resignation in data.resignations %}
+      <tr>
+        <td>{{ resignation.id }}</td>
+        <td>{{ resignation.resignation_date }}</td>
+        <td>{{ resignation.reason }}</td>
+        <td class="status {{ resignation.status|lower }}">{{ resignation.status }}</td>
+        <td>{{ resignation.applied_on }}</td>
+        <td>
+          {% if resignation.status == 'Pending' %}
+            <a href="{{ url_for('Admins_access.update_status', model_name='Resignation', record_id=resignation.id, column='status', value='Approved') }}"
+               class="btn-leave-approve">Approve</a>
+            <a href="{{url_for('Admins_access.update_status', model_name='Resignation', record_id=resignation.id, column='status', value='Rejected')}}"
+               class="btn-leave-reject">Reject</a>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+// Function to open a tab when a tab button is clicked
+function openTab(evt, tabId) {
+    // 1. Hide all tab contents
+    document.querySelectorAll(".view-emp-admin-tab-content").forEach(tab => {
+        tab.style.display = 'none';
+    });
+
+    // 2. Remove 'active' class from all tab buttons
+    document.querySelectorAll(".view-emp-admin-tab-button").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    // 3. Show the selected tab
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) selectedTab.style.display = 'block';
+
+    // 4. Add 'active' class to the clicked button
+    evt.currentTarget.classList.add("active");
+
+    // 5. Enable/disable leave filter buttons
+    const leaveFilters = document.querySelectorAll('.leave-filter-view-btn');
+    leaveFilters.forEach(btn => {
+        if (tabId === 'leaves') {
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('active');
+        }
+    });
+
+    // 6. Trigger "All" filter if Leaves tab is selected
+    if(tabId === 'leaves') {
+        const firstBtn = leaveFilters[0];
+        if(firstBtn) filterLeaves(firstBtn.getAttribute('data-status'), firstBtn);
+    }
+}
+
+// ------------------ LEAVE FILTER LOGIC ------------------
+function filterLeaves(status, btn) {
+    // 7. Remove 'active' from all leave filter buttons
+    document.querySelectorAll('.leave-filter-view-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+
+    const actionCol = document.querySelector('.action-col');
+
+    // 8. Show/hide rows based on leave status
+    document.querySelectorAll('#leaveTableBody tr').forEach(row => {
+        const rowStatus = row.getAttribute('data-status');
+        const actionCell = row.querySelector('.action-cell');
+
+        if (status === 'all' || rowStatus === status) {
+            row.style.display = '';
+            if (status === 'Pending' && rowStatus === 'Pending') {
+                actionCol.style.display = '';
+                if(actionCell) actionCell.style.display = '';
+            } else {
+                if(actionCell) actionCell.style.display = 'none';
+            }
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (status !== 'Pending') {
+        actionCol.style.display = 'none';
+    }
+}
+
+// 9. Attach leave filter button click events
+document.querySelectorAll('.leave-filter-view-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        filterLeaves(this.getAttribute('data-status'), this);
+    });
+});
+
+// ------------------ CLAIM ITEMS TOGGLE ------------------
+function toggleClaimItems(claimId) {
+    const row = document.getElementById("claim-items-" + claimId);
+    if (row.style.display === "none" || row.style.display === "") {
+        row.style.display = "table-row";
+    } else {
+        row.style.display = "none";
+    }
+}
+
+// ------------------ QUERY REPLIES TOGGLE ------------------
+function toggleReplies(queryId) {
+    const repliesRow = document.getElementById("query-replies-" + queryId);
+    if (repliesRow.style.display === "none" || repliesRow.style.display === "") {
+        repliesRow.style.display = "table-row";
+    } else {
+        repliesRow.style.display = "none";
+    }
+}
+
+// ------------------ QUERY REPLY SUBMIT ------------------
+function submitReply(queryId) {
+    const input = document.getElementById("reply-input-" + queryId);
+    const replyText = input.value.trim();
+
+    if (!replyText) {
+        alert("Reply cannot be empty!");
+        return;
+    }
+
+    fetch(`/update-status/Query/${queryId}/reply/${encodeURIComponent(replyText)}`)
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            const repliesList = document.getElementById("replies-list-" + queryId);
+            const newReply = document.createElement("li");
+            newReply.classList.add("reply-item");
+            newReply.innerHTML = `${data.reply_text} <span class="reply-user">(${data.user_type})</span>`;
+            repliesList.appendChild(newReply);
+            input.value = "";
+        } else {
+            alert(data.message || "Failed to submit reply");
+        }
+    })
+    .catch(() => alert("Error submitting reply"));
+}
+
+// ------------------ PAGE LOAD ------------------
+document.addEventListener('DOMContentLoaded', () => {
+    // 10. Hide all tabs initially
+    document.querySelectorAll(".view-emp-admin-tab-content").forEach(tab => {
+        tab.style.display = 'none';
+    });
+
+    // 11. Get backend active_tab (from Flask)
+    const activeTab = "{{ active_tab or 'leaves' }}".toLowerCase();
+    const tabToShow = document.getElementById(activeTab) || document.getElementById('leaves');
+
+    // 12. Show the active tab
+    if(tabToShow) tabToShow.style.display = 'block';
+
+    // 13. Highlight the active tab button
+    document.querySelectorAll(".view-emp-admin-tab-button").forEach(btn => {
+        if(btn.textContent.trim().toLowerCase() === activeTab) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+
+    // 14. Trigger Leave filters if leaves tab is active
+    if(activeTab === 'leaves') {
+        const firstFilterBtn = document.querySelector('.leave-filter-view-btn');
+        if(firstFilterBtn) filterLeaves(firstFilterBtn.getAttribute('data-status'), firstFilterBtn);
+    }
+});
+</script>
+
+
+{% endblock %}
+
+

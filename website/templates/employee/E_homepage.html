@@ -113,7 +113,7 @@
                     <strong>Casual Leave:</strong> {{ data.casual_leave_balance if data else 'N/A' }}
                 </div>
                 <div class="attendance-summaryhome-bottom">
-                    <strong>Working Days:</strong> {{ data.present_days if data else 'N/A' }}
+                    <strong>Total Working Days (This Month):</strong> {{ total_working_days }}
                 </div>
                 {% if resign_data.status=='Approved' %}
                 <div class="attendance-summaryhome-bottom">

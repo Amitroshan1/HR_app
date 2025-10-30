@@ -432,47 +432,65 @@ def punch():
     form = PunchForm()
     today = date.today()
 
+    # Get today's punch if exists
     punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
+
+    # Selected month/year for calendar
     selected_month = request.args.get('month', today.month, type=int)
     selected_year = request.args.get('year', today.year, type=int)
-
 
     calendar.setfirstweekday(calendar.MONDAY)
     first_day = date(selected_year, selected_month, 1)
     last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
 
+    # Get all punches for the selected month
     punches = Punch.query.filter(
         Punch.admin_id == current_user.id,
         Punch.punch_date.between(first_day, last_day)
     ).all()
 
-    punch_data = {p.punch_date: p for p in punches}
+    # Prepare daily color data
+    punch_data = {}
+    for p in punches:
+        color = 'bg-white'  # default
+        if p.punch_in and p.punch_out and p.today_work:
+            # Convert today_work string "HH:MM:SS" to timedelta
+            try:
+                h, m, s = map(int, str(p.today_work).split(':'))
+                total_td = timedelta(hours=h, minutes=m, seconds=s)
+            except:
+                total_td = timedelta(seconds=0)
 
+            if total_td >= timedelta(hours=8, minutes=30):
+                color = 'present'   # Green Full Day
+            elif total_td >= timedelta(hours=4):
+                color = 'halfday'   # Yellow Half Day
+            else:
+                color = 'pending'   # Red Pending
+        elif p.punch_in and not p.punch_out:
+            color = 'pending'       # Red if punched in but not out
+        punch_data[p.punch_date] = {'punch': p, 'color': color}
+
+    # Punch In / Out logic
     if form.validate_on_submit():
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
 
-        logger.debug(f"Punch attempt by user {current_user.email}: lat={lat}, lon={lon}, WFH={is_wfh}")
-
         locations = Location.query.all()
-        logger.debug(f"Loaded {len(locations)} saved locations from DB")
-
         is_near_location = False
         if lat is not None and lon is not None:
             is_near_location = is_near_saved_location(lat, lon, locations)
 
-        logger.debug(f"is_near_location result: {is_near_location}")
-
         if not is_near_location and not is_wfh:
-            logger.warning(f"User {current_user.email} tried punching outside location without WFH")
             flash("You are not near any authorized location and 'Work From Home' is not selected.", "danger")
             return redirect(url_for('profile.punch'))
 
+        # Punch In
         if form.punch_in.data:
             if check_leave():
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
-                return redirect(request.url)  # Stop further execution
+                return redirect(request.url)
             elif is_wfh and not check_wfh():
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
                 return redirect(request.url)
@@ -496,76 +514,44 @@ def punch():
                 db.session.commit()
                 flash('Punched in successfully!', 'warning')
 
-
+        # Punch Out
         elif form.punch_out.data:
-
             if check_leave():
-
                 flash("You are not allowed to punch on this day because you are on leave", "danger")
-
                 return redirect(request.url)
-
             elif is_wfh and not check_wfh():
-
                 flash("WFM Mode access is restricted until your request is approved.", "danger")
-
                 return redirect(request.url)
-
             if not punch or not punch.punch_in:
-
                 flash('You need to punch in first!', 'danger')
-
             else:
-
-                # Set punch-out time
-
                 punch.punch_out = datetime.now().time()
-                punch_time(current_user.id)  # Update today's work time
+                punch_time(current_user.id)  # update today_work
                 db.session.commit()
 
-                # ✅ Check if today is Sunday
-                if datetime.today().weekday() == 6:  # Sunday
+                if datetime.today().weekday() == 6:  # Sunday comp off
                     user = Signup.query.filter_by(email=current_user.email).first()
                     add_comp_off(user.id)
                     print("Comp Off added for Sunday work!")
+
                 flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
 
-
-    # Suppose punch.total_work is datetime.time (HH:MM:SS)
-    if punch and punch.today_work:
-        total_work_time = punch.today_work
-        total_work_td = timedelta(
-            hours=total_work_time.hour,
-            minutes=total_work_time.minute,
-            seconds=total_work_time.second
-        )
-        logger.debug(f"[WORK TIME] User {current_user.email} total work time today: {total_work_time}")
-        is_full_day = total_work_td >= timedelta(hours=8, minutes=10,seconds=10)  # 8 hours and 30 minutes
-        logger.debug(f"[WORK TIME] User {current_user.email} worked {total_work_td}, Full day: {is_full_day}")
-    else:
-        is_full_day = False
-
-
-
-    last_day = calendar.monthrange(selected_year, selected_month)[1]
-
+    # Get leave records for selected month
+    last_day_num = calendar.monthrange(selected_year, selected_month)[1]
     leave_records = LeaveApplication.query.filter(
         LeaveApplication.admin_id == current_user.id,
-        LeaveApplication.start_date <= date(selected_year, selected_month, last_day),
+        LeaveApplication.start_date <= date(selected_year, selected_month, last_day_num),
         LeaveApplication.end_date >= date(selected_year, selected_month, 1),
         LeaveApplication.status == 'Approved'
     ).all()
 
-
-    # Collect all leave days
+    # Collect leave days
     leave_days = set()
     for leave in leave_records:
         current_day = leave.start_date
         while current_day <= leave.end_date:
             leave_days.add(current_day)
             current_day += timedelta(days=1)
-
-
 
     return render_template(
         'profile/punch.html',
@@ -576,9 +562,11 @@ def punch():
         selected_month=selected_month,
         selected_year=selected_year,
         calendar=calendar,
-        is_full_day=is_full_day,
         leave_days=leave_days
     )
+
+
+
 
 
 

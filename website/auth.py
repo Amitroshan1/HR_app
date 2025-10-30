@@ -18,11 +18,11 @@ from .auth_helper import refresh_access_token
 from datetime import datetime
 import requests
 from .models.manager_model import ManagerContact
-from .utility import get_user_working_summary
+from .utility import get_total_working_days_bulk
 from .models.expense import ExpenseLineItem
 from .models.attendance import WorkFromHomeApplication
 from .forms.attendance import PunchForm
-from .utility import get_user_working_summary,get_remaining_resignation_days
+from .utility import get_remaining_resignation_days
 from .models.seperation import Resignation
 from .common import punch_in_time_count
 
@@ -257,7 +257,9 @@ def E_homepage():
 
     # Get employee record for current user
     employee = Employee.query.filter_by(admin_id=current_user.id).first()
-    data =get_user_working_summary(current_user.id, datetime.now().year, datetime.now().month)
+    total_working_days_map = get_total_working_days_bulk()  # no arguments
+    total_working_days = total_working_days_map.get(current_user.id, 0)
+
     
 
     # Default values
@@ -324,7 +326,6 @@ def E_homepage():
         news_feeds=news_feeds,
         DOJ=DOJ,
         flag=flag,
-        data=data,
         show_notification=show_notification,
         queries_for_emp_type=queries_for_emp_type,
         emp_type=emp_type,
@@ -333,7 +334,8 @@ def E_homepage():
         form=form,
         days=days,
         resign_data=resign_data,
-        punch_in_time_count=punch_in_time_count_str
+        punch_in_time_count=punch_in_time_count_str,
+        total_working_days=total_working_days  # ✅ Added
     )
 
 
@@ -368,7 +370,7 @@ def change_password():
         new_password = form.new_password.data
 
         admin = Signup.query.filter_by(email=current_user.email).first()
-        # Verify original password
+        # Verify the original password
         if current_user.email == admin.email:
 
             if not admin.check_password(original_password):

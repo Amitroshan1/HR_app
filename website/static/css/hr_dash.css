@@ -1222,7 +1222,6 @@ total employee css */
 
 
 
-
 /* Container */
 .perticular-emp-container {
   padding: 20px;
@@ -1236,6 +1235,7 @@ total employee css */
   border-radius: 10px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: left;
 }
 
 .perticular-emp-info h2 {
@@ -1255,7 +1255,7 @@ total employee css */
   display: flex;
   flex-wrap: wrap;          /* wrap cards to next line */
   gap: 20px;                /* space between cards */
-  justify-content: flex-start; /* align left */
+  justify-content: flex-start;
 }
 
 /* Each Module Card */
@@ -1267,8 +1267,7 @@ total employee css */
   border: 1px solid #eee;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
-
-  flex: 0 0 220px;   /* default card width, no shrink */
+  flex: 0 0 220px;          /* default card width */
   box-sizing: border-box;
 }
 
@@ -1299,6 +1298,26 @@ total employee css */
   background: #006400;
 }
 
+/* Optional Module Data Section */
+.module-data {
+  margin-top: 30px;
+  background: #fefefe;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.module-data ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+.module-data li {
+  margin-bottom: 10px;
+  color: #333;
+}
+
 /* Responsive Tweaks */
 @media (max-width: 768px) {
   .perticular-emp-modules {
@@ -1311,7 +1330,8 @@ total employee css */
     flex: 0 0 100%; /* full width on mobile */
   }
 
-  .perticular-emp-info {
+  .perticular-emp-info,
+  .module-data {
     text-align: center;
   }
 }
@@ -1640,3 +1660,409 @@ total employee css */
     .line-item-table th, .line-item-table td { font-size: 0.85rem; }
     .btn-approve, .btn-reject { font-size: 0.75rem; padding: 4px 8px; }
 }
+
+/* ================================
+   Container
+================================ */
+.view-emp-admin-container {
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 10px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* ================================
+   Profile Card
+================================ */
+.view-emp-admin-profile-card {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 3px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.view-emp-admin-profile-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 20px;
+}
+
+.view-emp-admin-profile-info {
+    flex: 1;
+}
+
+.view-emp-admin-profile-info h2 {
+    margin-bottom: 10px;
+}
+
+.view-emp-admin-profile-info p {
+    margin: 5px 0;
+    font-size: 15px;
+    color: #333;
+}
+
+.view-emp-admin-profile-info i {
+    color: #a0a0a0;
+    margin-right: 8px;
+}
+
+/* ================================
+   Tabs
+================================ */
+.view-emp-admin-tabs {
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.view-emp-admin-tab-button {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    color: #555;
+    font-weight: 500;
+    margin-right: 5px;
+    border-radius: 5px 5px 0 0;
+    transition: background 0.3s, color 0.3s;
+}
+
+.view-emp-admin-tab-button.active {
+    background-color: #ddd;
+    color: #333;
+}
+
+/* ================================
+   Leave Filter Buttons
+================================ */
+.leave-filters {
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.leave-filter-view-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-right: 8px;
+    margin-bottom: 5px;
+    font-weight: 500;
+    background-color: #f0f0f0;
+    color: #555;
+    transition: background 0.2s, color 0.2s;
+}
+
+.leave-filter-view-btn.active,
+.leave-filter-view-btn:hover {
+    background-color: #4caf50;
+    color: #fff;
+}
+
+/* ================================
+   Tables Styling
+================================ */
+.view-emp-admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.view-emp-admin-table thead {
+    background-color: #f1f1f1;
+}
+
+.view-emp-admin-table th,
+.view-emp-admin-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.view-emp-admin-table th {
+    font-weight: 600;
+    color: #333;
+}
+
+.view-emp-admin-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.view-emp-admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ================================
+   Leave Approve/Reject Buttons
+================================ */
+.btn-leave-approve {
+    background-color: #4caf50;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    margin-right: 5px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-leave-approve:hover {
+    background-color: #43a047;
+}
+
+.btn-leave-reject {
+    background-color: #f44336;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    margin-right: 5px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-leave-reject:hover {
+    background-color: #d32f2f;
+}
+
+/* ================================
+   Pending Row Highlight
+================================ */
+#leaveTableBody tr[data-status="Pending"] {
+    background-color: #fff9e6;
+}
+
+/* ================================
+   Claim View Button
+================================ */
+.claim-toggle-btn {
+    background-color: #f0f0f0;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.claim-toggle-btn:hover {
+    background-color: #ddd;
+    transform: translateY(-1px);
+}
+
+.claim-toggle-btn:active {
+    transform: translateY(0);
+}
+
+/* ================================
+   Queries Tab Styling
+================================ */
+.queries-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+    font-size: 14px;
+}
+
+.queries-table th,
+.queries-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.queries-table th {
+    background-color: #f4f6f8;
+    font-weight: 600;
+    color: #333;
+}
+
+.query-row:hover {
+    background-color: #f9f9f9;
+}
+
+/* Query status colors */
+.status.new {
+    color: #007bff;
+    font-weight: 600;
+}
+.status.resolved {
+    color: #28a745;
+    font-weight: 600;
+}
+.status.pending {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+/* Replies hidden row */
+.replies-row td {
+    background-color: #f8f9fa;
+    padding: 10px 20px;
+}
+
+.replies-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.reply-item {
+    padding: 6px 0;
+    border-bottom: 1px dashed #ccc;
+    font-size: 14px;
+    color: #444;
+}
+
+.reply-item:last-child {
+    border-bottom: none;
+}
+
+.reply-user {
+    font-size: 12px;
+    color: #666;
+    margin-left: 5px;
+}
+
+/* Reply input + button */
+.reply-box {
+    display: flex;
+    gap: 8px;
+}
+
+.reply-input {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.btn-reply {
+    padding: 6px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-reply:hover {
+    background-color: #0056b3;
+}
+
+/* View Replies button */
+.btn-view-replies {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 6px;
+    background-color: #6c757d;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.btn-view-replies:hover {
+    background-color: #5a6268;
+}
+
+/* ================================
+   Responsive Styles
+================================ */
+@media screen and (max-width: 1024px) {
+    .view-emp-admin-profile-card {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .view-emp-admin-profile-img {
+        margin-bottom: 15px;
+    }
+
+    .view-emp-admin-tabs {
+        flex-direction: column;
+    }
+
+    .view-emp-admin-tab-button {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .leave-filters {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .leave-filter-view-btn {
+        margin-bottom: 5px;
+    }
+
+    .view-emp-admin-table th,
+    .view-emp-admin-table td {
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .queries-table th,
+    .queries-table td {
+        font-size: 12px;
+        padding: 8px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .view-emp-admin-container {
+        padding: 5px;
+    }
+
+    .view-emp-admin-profile-card {
+        padding: 15px;
+    }
+
+    .view-emp-admin-profile-img {
+        width: 120px;
+        height: 120px;
+    }
+
+    .view-emp-admin-profile-info p {
+        font-size: 14px;
+    }
+
+    .queries-table th,
+    .queries-table td {
+        font-size: 11px;
+        padding: 6px;
+    }
+
+    .reply-input {
+        font-size: 12px;
+    }
+}
+

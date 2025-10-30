@@ -33,3 +33,4 @@ class Noc_Upload(db.Model):
     emp_type_uploader = db.Column(db.String(50), nullable=False)
 
     admin = db.relationship('Admin', back_populates='noc_upload')
+
