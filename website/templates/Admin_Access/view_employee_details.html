@@ -1,0 +1,110 @@
+{% extends "Admin_Access/admin_base.html" %}
+{% block title %}Employee Details{% endblock %}
+
+{% block content %}
+<div class="emp-container">
+
+  <!-- Employee Profile -->
+  <div class="emp-profile-card">
+    <img src="{{ url_for('static', filename='uploads/' ~ data.emp.photo_filename) }}"
+         class="emp-profile-img" alt="Profile Photo">
+    <div class="emp-profile-info">
+      <h2>{{ data.emp.name }}</h2>
+      <p><b>Employee ID:</b> {{ data.emp.emp_id }}</p>
+      <p><b>Email:</b> {{ data.emp.email }}</p>
+      <p><b>Designation:</b> {{ data.emp.designation }}</p>
+      <p><b>Mobile:</b> {{ data.emp.mobile }}</p>
+      <p><b>Emergency Contact:</b> {{ data.emp.emergency_mobile }}</p>
+      <p><b>Gender:</b> {{ data.emp.gender }}</p>
+      <p><b>DOB:</b> {{ data.emp.dob }}</p>
+      <p><b>Blood Group:</b> {{ data.emp.blood_group }}</p>
+      <p><b>Permanent Address:</b>
+        {{ data.emp.permanent_address_line1 }}{% if data.emp.permanent_address_line2 %}, {{ data.emp.permanent_address_line2 }}{% endif %}
+        {% if data.emp.permanent_address_line3 %}, {{ data.emp.permanent_address_line3 }}{% endif %}
+        , {{ data.emp.permanent_district }}, {{ data.emp.permanent_state }}, {{ data.emp.permanent_pincode }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="emp-tabs">
+    <button class="emp-tab-button active" onclick="openTab(event, 'leaves')">Leaves</button>
+    <button class="emp-tab-button" onclick="openTab(event, 'punches')">Punches</button>
+  </div>
+
+  <!-- Leave Table -->
+  <div id="leaves" class="emp-tab-content active">
+    <table class="emp-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if data.leaves %}
+          {% for leave in data.leaves %}
+          <tr>
+            <td>{{ leave.id }}</td>
+            <td>{{ leave.leave_type }}</td>
+            <td>{{ leave.status }}</td>
+            <td>{{ leave.start_date }}</td>
+            <td>{{ leave.end_date }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="5">No leave records found.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Punch Table -->
+  <div id="punches" class="emp-tab-content">
+    <table class="emp-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Punch In</th>
+          <th>Punch Out</th>
+          <th>Work Hours</th>
+          <th>Holiday</th>
+          <th>WFH</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if data.punches %}
+          {% for punch in data.punches %}
+          <tr>
+            <td>{{ punch.punch_date }}</td>
+            <td>{{ punch.punch_in or "-" }}</td>
+            <td>{{ punch.punch_out or "-" }}</td>
+            <td>{{ punch.today_work or "-" }}</td>
+            <td>{{ "Yes" if punch.is_holiday else "No" }}</td>
+            <td>{{ "Yes" if punch.is_wfh else "No" }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6">No punch records found.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function openTab(evt, tabId) {
+    // Hide all tab contents
+    document.querySelectorAll(".emp-tab-content").forEach(tab => tab.classList.remove("active"));
+    // Remove active from buttons
+    document.querySelectorAll(".emp-tab-button").forEach(btn => btn.classList.remove("active"));
+    // Show selected tab
+    document.getElementById(tabId).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+</script>
+{% endblock %}
