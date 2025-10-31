@@ -83,6 +83,7 @@ class SignUpForm(FlaskForm):
 
     submit = SubmitField('Sign Up')
 
+
     def validate_email(self, email):
         existing = Signup.query.filter_by(email=email.data).first()
         if existing and str(existing.email) != str(self.email.data):
