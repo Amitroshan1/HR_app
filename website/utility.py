@@ -148,6 +148,7 @@ def get_total_working_days_bulk(admins=None):
     if admins is None or len(admins) == 0:
         admins = [current_user]
 
+    # --- Fetch data ---
     admin_ids = [a.id for a in admins]
     admin_emails = [a.email for a in admins]
 
@@ -372,9 +373,3 @@ def build_tally_xml(employees, company_name, period_start="20250901", period_end
     """
 
     return clean_text(xml_payload).strip()
-
-
-
-
-
-

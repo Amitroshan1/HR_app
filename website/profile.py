@@ -923,8 +923,6 @@ def apply_leave():
         if manager_contact:
             cc_emails.extend(filter(None, [manager_contact.l2_email, manager_contact.l3_email]))
 
-
-
         subject = f"New Leave Application: {leave_type}"
         body = f"""
             <html>
