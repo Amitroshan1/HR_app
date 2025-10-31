@@ -137,28 +137,25 @@ def add_comp_off(signup_id):
 
     db.session.commit()
 
-
 def get_total_working_days_bulk(admins=None):
     """
-    Calculates total working days for each admin (or current user if no admins provided)
-    with defined rules.
+    Robust version that maps Signup by email (matching your models) and
+    normalizes punch/leave dates to date objects before comparisons.
     """
-
     today = datetime.today()
     year, month = today.year, today.month
 
-    # --- Handle current user ---
     if admins is None or len(admins) == 0:
         admins = [current_user]
 
-    # --- Fetch data ---
     admin_ids = [a.id for a in admins]
+    admin_emails = [a.email for a in admins]
 
-    signup_map = {
-        s.id: s.emp_type
-        for s in Signup.query.filter(Signup.id.in_(admin_ids)).all()
-    }
+    # --- Map signup by email (your schema has email on both models) ---
+    signups = Signup.query.filter(Signup.email.in_(admin_emails)).all()
+    signup_map_by_email = {s.email: getattr(s, 'emp_type', '') for s in signups}
 
+    # --- Fetch punches and leaves for the month ---
     punches = db.session.query(Punch).filter(
         Punch.admin_id.in_(admin_ids),
         extract('year', Punch.punch_date) == year,
@@ -172,59 +169,66 @@ def get_total_working_days_bulk(admins=None):
         extract('month', LeaveApplication.start_date) == month
     ).all()
 
-    # --- Prepare lookup maps ---
-    punch_map = {}
+    # --- Build normalized maps keyed by date ---
+    punch_map = {}  # {admin_id: {date_obj: [p1,p2...]}}
     for p in punches:
-        punch_map.setdefault(p.admin_id, []).append(p)
+        # normalize to date object (handle datetime or date)
+        pd = p.punch_date.date() if isinstance(p.punch_date, datetime) else p.punch_date
+        punch_map.setdefault(p.admin_id, {}).setdefault(pd, []).append(p)
 
-    leave_map = {}
+    leave_map = {}  # {admin_id: [(start_date, end_date, leave_obj), ...]}
     for l in leaves:
-        leave_map.setdefault(l.admin_id, []).append(l)
+        sdate = l.start_date if isinstance(l.start_date, date) else l.start_date.date()
+        edate = l.end_date if isinstance(l.end_date, date) else l.end_date.date()
+        leave_map.setdefault(l.admin_id, []).append((sdate, edate, l))
 
     total_days_map = {}
 
-    # --- Calculate for each admin ---
-    for admin in admins:
-        emp_type = signup_map.get(admin.id, '')
-        total_days = 0.0
-        current_day = datetime(year, month, 1)
+    # --- iterate each admin and each day of the month ---
+    # compute last day of month
+    first_of_month = datetime(year, month, 1).date()
+    next_month = (datetime(year, month, 1) + timedelta(days=32)).replace(day=1).date()
+    last_of_month = next_month - timedelta(days=1)
 
-        while current_day <= today:
+    for admin in admins:
+        emp_type = signup_map_by_email.get(admin.email, '')
+        total_days = 0.0
+        current_day = first_of_month
+
+        while current_day <= last_of_month:
             weekday = current_day.weekday()  # Monday=0 ... Sunday=6
             is_weekend = weekday in (5, 6)
             is_sunday = weekday == 6
 
-            punches_for_day = [
-                p for p in punch_map.get(admin.id, [])
-                if p.punch_date == current_day.date()
-            ]
+            punches_for_day = punch_map.get(admin.id, {}).get(current_day, [])
             leave_for_day = None
-
-            # --- Check leave ---
-            for l in leave_map.get(admin.id, []):
-                if l.start_date <= current_day.date() <= l.end_date:
-                    leave_for_day = l
+            for sdate, edate, lobj in leave_map.get(admin.id, []):
+                if sdate <= current_day <= edate:
+                    leave_for_day = lobj
                     break
 
-            # --- Punch value ---
+            # determine punch value
             punch_value = 0
             if punches_for_day:
                 p = punches_for_day[0]
-                if p.punch_in and p.punch_out:
+                in_present = bool(getattr(p, 'punch_in', None))
+                out_present = bool(getattr(p, 'punch_out', None))
+                if in_present and out_present:
                     punch_value = 1
-                elif p.punch_in or p.punch_out:
+                elif in_present or out_present:
                     punch_value = 0.5
 
-            # --- Rules ---
-            if emp_type in ('Engineering', 'Software Development'):
-                if is_weekend:  # Sat or Sun always working
+            # apply rules
+            if emp_type and emp_type.lower() in ('engineering', 'software development'):
+                if is_weekend:
                     total_days += 1
                 elif punch_value > 0 or leave_for_day:
                     total_days += punch_value if punch_value > 0 else 1
-            else:  # Other departments (Accounts, HR, etc.)
-                if is_sunday:  # Sunday counted for everyone
+            else:
+                # other depts
+                if is_sunday:
                     total_days += 1
-                elif weekday == 5:  # Saturday
+                elif weekday == 5:  # saturday
                     if punch_value > 0 or leave_for_day:
                         total_days += punch_value if punch_value > 0 else 1
                 else:
@@ -233,17 +237,14 @@ def get_total_working_days_bulk(admins=None):
 
             current_day += timedelta(days=1)
 
-        # --- Adjust with extra_days ---
-        leaves_for_admin = leave_map.get(admin.id, [])
-        extra_days_total = sum(
-            l.extra_days for l in leaves_for_admin if l.status == 'Approved'
-        )
-
+        # adjust with extra_days (your model uses extra_days)
+        extra_days_total = sum(getattr(lobj, 'extra_days', 0) or 0 for sdate, edate, lobj in leave_map.get(admin.id, []))
         total_days -= extra_days_total
         total_days = max(total_days, 0)
         total_days_map[admin.id] = round(total_days, 1)
 
     return total_days_map
+
 
 
 
@@ -371,3 +372,9 @@ def build_tally_xml(employees, company_name, period_start="20250901", period_end
     """
 
     return clean_text(xml_payload).strip()
+
+
+
+
+
+

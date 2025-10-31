@@ -513,6 +513,8 @@ def punch():
                 db.session.add(punch)
                 db.session.commit()
                 flash('Punched in successfully!', 'warning')
+                return redirect(url_for('profile.punch'))
+
 
         # Punch Out
         elif form.punch_out.data:
@@ -535,6 +537,7 @@ def punch():
                     print("Comp Off added for Sunday work!")
 
                 flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
+                return redirect(url_for('profile.punch'))
 
     # Get leave records for selected month
     last_day_num = calendar.monthrange(selected_year, selected_month)[1]
