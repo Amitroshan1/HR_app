@@ -183,3 +183,4 @@ class SearchFormmanager(FlaskForm):
     )
 
     submit = SubmitField('Search')
+
