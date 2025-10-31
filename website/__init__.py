@@ -49,11 +49,12 @@ def is_safe_url(target):
 
 
 
+
 def update_leave_balances():
-    """ Updates leave balances monthly for employees after 6 months of joining. """
+    """Updates leave balances monthly for employees after 6 months of joining."""
     from .models.attendance import LeaveBalance
-    from .models.Admin_models import Admin  
-    from .models.signup import Signup 
+    from .models.Admin_models import Admin
+    from .models.signup import Signup
 
     with scheduler.app.app_context():
         leave_balances = LeaveBalance.query.all()
@@ -64,14 +65,10 @@ def update_leave_balances():
 
         for balance in leave_balances:
             signup = Signup.query.filter_by(id=balance.signup_id).first()
-            # print(f"Processing leave balance for signup ID: {balance.signup_id}, Admin ID: {signup.email if signup else 'None'}")
             admin = Admin.query.filter_by(email=signup.email).first() if signup else None
-            # print(f"Found admin: {admin.email if admin else 'None'} for signup ID: {signup.id if signup else 'None'}")  
-            if not admin:
-                continue  # Skip if admin not found
 
-            if not signup or not signup.doj:
-                continue  # Skip if signup or DoJ not found
+            if not signup or not signup.doj or not admin:
+                continue  # Skip if essential data missing
 
             doj = signup.doj
 
@@ -79,26 +76,29 @@ def update_leave_balances():
             if today < doj + relativedelta(months=6):
                 continue
 
-            # If never updated, initialize to 6 months after DoJ
+            # Initialize first eligible update date
             if not balance.last_updated:
                 balance.last_updated = doj + relativedelta(months=6)
+
+                # Give first month’s leave immediately after completing 6 months
+                if today >= balance.last_updated:
+                    balance.privilege_leave_balance += 1.08
+                    balance.casual_leave_balance += 0.67
 
             # Calculate how many full months passed since last update
             months_passed = (today.year - balance.last_updated.year) * 12 + (today.month - balance.last_updated.month)
 
+            # Add leave only if at least one full month has passed
             if months_passed >= 1:
-                for _ in range(min(months_passed, 1)):
+                # Add leave for one month (controlled monthly addition)
+                balance.privilege_leave_balance += 1.08
+                balance.casual_leave_balance += 0.67
 
-                    balance.privilege_leave_balance += 1.08
-                    balance.casual_leave_balance += 0.67
-
-                # Update last_updated to today to reflect actual update date
+                # Update last_updated to today
                 balance.last_updated = today
-                # print(f"Updated leave for: {signup.email}, Months: {months_passed}, New Last Updated: {today}")
 
         try:
             db.session.commit()
-
         except Exception as e:
             print(f"Database commit failed: {str(e)}")
 
