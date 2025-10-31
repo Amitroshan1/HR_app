@@ -148,7 +148,7 @@ def get_total_working_days_bulk(admins=None):
     year, month = today.year, today.month
 
     # --- Handle current user ---
-    if admins is None or len(admins) == 0:
+    if not admins:
         admins = [current_user]
 
     # --- Fetch data ---
@@ -236,7 +236,7 @@ def get_total_working_days_bulk(admins=None):
         # --- Adjust with extra_days ---
         leaves_for_admin = leave_map.get(admin.id, [])
         extra_days_total = sum(
-            l.extra_days for l in leaves_for_admin if l.status == 'Approved'
+            (l.extra_days or 0) for l in leaves_for_admin if l.status == 'Approved'
         )
 
         total_days -= extra_days_total
