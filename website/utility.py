@@ -137,7 +137,6 @@ def add_comp_off(signup_id):
 
     db.session.commit()
 
-
 def get_total_working_days_bulk(admins=None):
     """
     Calculates total working days for each admin (or current user if no admins provided)
@@ -244,8 +243,6 @@ def get_total_working_days_bulk(admins=None):
         total_days_map[admin.id] = round(total_days, 1)
 
     return total_days_map
-
-
 
 
 
