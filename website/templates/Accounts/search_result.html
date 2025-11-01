@@ -68,15 +68,6 @@
         Upload Payslips In Bulk
     </a>
 
-    <form action="{{ url_for('Accounts.push_to_tally') }}" method="post">
-        {{ form.hidden_tag() }} <!-- ⚡ CSRF token included automatically -->
-
-        {% for admin in admin_data %}
-        <input type="hidden" name="emails" value="{{ admin.email }}">
-        {% endfor %}
-
-        {{ form.submit() }}
-    </form>
 </div>
 
 {% endblock %}
