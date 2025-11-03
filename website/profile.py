@@ -885,7 +885,6 @@ def apply_leave():
         db.session.commit()
 
 
-
         # Save leave application
         leave_application = LeaveApplication(
             admin_id=emp.id,

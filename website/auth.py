@@ -4,7 +4,7 @@ from .models.emp_detail_models import Employee
 from flask_login import login_user, login_required, logout_user, current_user
 from .forms.signup_form import SelectRoleForm
 from datetime import datetime, timedelta, date
-from .models.attendance import Punch
+from .models.attendance import Punch, LeaveBalance
 from .models.manager_model import ManagerContact
 from .models.news_feed import NewsFeed
 from .models.emp_detail_models import Asset
@@ -316,6 +316,18 @@ def E_homepage():
 
     form = PunchForm()
 
+    # --- Fetch Leave Balance (PL, CL) ---
+    pl_balance = 0.0
+    cl_balance = 0.0
+
+    # Match current user's email to Signup table
+    signup_record = Signup.query.filter_by(email=current_user.email).first()
+    if signup_record:
+        leave_balance = LeaveBalance.query.filter_by(signup_id=signup_record.id).first()
+        if leave_balance:
+            pl_balance = leave_balance.privilege_leave_balance
+            cl_balance = leave_balance.casual_leave_balance
+
     # Always return employee (even if None)
     return render_template(
         "employee/E_homepage.html",
@@ -335,7 +347,9 @@ def E_homepage():
         days=days,
         resign_data=resign_data,
         punch_in_time_count=punch_in_time_count_str,
-        total_working_days=total_working_days  # ✅ Added
+        total_working_days=total_working_days,
+        pl_balance=pl_balance,  # ✅ Added
+        cl_balance=cl_balance  # ✅ Added
     )
 
 

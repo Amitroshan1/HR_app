@@ -139,12 +139,14 @@ def add_comp_off(signup_id):
 
 def get_total_working_days_bulk(admins=None):
     """
-    Robust version that maps Signup by email (matching your models) and
-    normalizes punch/leave dates to date objects before comparisons.
+    Calculates total working days for each admin from 1st of the current month up to today.
+    Considers punches, leaves, weekends, emp_type rules, and extra leave days.
     """
+
     today = datetime.today()
     year, month = today.year, today.month
 
+    # --- Use current user if no admins passed ---
     if admins is None or len(admins) == 0:
         admins = [current_user]
 
@@ -152,11 +154,11 @@ def get_total_working_days_bulk(admins=None):
     admin_ids = [a.id for a in admins]
     admin_emails = [a.email for a in admins]
 
-    # --- Map signup by email (your schema has email on both models) ---
+    # --- Fetch signup details to get emp_type ---
     signups = Signup.query.filter(Signup.email.in_(admin_emails)).all()
     signup_map_by_email = {s.email: getattr(s, 'emp_type', '') for s in signups}
 
-    # --- Fetch punches and leaves for the month ---
+    # --- Fetch punches and leaves for current month ---
     punches = db.session.query(Punch).filter(
         Punch.admin_id.in_(admin_ids),
         extract('year', Punch.punch_date) == year,
@@ -170,14 +172,16 @@ def get_total_working_days_bulk(admins=None):
         extract('month', LeaveApplication.start_date) == month
     ).all()
 
-    # --- Build normalized maps keyed by date ---
-    punch_map = {}  # {admin_id: {date_obj: [p1,p2...]}}
+    # --- Normalize punch data ---
+    punch_map = {}  # {admin_id: {date: [punches...]}}
+
     for p in punches:
-        # normalize to date object (handle datetime or date)
         pd = p.punch_date.date() if isinstance(p.punch_date, datetime) else p.punch_date
         punch_map.setdefault(p.admin_id, {}).setdefault(pd, []).append(p)
 
-    leave_map = {}  # {admin_id: [(start_date, end_date, leave_obj), ...]}
+    # --- Normalize leave data ---
+    leave_map = {}  # {admin_id: [(start_date, end_date, leave_obj)]}
+
     for l in leaves:
         sdate = l.start_date if isinstance(l.start_date, date) else l.start_date.date()
         edate = l.end_date if isinstance(l.end_date, date) else l.end_date.date()
@@ -185,30 +189,31 @@ def get_total_working_days_bulk(admins=None):
 
     total_days_map = {}
 
-    # --- iterate each admin and each day of the month ---
-    # compute last day of month
+    # --- Month start and end (till today only) ---
     first_of_month = datetime(year, month, 1).date()
-    next_month = (datetime(year, month, 1) + timedelta(days=32)).replace(day=1).date()
-    last_of_month = next_month - timedelta(days=1)
+    last_date = today.date()  # 🔹 Only till today, not full month
 
+    # --- Iterate over admins ---
     for admin in admins:
         emp_type = signup_map_by_email.get(admin.email, '')
         total_days = 0.0
         current_day = first_of_month
 
-        while current_day <= last_of_month:
+        while current_day <= last_date:
             weekday = current_day.weekday()  # Monday=0 ... Sunday=6
             is_weekend = weekday in (5, 6)
             is_sunday = weekday == 6
 
+            # Get punch and leave info for this day
             punches_for_day = punch_map.get(admin.id, {}).get(current_day, [])
             leave_for_day = None
+
             for sdate, edate, lobj in leave_map.get(admin.id, []):
                 if sdate <= current_day <= edate:
                     leave_for_day = lobj
                     break
 
-            # determine punch value
+            # Determine punch value
             punch_value = 0
             if punches_for_day:
                 p = punches_for_day[0]
@@ -219,30 +224,47 @@ def get_total_working_days_bulk(admins=None):
                 elif in_present or out_present:
                     punch_value = 0.5
 
-            # apply rules
-            if emp_type and emp_type.lower() in ('engineering', 'software development'):
+            # --- Apply rules ---
+            if emp_type in ('Engineering', 'Software Development'):
+                # Sat & Sun always counted
                 if is_weekend:
                     total_days += 1
                 elif punch_value > 0 or leave_for_day:
                     total_days += punch_value if punch_value > 0 else 1
-            else:
-                # other depts
+
+            else:  # Accounts, HR, etc.
                 if is_sunday:
                     total_days += 1
-                elif weekday == 5:  # saturday
+                elif weekday == 5:  # Saturday
                     if punch_value > 0 or leave_for_day:
                         total_days += punch_value if punch_value > 0 else 1
-                else:
+                else:  # Monday–Friday
                     if punch_value > 0 or leave_for_day:
                         total_days += punch_value if punch_value > 0 else 1
+
+            # --- Debug print ---
+            print(
+                f"[DEBUG] admin={admin.id} date={current_day} "
+                f"weekday={weekday} punch_value={punch_value} "
+                f"leave={'yes' if leave_for_day else 'no'} "
+                f"total_so_far={total_days}"
+            )
 
             current_day += timedelta(days=1)
 
-        # adjust with extra_days (your model uses extra_days)
-        extra_days_total = sum(getattr(lobj, 'extra_days', 0) or 0 for sdate, edate, lobj in leave_map.get(admin.id, []))
+        # --- Adjust with extra_days ---
+        leaves_for_admin = leave_map.get(admin.id, [])
+        extra_days_total = sum(
+            (lobj.extra_days or 0)
+            for (sdate, edate, lobj) in leaves_for_admin
+            if getattr(lobj, 'status', None) == 'Approved'
+        )
+
         total_days -= extra_days_total
         total_days = max(total_days, 0)
         total_days_map[admin.id] = round(total_days, 1)
+
+        print(f"[DEBUG] ✅ Final total for admin {admin.id}: {total_days_map[admin.id]}")
 
     return total_days_map
 

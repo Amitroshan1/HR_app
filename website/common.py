@@ -274,7 +274,7 @@ def send_wfh_approval_email_to_managers(user, wfh):
     Sends an approval request email to the manager(s) for a submitted WFH application.
     If no manager is found, email is still sent to HR without CC.
     """
-    hr_mail = "skchaugule@saffotech.com"
+    hr_mail = "hr@saffotech.com"
 
 
     # Get user circle & emp_type from Signup model
