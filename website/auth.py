@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session
 from .models.Admin_models import Admin
+from .models.Performance import EmployeePerformance
 from .models.emp_detail_models import Employee
 from flask_login import login_user, login_required, logout_user, current_user
 from .forms.signup_form import SelectRoleForm
@@ -415,3 +416,62 @@ def inject_badge_counts():
         count_new_claims=count_new_claims,
         count_new_wfhs=count_new_wfhs
     )
+
+
+
+
+@auth.route('/performance', methods=['GET', 'POST'])
+@login_required
+def performance():
+    """
+    Allows an employee to submit and view their monthly performance.
+    Each employee can submit only one form per month.
+    """
+    employee_name = current_user.first_name  # logged-in user's name
+
+    if request.method == 'POST':
+        # --- Get form values safely ---
+        month = (request.form.get('month') or '').strip()
+        achievements = (request.form.get('achievements') or '').strip()
+        challenges = (request.form.get('challenges') or '').strip()
+        goals_next_month = (request.form.get('goals_next_month') or '').strip()
+
+        # --- Validate required fields ---
+        if not month or not achievements:
+            flash('Please fill out both Month and Achievements.', 'warning')
+            return redirect(url_for('auth.performance'))
+
+        # --- Check if already submitted for this month ---
+        existing = EmployeePerformance.query.filter_by(
+            employee_name=employee_name,
+            month=month
+        ).first()
+
+        if existing:
+            flash(f"You’ve already submitted your performance for {month}.", 'warning')
+            return redirect(url_for('auth.performance'))
+
+        # --- Create and save new record ---
+        new_record = EmployeePerformance(
+            employee_name=employee_name,
+            month=month,
+            achievements=achievements,
+            challenges=challenges,
+            goals_next_month=goals_next_month
+        )
+
+        db.session.add(new_record)
+        db.session.commit()
+
+        flash('Your performance form was submitted successfully!', 'success')
+        return redirect(url_for('auth.performance'))
+
+    # --- GET Request: Fetch user’s previous submissions ---
+    records = (
+        EmployeePerformance.query
+        .filter_by(employee_name=employee_name)
+        .order_by(EmployeePerformance.submitted_at.desc())
+        .all()
+    )
+
+    return render_template('employee/performance.html', records=records)

@@ -1773,3 +1773,191 @@ button[type="button"], .btn {
   color: red;
   font-weight: bold;
 }
+
+/* ================================
+   Employee Performance Form CSS
+   Unique class prefix: per-
+   Theme: Grey & White
+==================================*/
+
+/* --- Container --- */
+.per-container {
+    max-width: 900px;
+    margin: 30px auto;
+    background-color: #f8f9fa;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Title --- */
+.per-title-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.per-title {
+    text-align: center;
+    color: #343a40;
+    font-weight: 700;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.per-icon {
+    font-size: 1.8rem;
+    color: #6c757d;
+}
+
+.per-required {
+    color: red;
+    font-size: 14px;
+    margin-left: 4px;
+    font-weight: 700;
+}
+
+.per-alert {
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+/* --- Form Card --- */
+.per-form-card {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    transition: 0.3s;
+}
+
+.per-form-card:hover {
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Form Groups --- */
+.per-form-group {
+    margin-bottom: 18px;
+}
+
+.per-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 15px;
+}
+
+.per-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f5f5f5;
+    font-size: 15px;
+    transition: 0.3s;
+}
+
+.per-input:focus {
+    outline: none;
+    background-color: #fff;
+    border-color: #6c757d;
+    box-shadow: 0 0 4px rgba(108, 117, 125, 0.4);
+}
+
+/* --- Button --- */
+.per-btn {
+    display: inline-block;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.per-btn:hover {
+    background-color: #5a6268;
+    cursor: pointer;
+    transform: translateY(-2px);
+}
+
+/* --- Divider --- */
+.per-divider {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 30px 0;
+}
+
+/* --- Table Section --- */
+.per-table-wrapper {
+    overflow-x: auto;
+}
+
+.per-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 15px;
+}
+
+.per-table th,
+.per-table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+.per-table th {
+    background-color: #e9ecef;
+    color: #343a40;
+    font-weight: 600;
+}
+
+.per-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.per-table tr:hover {
+    background-color: #f1f3f4;
+    transition: 0.2s;
+}
+
+/* --- No Record Text --- */
+.per-no-record {
+    color: #6c757d;
+    text-align: center;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .per-container {
+        padding: 20px;
+    }
+
+    .per-title {
+        font-size: 22px;
+    }
+
+    .per-form-card {
+        padding: 20px;
+    }
+
+    .per-table th,
+    .per-table td {
+        font-size: 14px;
+        padding: 8px;
+    }
+}
+
+
+102205984933

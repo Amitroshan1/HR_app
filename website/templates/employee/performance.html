@@ -1,0 +1,122 @@
+{% extends "employee/E_homeBase.html" %}
+{% block title %}Employee Performance{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/performance.css') }}">
+
+<div class="per-container">
+
+    <!-- Page Title -->
+    <div class="per-title-wrapper">
+        <h2 class="per-title">
+            <span class="per-icon">📋</span>
+            Monthly Performance Form
+        </h2>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'warning' }} per-alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Performance Form -->
+    <form method="POST" action="{{ url_for('auth.performance') }}" class="per-form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Month -->
+        <div class="per-form-group">
+            <label for="month" class="per-label">
+                Month <span class="per-required">*</span>
+            </label>
+            <select name="month" id="month" class="per-input" required>
+                <option value="">-- Select Month --</option>
+                <option>January 2025</option>
+                <option>February 2025</option>
+                <option>March 2025</option>
+                <option>April 2025</option>
+                <option>May 2025</option>
+                <option>June 2025</option>
+                <option>July 2025</option>
+                <option>August 2025</option>
+                <option>September 2025</option>
+                <option>October 2025</option>
+                <option>November 2025</option>
+                <option>December 2025</option>
+            </select>
+        </div>
+
+        <!-- Achievements -->
+        <div class="per-form-group">
+            <label for="achievements" class="per-label">
+                Achievements <span class="per-required">*</span>
+            </label>
+            <textarea id="achievements" name="achievements" rows="3" class="per-input" required></textarea>
+        </div>
+
+        <!-- Challenges -->
+        <div class="per-form-group">
+            <label for="challenges" class="per-label">Challenges</label>
+            <textarea id="challenges" name="challenges" rows="3" class="per-input"></textarea>
+        </div>
+
+        <!-- Goals -->
+        <div class="per-form-group">
+            <label for="goals_next_month" class="per-label">Goals for Next Month</label>
+            <textarea id="goals_next_month" name="goals_next_month" rows="3" class="per-input"></textarea>
+        </div>
+
+        <!-- Suggestion -->
+        <div class="per-form-group">
+            <label for="suggestion_improvement" class="per-label">Suggestion / Improvement</label>
+            <textarea id="suggestion_improvement" name="suggestion_improvement" rows="3" class="per-input"></textarea>
+        </div>
+
+        <button type="submit" class="per-btn">Submit</button>
+    </form>
+
+    <hr class="per-divider">
+
+    <h3 class="per-subtitle">Your Previous Submissions</h3>
+
+    {% if records %}
+        <div class="per-table-wrapper">
+            <table class="per-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Achievements</th>
+                        <th>Challenges</th>
+                        <th>Goals</th>
+                        <th>Suggestions / Improvements</th>
+                        <th>Status</th>
+                        <th>Submitted At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ r.month }}</td>
+                        <td>{{ r.achievements }}</td>
+                        <td>{{ r.challenges or '-' }}</td>
+                        <td>{{ r.goals_next_month or '-' }}</td>
+                        <td>{{ r.suggestion_improvement or '-' }}</td>
+                        <td>{{ r.status }}</td>
+                        <td>{{ r.submitted_at.strftime('%d-%b-%Y %I:%M %p') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="per-no-record">No performance forms submitted yet.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}
