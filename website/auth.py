@@ -426,38 +426,54 @@ def performance():
     """
     Allows an employee to submit and view their monthly performance.
     Each employee can submit only one form per month.
+    The admin_id now stores the current logged-in user's Admin ID directly.
     """
-    employee_name = current_user.first_name  # logged-in user's name
 
+    # 🧩 Step 1: Identify logged-in employee
+    employee_name = current_user.first_name
+    employee_email = current_user.email
+
+    # Fetch employee signup record
+    emp_data = Signup.query.filter_by(email=employee_email).first()
+    if not emp_data:
+        flash("Employee record not found in signup table.", "danger")
+        return redirect(url_for('auth.performance'))
+
+    # 🧩 Step 2: Handle POST (form submission)
     if request.method == 'POST':
-        # --- Get form values safely ---
         month = (request.form.get('month') or '').strip()
         achievements = (request.form.get('achievements') or '').strip()
         challenges = (request.form.get('challenges') or '').strip()
         goals_next_month = (request.form.get('goals_next_month') or '').strip()
+        suggestion_improvement = (request.form.get('suggestion_improvement') or '').strip()
 
-        # --- Validate required fields ---
+        # Validate required fields
         if not month or not achievements:
             flash('Please fill out both Month and Achievements.', 'warning')
             return redirect(url_for('auth.performance'))
 
-        # --- Check if already submitted for this month ---
+        # Check for duplicate submission
         existing = EmployeePerformance.query.filter_by(
             employee_name=employee_name,
             month=month
         ).first()
-
         if existing:
             flash(f"You’ve already submitted your performance for {month}.", 'warning')
             return redirect(url_for('auth.performance'))
 
-        # --- Create and save new record ---
+        # 🧩 Step 3: Assign current logged-in Admin ID (manager)
+        admin_obj = Admin.query.filter_by(email=current_user.email).first()
+        admin_id = admin_obj.id if admin_obj else None
+
+        # 🧩 Step 4: Create new performance record
         new_record = EmployeePerformance(
             employee_name=employee_name,
             month=month,
             achievements=achievements,
             challenges=challenges,
-            goals_next_month=goals_next_month
+            goals_next_month=goals_next_month,
+            suggestion_improvement=suggestion_improvement,
+            admin_id=admin_id
         )
 
         db.session.add(new_record)
@@ -466,7 +482,7 @@ def performance():
         flash('Your performance form was submitted successfully!', 'success')
         return redirect(url_for('auth.performance'))
 
-    # --- GET Request: Fetch user’s previous submissions ---
+    # 🧩 Step 5: Fetch previous submissions
     records = (
         EmployeePerformance.query
         .filter_by(employee_name=employee_name)

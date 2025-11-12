@@ -1,0 +1,57 @@
+
+{% extends "HumanResource/hr_base.html" %}
+{% block title %}HR Confirmation Requests{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/revi_hr_confirmation.css') }}">
+
+<div class="revi-hr-container">
+  <h3 class="revi-hr-title">🏢 HR Employee Confirmation Requests</h3>
+
+  {% if requests %}
+  <table class="revi-hr-table">
+    <thead>
+      <tr>
+        <th>Employee Name</th>
+        <th>Manager Review</th>
+        <th>Status</th>
+        <th>Submitted On</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in requests %}
+      <tr>
+        <td>{{ req.confirmation.employee.first_name }}</td>
+        <td>{{ req.manager_review or 'No review' }}</td>
+        <td>
+          {% if req.status == 'Pending' %}
+          <span class="revi-hr-badge revi-hr-pending">Pending</span>
+          {% elif req.status == 'Approved' %}
+          <span class="revi-hr-badge revi-hr-approved">Approved</span>
+          {% else %}
+          <span class="revi-hr-badge revi-hr-rejected">Rejected</span>
+          {% endif %}
+        </td>
+        <td>{{ req.created_at.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if req.status == 'Pending' %}
+          <form action="{{ url_for('hr.update_hr_confirmation_request', request_id=req.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="review" placeholder="Enter HR review..." class="revi-hr-textarea"></textarea>
+            <button name="action" value="approve" class="revi-hr-btn revi-hr-approve">Approve</button>
+            <button name="action" value="reject" class="revi-hr-btn revi-hr-reject">Reject</button>
+          </form>
+          {% else %}
+          <span class="text-muted">--</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="revi-hr-empty">No HR confirmation requests found.</div>
+  {% endif %}
+</div>
+{% endblock %}

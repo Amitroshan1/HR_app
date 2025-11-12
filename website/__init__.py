@@ -22,7 +22,6 @@ from urllib3.exceptions import NewConnectionError
 
 
 
-
 basedir = os.path.abspath(os.path.dirname(__file__))
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
@@ -38,6 +37,10 @@ csrf = CSRFProtect()
 scheduler = APScheduler()
 Session = Session()
 
+
+def with_app_context(app, func):
+    with app.app_context():
+        func()
 
 class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)
@@ -339,6 +342,7 @@ def create_app():
     from .models.otp import OTP
     from .models.expense import ExpenseClaimHeader, ExpenseLineItem
     from .models.seperation import Resignation
+    from .models.confirmation_request import ConfirmationRequest
 
     migrate.init_app(app, db)  # Now models are loaded, safe to initialize
 
@@ -407,10 +411,16 @@ def create_app():
     trigger='interval',
     days = 3 # runs every day; adjust as needed
 )
-
-
-
-
+    from .utility import check_and_send_confirmation_emails
+    if not scheduler.get_job('check_and_send_confirmation_emails'):
+        scheduler.add_job(
+            id='check_and_send_confirmation_emails',
+            func=lambda: with_app_context(app, check_and_send_confirmation_emails),
+            trigger='interval',
+            # hour=9,
+            minutes=1,
+            timezone='Asia/Kolkata'
+        )
 
     # After request hook to set cache control
     @app.after_request

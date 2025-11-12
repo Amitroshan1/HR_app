@@ -1,0 +1,174 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}Performance Review{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/performance_review.css') }}">
+
+<div class="review-container">
+    <!-- 🔹 Page Title -->
+    <div class="review-title-wrapper">
+        <h2 class="review-title">
+            <span class="review-icon">📊</span>
+            Employee Performance Review
+        </h2>
+    </div>
+
+    <!-- 🔹 Filter Section -->
+<div class="review-filter-box">
+  <form id="performanceFilterForm" method="GET" action="{{ url_for('manager_bp.performance_review') }}">
+
+    <!-- Month Filter -->
+    <label for="month">Month:</label>
+    <select id="month" name="month">
+      <option value="">-- All Months --</option>
+      {% for m in [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+      ] %}
+        <option value="{{ m }}" {% if month_filter == m %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+
+    <!-- Status Filter -->
+    <label for="status">Status:</label>
+    <select id="status" name="status">
+      <option value="">-- All --</option>
+      <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+      <option value="Reviewed" {% if status_filter == 'Reviewed' %}selected{% endif %}>Reviewed</option>
+    </select>
+  </form>
+</div>
+
+
+    <!-- 🔹 Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'warning' }} review-alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- 🔹 Performance Records Table -->
+    {% if performances %}
+        <div class="review-table-wrapper">
+            <table class="review-table">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Month</th>
+                        <th>Status</th>
+                        <th>Manager Rating</th>
+                        <th>Submitted At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in performances %}
+                    <tr>
+                        <td>{{ p.employee_name }}</td>
+                        <td>{{ p.month }}</td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if p.status == 'Reviewed' else 'badge-warning' }}">
+                                {{ p.status }}
+                            </span>
+                        </td>
+                        <td>{{ p.review.rating if p.review else '—' }}</td>
+                        <td>{{ p.submitted_at.strftime('%d-%b-%Y %I:%M %p') }}</td>
+                        <td>
+                            <button class="view-btn" type="button" data-target="details-{{ p.id }}">View</button>
+                        </td>
+                    </tr>
+
+                    <!-- 🔹 Expanded Details Section -->
+                    <tr id="details-{{ p.id }}" class="details-row hidden">
+                        <td colspan="6">
+                            <div class="details-card">
+                                <h4>📌 Achievements</h4>
+                                <p>{{ p.achievements or 'No achievements added.' }}</p>
+
+                                <h4>⚙️ Challenges</h4>
+                                <p>{{ p.challenges or 'No challenges mentioned.' }}</p>
+
+                                <h4>🎯 Goals for Next Month</h4>
+                                <p>{{ p.goals_next_month or 'No goals specified.' }}</p>
+
+                                <h4>💡 Suggestions / Improvements</h4>
+                                <p>{{ p.suggestion_improvement or 'No suggestions provided.' }}</p>
+
+                                <hr>
+
+                                {% if not p.review %}
+                                <form method="POST" action="{{ url_for('manager_bp.performance_review') }}" class="review-inline-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="perf_id" value="{{ p.id }}">
+
+                                    <div class="form-grid">
+                                        <div class="form-field">
+                                            <label class="form-label">Rating <span class="required">*</span></label>
+                                            <select name="rating" class="form-input" required>
+                                                <option value="">-- Select Rating --</option>
+                                                <option>A+</option>
+                                                <option>A</option>
+                                                <option>B+</option>
+                                                <option>B</option>
+                                                <option>C</option>
+                                                <option>D</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-field full-width">
+                                            <label class="form-label">Comments</label>
+                                            <textarea name="comments" rows="3" class="form-input" placeholder="Enter your feedback..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="submit-btn">Submit Review</button>
+                                </form>
+                                {% else %}
+                                <div class="review-summary">
+                                    <h4>👨‍💼 Manager Feedback</h4>
+                                    <p><strong>Rating:</strong> {{ p.review.rating }}</p>
+                                    <p><strong>Comments:</strong> {{ p.review.comments or 'No comments provided.' }}</p>
+                                    <p><strong>Reviewed At:</strong> {{ p.review.reviewed_at.strftime('%d-%b-%Y %I:%M %p') }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="review-no-record">No performance submissions found.</p>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("performanceFilterForm");
+  form.querySelectorAll("select").forEach(select => {
+    select.addEventListener("change", function () {
+      const params = new URLSearchParams(new FormData(form));
+      window.location = form.action + "?" + params.toString();
+    });
+  });
+
+  // View / Hide Toggle
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target');
+      const row = document.getElementById(targetId);
+      row.classList.toggle('hidden');
+      this.textContent = row.classList.contains('hidden') ? 'View' : 'Hide';
+    });
+  });
+});
+</script>
+
+
+{% endblock %}

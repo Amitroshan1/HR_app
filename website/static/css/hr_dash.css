@@ -2066,3 +2066,625 @@ total employee css */
     }
 }
 
+
+/* ===============================
+   Manager Performance Review CSS
+   Theme: Grey & White
+   =============================== */
+
+.review-container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 25px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Title Section */
+.review-title-wrapper {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.review-title {
+    font-size: 26px;
+    color: #343a40;
+    font-weight: 700;
+}
+
+.review-icon {
+    font-size: 28px;
+    margin-right: 10px;
+}
+
+/* Flash Messages */
+.review-alert {
+    margin: 15px auto;
+    width: 90%;
+    border-radius: 6px;
+    padding: 10px 15px;
+}
+
+/* Table Styling */
+.review-table-wrapper {
+    overflow-x: auto;
+}
+
+.review-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.review-table th {
+    background-color: #e9ecef;
+    color: #343a40;
+    text-align: left;
+    padding: 12px;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.review-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    color: #444;
+    vertical-align: top;
+}
+
+.review-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.review-table tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Text wrapping for long content */
+.wrap-text {
+    white-space: pre-wrap;
+}
+
+/* Badges */
+.badge {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #fff;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #343a40;
+}
+
+/* Review Button */
+.review-btn {
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.review-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Inline Form */
+.hidden {
+    display: none;
+}
+
+.review-form-row {
+    background-color: #f1f3f5;
+}
+
+.review-inline-form {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 6px;
+}
+
+.form-input,
+textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f5f5f5;
+    font-size: 15px;
+    transition: 0.3s;
+}
+
+.form-input:focus,
+textarea:focus {
+    outline: none;
+    background-color: #fff;
+    border-color: #6c757d;
+}
+
+.submit-btn {
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background 0.3s;
+    margin-top: 15px;
+}
+
+.submit-btn:hover {
+    background-color: #5a6268;
+    cursor: pointer;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .review-title {
+        font-size: 22px;
+    }
+
+    .review-table th,
+    .review-table td {
+        font-size: 13px;
+        padding: 8px;
+    }
+}
+
+/* -------------------------------------------- */
+/* REVICONFIRMATION PAGE STYLING (by Shubham)  */
+/* Compact Grey & White Theme - Fully Responsive */
+/* -------------------------------------------- */
+
+/* Container */
+.revi-container {
+  max-width: 96%;
+  margin: 25px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  animation: revi-fadein 0.8s ease;
+  overflow-x: auto;
+}
+
+/* Title */
+.revi-title {
+  font-weight: 700;
+  color: #333333;
+  text-align: center;
+  margin-bottom: 20px;
+  font-family: "Poppins", sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Table styling */
+.revi-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #f8f8f8;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 13.5px;
+  color: #333333;
+}
+
+.revi-table thead {
+  background-color: #e0e0e0;
+  color: #333333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.revi-table th,
+.revi-table td {
+  padding: 6px 10px; /* 🔹 Reduced from 12px to 6px for tighter rows */
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  line-height: 1.3; /* 🔹 Tighter vertical spacing */
+}
+
+.revi-table tbody tr:hover {
+  background-color: #f3f3f3;
+  transition: background-color 0.3s ease;
+}
+
+/* Status badges */
+.revi-status-badge {
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 3px 8px; /* 🔹 Smaller badge height */
+  font-size: 12px;
+  display: inline-block;
+}
+
+.revi-status-pending {
+  background-color: #fdf3e7;
+  color: #7a5e2d;
+}
+
+.revi-status-approved {
+  background-color: #e7f7e7;
+  color: #226622;
+}
+
+.revi-status-rejected {
+  background-color: #f8e7e7;
+  color: #993333;
+}
+
+/* Buttons */
+.revi-button {
+  border: none;
+  padding: 5px 10px; /* 🔹 Smaller buttons */
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  font-size: 12.5px;
+  margin: 1px;
+}
+
+/* Approve Button */
+.revi-button-approve {
+  background-color: #4f4f4f;
+  color: white;
+}
+
+.revi-button-approve:hover {
+  background-color: #2e2e2e;
+  transform: scale(1.03);
+}
+
+/* Reject Button */
+.revi-button-reject {
+  background-color: #9e9e9e;
+  color: #ffffff;
+}
+
+.revi-button-reject:hover {
+  background-color: #616161;
+  transform: scale(1.03);
+}
+
+/* Empty message */
+.revi-empty-alert {
+  margin-top: 20px;
+  background: #f0f0f0;
+  color: #444444;
+  font-weight: 500;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Fade-in animation */
+@keyframes revi-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* -------------------------------------------- */
+/* RESPONSIVE DESIGN                            */
+/* -------------------------------------------- */
+
+@media (max-width: 992px) {
+  .revi-table th, .revi-table td {
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+
+  .revi-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .revi-container {
+    padding: 15px;
+  }
+
+  .revi-table th, .revi-table td {
+    padding: 4px 6px;
+    font-size: 12.5px;
+  }
+
+  .revi-button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .revi-table {
+    font-size: 12px;
+  }
+
+  .revi-title {
+    font-size: 18px;
+  }
+
+  .revi-button {
+    display: block;
+    width: 100%;
+    margin: 4px 0;
+  }
+
+  .revi-table th, .revi-table td {
+    padding: 3px 5px;
+  }
+}
+
+
+
+
+/* --------------------------------------------- */
+/* HR Confirmation Page Styling — by Shubham     */
+/* --------------------------------------------- */
+
+/* Page Container */
+.revi-hr-container {
+  max-width: 95%;
+  margin: 30px auto;
+  padding: 25px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  font-family: "Poppins", sans-serif;
+  animation: revi-fadein 0.7s ease-in-out;
+}
+
+/* Title */
+.revi-hr-title {
+  text-align: center;
+  color: #343a40;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  letter-spacing: 0.5px;
+}
+
+/* Table */
+.revi-hr-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f9f9f9;
+}
+
+.revi-hr-table thead {
+  background: #6c757d;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.revi-hr-table th,
+.revi-hr-table td {
+  padding: 14px 12px;
+  text-align: center;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 0.95rem;
+}
+
+.revi-hr-table tbody tr:nth-child(even) {
+  background: #f1f3f5;
+}
+
+.revi-hr-table tbody tr:hover {
+  background-color: #e9ecef;
+  transition: background-color 0.3s ease;
+}
+
+/* Status Badges */
+.revi-hr-badge {
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.revi-hr-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.revi-hr-approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.revi-hr-rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Textarea */
+.revi-hr-textarea {
+  width: 100%;
+  min-height: 60px;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 8px;
+  resize: vertical;
+  font-size: 0.9rem;
+  color: #495057;
+  background: #ffffff;
+  margin-bottom: 6px;
+}
+
+.revi-hr-textarea:focus {
+  outline: none;
+  border-color: #6c757d;
+  box-shadow: 0 0 4px rgba(108, 117, 125, 0.3);
+}
+
+/* Buttons */
+.revi-hr-btn {
+  border: none;
+  padding: 8px 14px;
+  margin: 2px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+}
+
+.revi-hr-approve {
+  background: #28a745;
+  color: white;
+}
+
+.revi-hr-approve:hover {
+  background: #218838;
+  transform: scale(1.05);
+}
+
+.revi-hr-reject {
+  background: #dc3545;
+  color: white;
+}
+
+.revi-hr-reject:hover {
+  background: #b02a37;
+  transform: scale(1.05);
+}
+
+/* Empty Message */
+.revi-hr-empty {
+  margin-top: 30px;
+  background: #f1f3f5;
+  color: #495057;
+  font-weight: 500;
+  border-radius: 10px;
+  padding: 25px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .revi-hr-table th,
+  .revi-hr-table td {
+    padding: 10px 6px;
+    font-size: 0.85rem;
+  }
+
+  .revi-hr-title {
+    font-size: 1.3rem;
+  }
+
+  .revi-hr-btn {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .revi-hr-container {
+    padding: 15px;
+  }
+
+  .revi-hr-table,
+  .revi-hr-table thead,
+  .revi-hr-table tbody,
+  .revi-hr-table th,
+  .revi-hr-table td,
+  .revi-hr-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .revi-hr-table thead {
+    display: none;
+  }
+
+  .revi-hr-table tr {
+    background: #fff;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
+    padding: 10px;
+  }
+
+  .revi-hr-table td {
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+  }
+
+  .revi-hr-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .revi-hr-textarea {
+    width: 100%;
+    margin-top: 6px;
+  }
+}
+
+/* Smooth Fade Animation */
+@keyframes revi-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

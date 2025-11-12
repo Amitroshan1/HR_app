@@ -1,7 +1,11 @@
+from flask import current_app
 from flask_login import current_user
 
+from .common import verify_oauth2_and_send_email
 from .models.attendance import Punch, LeaveBalance, LeaveApplication
 from .models.Admin_models import Admin
+from .models.confirmation_request import ConfirmationRequest
+from .models.manager_model import ManagerContact
 from .models.signup import Signup
 from calendar import monthrange
 from . import db
@@ -396,3 +400,147 @@ def build_tally_xml(employees, company_name, period_start="20250901", period_end
     """
 
     return clean_text(xml_payload).strip()
+
+
+
+
+
+def check_and_send_confirmation_emails():
+    """
+    ✅ Checks all employees who have completed 6 months since Date of Joining (doj)
+    and triggers an email notification to all (L1, L2, L3) managers
+    with HR in CC, using Microsoft Graph OAuth2.
+    Also creates a ConfirmationRequest record for each employee once.
+    """
+
+    # 🚀 Step 0: Start of job
+    current_app.logger.info("🚀 Starting check_and_send_confirmation_emails job...")
+
+    today = date.today()
+    six_months_ago = today - timedelta(days=180)
+    current_app.logger.info(f"📅 Today's date: {today}, 6 months ago: {six_months_ago}")
+
+    # ✅ Step 1: Find employees who completed 6 months and not yet sent confirmation email
+    eligible_employees = Signup.query.filter(
+        Signup.doj <= six_months_ago,
+        Signup.confirmation_email_sent == False
+    ).all()
+
+    current_app.logger.info(f"✅ Found {len(eligible_employees)} eligible employees for confirmation check.")
+
+    if not eligible_employees:
+        current_app.logger.info("ℹ️ No employees found who completed 6 months.")
+        db.session.close()
+        return
+
+    for emp in eligible_employees:
+        current_app.logger.info(f"🔍 Processing employee: {emp.first_name} ({emp.email}), DOJ={emp.doj}")
+
+        try:
+            # ✅ Step 2: Fetch manager contact details
+            manager_contact = ManagerContact.query.filter_by(
+                circle_name=emp.circle,
+                user_type=emp.emp_type
+            ).first()
+
+            if not manager_contact:
+                current_app.logger.warning(
+                    f"⚠️ No manager contact found for {emp.email} in {emp.circle}/{emp.emp_type}."
+                )
+                continue
+
+            # ✅ Step 3: Collect manager emails (L1, L2, L3)
+            to_emails = [
+                email for email in [
+                    manager_contact.l1_email,
+                    manager_contact.l2_email,
+                    manager_contact.l3_email
+                ] if email
+            ]
+
+            current_app.logger.info(f"📨 Manager emails found: {to_emails}")
+
+            if not to_emails:
+                current_app.logger.warning(f"⚠️ No valid manager emails for {emp.email}")
+                continue
+
+            # ✅ Step 4: HR CC email (fixed)
+            hr_cc_email = "hr@company.com"
+
+            # ✅ Step 5: OAuth sender (L2 manager)
+            manager_admin = Admin.query.filter_by(email=manager_contact.l2_email).first()
+
+            if not manager_admin:
+                current_app.logger.warning(
+                    f"⚠️ L2 Manager {manager_contact.l2_email} not found in Admin table."
+                )
+                continue
+
+            if not manager_admin.oauth_refresh_token:
+                current_app.logger.warning(
+                    f"⚠️ L2 Manager {manager_contact.l2_email} has no OAuth token. Email skipped for {emp.email}"
+                )
+                continue
+
+            # ✅ Step 6: Prepare email content
+            subject = f"⚡ Confirmation Due: {emp.first_name} ({emp.emp_id})"
+            body = f"""
+            <p>Dear Team,</p>
+            <p>This is an automated reminder that <strong>{emp.first_name}</strong> 
+            (<a href="mailto:{emp.email}">{emp.email}</a>) has now completed 
+            <strong>6 months</strong> with the organization.</p>
+            <p><strong>Date of Joining:</strong> {emp.doj.strftime('%d %B %Y')}</p>
+            <p>Please review and confirm their employment status via the HRMS portal.</p>
+            <br>
+            <p>Regards,<br><strong>HR System</strong></p>
+            """
+
+            # ✅ Step 7: Send email to all managers with HR in CC
+            email_sent_successfully = False
+            for recipient_email in to_emails:
+                current_app.logger.info(f"📤 Sending email to {recipient_email} (CC: {hr_cc_email}) for {emp.email}...")
+
+                success = verify_oauth2_and_send_email(
+                    user=manager_admin,
+                    subject=subject,
+                    body=body,
+                    recipient_email=recipient_email,
+                    cc_emails=[hr_cc_email]
+                )
+
+                if success:
+                    email_sent_successfully = True
+                    current_app.logger.info(
+                        f"✅ Successfully sent to {recipient_email} (cc: {hr_cc_email}) for {emp.email}"
+                    )
+                else:
+                    current_app.logger.warning(
+                        f"⚠️ Failed to send email to {recipient_email} for {emp.email}"
+                    )
+
+            # ✅ Step 8: Create a ConfirmationRequest record (only once)
+            if email_sent_successfully:
+                existing_request = ConfirmationRequest.query.filter_by(employee_id=emp.id).first()
+                if not existing_request:
+                    new_request = ConfirmationRequest(
+                        employee_id=emp.id,
+                        l1_email=manager_contact.l1_email,
+                        l2_email=manager_contact.l2_email,
+                        l3_email=manager_contact.l3_email,
+                        status='Pending'
+                    )
+                    db.session.add(new_request)
+                    current_app.logger.info(f"📝 ConfirmationRequest created for {emp.email}")
+
+                # ✅ Step 9: Mark confirmation email as sent
+                emp.confirmation_email_sent = True
+                db.session.commit()
+                current_app.logger.info(f"✅ Updated confirmation_email_sent=True for {emp.email}")
+
+        except Exception as e:
+            current_app.logger.error(f"💥 Error processing {emp.email}: {e}")
+            db.session.rollback()
+
+    # ✅ Step 10: Clean up session
+    db.session.close()
+    current_app.logger.info("🏁 Finished check_and_send_confirmation_emails job.")

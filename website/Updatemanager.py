@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app,session
 from flask_login import current_user, login_required
@@ -12,7 +13,9 @@ from .forms.expense_form import ExpenseClaimForm
 from .forms.manager import ManagerContactForm
 from .forms.seperation import NocUpload
 from .models.Admin_models import Admin
+from .models.Performance import EmployeePerformance, ManagerReview
 from .models.attendance import LeaveApplication, WorkFromHomeApplication
+from .models.confirmation_request import ConfirmationRequest, HRConfirmationRequest
 from .models.expense import ExpenseClaimHeader, ExpenseLineItem
 from .models.manager_model import ManagerContact
 from .models.seperation import Resignation, Noc, Noc_Upload
@@ -786,4 +789,234 @@ def noc_upload(admin_id):
 
 
     return render_template('Manager/noc_upload.html', admin_id=admin_id,form=form)
+
+@manager_bp.route('/performance_review', methods=['GET', 'POST'])
+@login_required
+def performance_review():
+    """
+    Manager/TL can view and review employee performances
+    belonging to their circle and emp_type.
+    (Now admin_id in EmployeePerformance belongs to the employee)
+    """
+    current_email = current_user.email
+
+    # 1️⃣ Fetch current user's circle and emp_type from Signup
+    manager_signup = Signup.query.filter_by(email=current_email).first()
+    if not manager_signup:
+        flash("Signup record not found for the logged-in manager.", "danger")
+        return render_template('manager/performance_review.html', performances=[])
+
+    circle = manager_signup.circle
+    emp_type = manager_signup.emp_type
+
+    # 2️⃣ Find all employees under same circle & emp_type
+    employees = Signup.query.filter_by(circle=circle, emp_type=emp_type).all()
+    employee_emails = [e.email for e in employees]
+
+    if not employee_emails:
+        flash("No employees found in your circle and department.", "info")
+        return render_template('manager/performance_review.html', performances=[])
+
+    # 3️⃣ Convert employee emails to their Admin IDs
+    employee_admins = Admin.query.filter(Admin.email.in_(employee_emails)).all()
+    employee_admin_ids = [a.id for a in employee_admins]
+
+    if not employee_admin_ids:
+        flash("No admin records found for assigned employees.", "info")
+        return render_template('manager/performance_review.html', performances=[])
+
+    # 4️⃣ Handle Review Submission (POST)
+    if request.method == 'POST':
+        perf_id = request.form.get('perf_id')
+        rating = (request.form.get('rating') or '').strip()
+        comments = (request.form.get('comments') or '').strip()
+
+        if not perf_id:
+            flash("Invalid performance record.", "danger")
+            return redirect(url_for('manager_bp.performance_review'))
+
+        performance = EmployeePerformance.query.filter_by(id=perf_id).first()
+        if not performance or performance.admin_id not in employee_admin_ids:
+            flash("You are not authorized to review this record.", "warning")
+            return redirect(url_for('manager_bp.performance_review'))
+
+        # 5️⃣ Save the review
+        admin_obj = Admin.query.filter_by(email=current_email).first()
+        if not admin_obj:
+            flash("Admin record not found for manager.", "danger")
+            return redirect(url_for('manager_bp.performance_review'))
+
+        new_review = ManagerReview(
+            performance_id=performance.id,
+            manager_id=admin_obj.id,
+            rating=rating,
+            comments=comments
+        )
+        performance.status = 'Reviewed'
+
+        db.session.add(new_review)
+        db.session.commit()
+
+        flash(f"Review submitted for {performance.employee_name}.", "success")
+        return redirect(url_for('manager_bp.performance_review'))
+
+    # 6️⃣ GET — Filters (Month / Status)
+    month_filter = request.args.get('month', '').strip()
+    status_filter = request.args.get('status', '').strip()
+
+    # 7️⃣ Fetch performances for all assigned employee admin_ids
+    query = EmployeePerformance.query.filter(EmployeePerformance.admin_id.in_(employee_admin_ids))
+
+    if month_filter:
+        query = query.filter(EmployeePerformance.month.like(f"%{month_filter}%"))
+    if status_filter:
+        query = query.filter(EmployeePerformance.status == status_filter)
+
+    performances = query.order_by(EmployeePerformance.submitted_at.desc()).all()
+
+    return render_template(
+        'manager/performance_review.html',
+        performances=performances,
+        month_filter=month_filter,
+        status_filter=status_filter
+    )
+
+
+@manager_bp.route('/confirmation-requests')
+@login_required
+def view_confirmation_requests():
+    """
+    ✅ Displays all confirmation requests for which the current user is an L1, L2, or L3 manager.
+    """
+
+    user_email = current_user.email
+    requests = ConfirmationRequest.query.filter(
+        (ConfirmationRequest.l1_email == user_email) |
+        (ConfirmationRequest.l2_email == user_email) |
+        (ConfirmationRequest.l3_email == user_email)
+    ).order_by(ConfirmationRequest.created_at.desc()).all()
+
+    return render_template('Manager/confirmation_requests.html', requests=requests)
+
+
+@manager_bp.route('/confirmation-request/<int:request_id>/update', methods=['POST'])
+@login_required
+def update_confirmation_request(request_id):
+    """
+    TL/Manager updates a confirmation request — approves/rejects and writes a review.
+    Automatically creates a HRConfirmationRequest record and emails HR (email sent from manager's account).
+    """
+
+    # 1. Load the confirmation request by id (404 if not found)
+    req = ConfirmationRequest.query.get_or_404(request_id)
+
+    # 2. Read form values: action and review comment
+    action = request.form.get('action')
+    review_comment = request.form.get('review_comment', '').strip()
+
+    # 3. Store manager's email (the logged-in user performing the action)
+    manager_email = current_user.email
+
+    # 4. Prevent processing a request that is already handled
+    if req.status != 'Pending':
+        flash("ℹ️ This request has already been processed.", "info")
+        return redirect(url_for('manager_bp.view_confirmation_requests'))
+
+    # 5. Update request status and review_comment depending on action
+    if action == "approve":
+        req.status = "Approved"
+        req.review_comment = review_comment
+        decision_word = "approved"
+        flash_msg = "✅ Confirmation approved and sent to HR."
+    elif action == "reject":
+        req.status = "Rejected"
+        req.review_comment = review_comment
+        decision_word = "rejected"
+        flash_msg = "❌ Confirmation rejected and sent to HR."
+    else:
+        flash("⚠️ Invalid action.", "warning")
+        return redirect(url_for('manager_bp.view_confirmation_requests'))
+
+    # 6. Update timestamp and persist manager decision
+    req.updated_at = datetime.utcnow()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"💥 DB commit failed while updating request {req.id}: {e}")
+        flash("Something went wrong when saving your decision. Try again.", "danger")
+        return redirect(url_for('manager_bp.view_confirmation_requests'))
+
+    # 7. Create an HRConfirmationRequest entry (if not already created)
+    existing_hr_req = HRConfirmationRequest.query.filter_by(confirmation_id=req.id).first()
+    if not existing_hr_req:
+        try:
+            # Note: hr_email left NULL so all HR users (emp_type == 'Human Resource') can view it
+            hr_request = HRConfirmationRequest(
+                confirmation_id=req.id,
+                employee_id=req.employee_id,
+                hr_email=None,                 # not assigned to a single HR person
+                manager_email=manager_email,   # who took the action
+                manager_decision=req.status,
+                manager_review=review_comment,
+                status='Pending'
+            )
+            db.session.add(hr_request)
+            db.session.commit()
+            current_app.logger.info(f"📩 HR confirmation request created for employee_id={req.employee_id}")
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"💥 Failed to create HRConfirmationRequest for req {req.id}: {e}")
+    else:
+        current_app.logger.info(f"⚠️ HR request already exists for confirmation_id={req.id}, skipping creation.")
+
+    # 8. Prepare email body and subject to notify HR (short, instructive)
+    employee = req.employee  # relation must exist: ConfirmationRequest.employee
+    subject = f"Employee Confirmation {req.status}: {employee.first_name} ({employee.emp_id})"
+    body = f"""
+    <div style="font-family:Arial, sans-serif; color:#333;">
+        <h3>Employee Confirmation Update</h3>
+        <p>Dear HR Team,</p>
+        <p>
+            The confirmation request for <strong>{employee.first_name}</strong>
+            (<a href="mailto:{employee.email}">{employee.email}</a>) has been
+            <strong style="color:{'green' if req.status == 'Approved' else 'red'};">{decision_word.upper()}</strong>
+            by <strong>{manager_email}</strong>.
+        </p>
+        <p><strong>Manager's Review:</strong></p>
+        <blockquote style="background:#f8f9fa; padding:10px; border-left:4px solid #999;">
+            {review_comment or 'No review provided.'}
+        </blockquote>
+        <p>Please check your HR dashboard in the HRMS portal to review and take further action.</p>
+        <p>Regards,<br><strong>HRMS System</strong></p>
+    </div>
+    """
+
+    # 9. Send email to HR: send to a generic HR distribution or leave recipient to system decision.
+    #    Here we send to a generic address 'hr@company.com' so HR group mailbox gets it.
+    hr_recipient = "hr@company.com "
+
+    # 10. Attempt to send email using manager's OAuth account (if available)
+    manager_admin = Admin.query.filter_by(email=manager_email).first()
+    if manager_admin and manager_admin.oauth_refresh_token:
+        try:
+            success = verify_oauth2_and_send_email(
+                user=manager_admin,
+                subject=subject,
+                body=body,
+                recipient_email=hr_recipient,
+            )
+            if success:
+                current_app.logger.info(f"✅ HR email sent to {hr_recipient} for employee {employee.email}")
+            else:
+                current_app.logger.warning(f"⚠️ Failed to send HR email for employee {employee.email}")
+        except Exception as e:
+            current_app.logger.error(f"💥 Error sending HR email for req {req.id}: {e}")
+    else:
+        # Manager can't send via OAuth — log and continue (HR can still see request on dashboard)
+        current_app.logger.warning(f"⚠️ No valid OAuth token for manager {manager_email}. Skipping HR email.")
+
+    # 11. Notify the manager in UI and redirect back to list
+    flash(flash_msg, "success")
+    return redirect(url_for('manager_bp.view_confirmation_requests'))
 

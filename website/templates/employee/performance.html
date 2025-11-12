@@ -5,7 +5,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/performance.css') }}">
 
 <div class="per-container">
-
     <!-- Page Title -->
     <div class="per-title-wrapper">
         <h2 class="per-title">
@@ -29,29 +28,21 @@
     <form method="POST" action="{{ url_for('auth.performance') }}" class="per-form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <!-- Month -->
         <div class="per-form-group">
             <label for="month" class="per-label">
                 Month <span class="per-required">*</span>
             </label>
             <select name="month" id="month" class="per-input" required>
                 <option value="">-- Select Month --</option>
-                <option>January 2025</option>
-                <option>February 2025</option>
-                <option>March 2025</option>
-                <option>April 2025</option>
-                <option>May 2025</option>
-                <option>June 2025</option>
-                <option>July 2025</option>
-                <option>August 2025</option>
-                <option>September 2025</option>
-                <option>October 2025</option>
-                <option>November 2025</option>
-                <option>December 2025</option>
+                {% for m in [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ] %}
+                    <option>{{ m }} 2025</option>
+                {% endfor %}
             </select>
         </div>
 
-        <!-- Achievements -->
         <div class="per-form-group">
             <label for="achievements" class="per-label">
                 Achievements <span class="per-required">*</span>
@@ -59,19 +50,16 @@
             <textarea id="achievements" name="achievements" rows="3" class="per-input" required></textarea>
         </div>
 
-        <!-- Challenges -->
         <div class="per-form-group">
             <label for="challenges" class="per-label">Challenges</label>
             <textarea id="challenges" name="challenges" rows="3" class="per-input"></textarea>
         </div>
 
-        <!-- Goals -->
         <div class="per-form-group">
             <label for="goals_next_month" class="per-label">Goals for Next Month</label>
             <textarea id="goals_next_month" name="goals_next_month" rows="3" class="per-input"></textarea>
         </div>
 
-        <!-- Suggestion -->
         <div class="per-form-group">
             <label for="suggestion_improvement" class="per-label">Suggestion / Improvement</label>
             <textarea id="suggestion_improvement" name="suggestion_improvement" rows="3" class="per-input"></textarea>
@@ -91,11 +79,9 @@
                     <tr>
                         <th>Month</th>
                         <th>Achievements</th>
-                        <th>Challenges</th>
-                        <th>Goals</th>
-                        <th>Suggestions / Improvements</th>
                         <th>Status</th>
                         <th>Submitted At</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -103,12 +89,30 @@
                     <tr>
                         <td>{{ r.month }}</td>
                         <td>{{ r.achievements }}</td>
-                        <td>{{ r.challenges or '-' }}</td>
-                        <td>{{ r.goals_next_month or '-' }}</td>
-                        <td>{{ r.suggestion_improvement or '-' }}</td>
                         <td>{{ r.status }}</td>
                         <td>{{ r.submitted_at.strftime('%d-%b-%Y %I:%M %p') }}</td>
+                        <td>
+                            {% if r.review %}
+                                <button class="per-feedback-btn" data-target="feedback-{{ r.id }}">View Feedback</button>
+                            {% else %}
+                                <span class="badge badge-warning">Awaiting Review</span>
+                            {% endif %}
+                        </td>
                     </tr>
+
+                    <!-- Feedback Card (hidden by default) -->
+                    {% if r.review %}
+                    <tr id="feedback-{{ r.id }}" class="per-feedback-row per-hidden">
+                        <td colspan="5">
+                            <div class="per-feedback-card">
+                                <h4>👨‍💼 Manager Feedback</h4>
+                                <p><strong>Rating:</strong> {{ r.review.rating or 'N/A' }}</p>
+                                <p><strong>Comments:</strong> {{ r.review.comments or 'No comments provided.' }}</p>
+                                <p><strong>Reviewed At:</strong> {{ r.review.reviewed_at.strftime('%d-%b-%Y %I:%M %p') if r.review.reviewed_at else 'N/A' }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -116,7 +120,25 @@
     {% else %}
         <p class="per-no-record">No performance forms submitted yet.</p>
     {% endif %}
-
 </div>
+
+<!-- JS: Toggle feedback with smooth slide -->
+<script>
+document.querySelectorAll('.per-feedback-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-target');
+        const row = document.getElementById(targetId);
+
+        if (row.classList.contains('per-hidden')) {
+            row.classList.remove('per-hidden');
+            row.style.maxHeight = row.scrollHeight + 'px';
+            row.style.transition = 'max-height 0.3s ease-in-out';
+        } else {
+            row.style.maxHeight = '0';
+            setTimeout(() => row.classList.add('per-hidden'), 300);
+        }
+    });
+});
+</script>
 
 {% endblock %}

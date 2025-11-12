@@ -16,9 +16,11 @@ class Signup(db.Model, UserMixin):
     doj = db.Column(db.Date, nullable=False)  # Renamed `Doj` to `doj` (Python naming convention)
     emp_type = db.Column(db.String(50), nullable=False, default='employee')
     circle = db.Column(db.String(50), nullable=True)  # Changed default `None` to `nullable=True`
+    confirmation_email_sent = db.Column(db.Boolean, default=False)
 
     # Use the `single_parent=True` flag to ensure delete-orphan works on the "many" side
     leave_balance = db.relationship('LeaveBalance', back_populates='signup', uselist=False, cascade="all, delete-orphan")
+    confirmation_requests = db.relationship('ConfirmationRequest',backref='employee',lazy=True,cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Signup {self.email}>"

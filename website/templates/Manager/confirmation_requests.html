@@ -1,0 +1,100 @@
+{% extends "Manager/manager_base.html" %}
+{% block title %}Employee Confirmation Requests{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/revi_confirmation.css') }}">
+
+<div class="revi-container">
+    <h3 class="revi-title">🧾 Employee Confirmation Requests</h3>
+
+    {% if requests %}
+        <div class="revi-table-wrapper">
+            <table class="revi-table">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Email</th>
+                        <th>Request For</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Review & Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                        <tr>
+                            <td>{{ req.employee.first_name }}</td>
+                            <td>{{ req.employee.email }}</td>
+
+                            <!-- ✅ Identify role -->
+                            <td>
+                                {% if current_user.email == req.l1_email %}
+                                    Team Lead (L1)
+                                {% elif current_user.email == req.l2_email %}
+                                    Manager (L2)
+                                {% elif current_user.email == req.l3_email %}
+                                    Senior Manager (L3)
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </td>
+
+                            <!-- ✅ Status -->
+                            <td>
+                                {% if req.status == 'Pending' %}
+                                    <span class="revi-status-badge revi-status-pending">Pending</span>
+                                {% elif req.status == 'Approved' %}
+                                    <span class="revi-status-badge revi-status-approved">Approved</span>
+                                {% else %}
+                                    <span class="revi-status-badge revi-status-rejected">Rejected</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- ✅ Date -->
+                            <td>{{ req.created_at.strftime('%d %b %Y') }}</td>
+
+                            <!-- ✅ Review and buttons -->
+                            <td>
+                                {% if req.status == 'Pending' %}
+                                    <form
+                                        action="{{ url_for('manager_bp.update_confirmation_request', request_id=req.id) }}"
+                                        method="POST"
+                                        class="revi-form-secure"
+                                    >
+                                        <!-- Hidden CSRF token -->
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                        <!-- 📝 Review box -->
+                                        <textarea
+                                            name="review_comment"
+                                            class="revi-review-box"
+                                            placeholder="Write your review before approval..."
+                                            required
+                                        ></textarea>
+
+                                        <!-- Buttons -->
+                                        <div class="revi-btn-group">
+                                            <button name="action" value="approve" class="revi-button revi-button-approve">
+                                                Approve
+                                            </button>
+                                            <button name="action" value="reject" class="revi-button revi-button-reject">
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="revi-empty-alert">No confirmation requests found.</div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1938,6 +1938,61 @@ button[type="button"], .btn {
     margin-top: 20px;
 }
 
+/* ============================
+   Manager Feedback Section
+============================ */
+
+.per-feedback-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.per-feedback-btn:hover {
+    background-color: #5a6268;
+    cursor: pointer;
+    transform: translateY(-2px);
+}
+
+.per-feedback-row {
+    background-color: #f1f3f5;
+}
+
+.per-feedback-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.per-feedback-card h4 {
+    margin-bottom: 10px;
+    color: #343a40;
+    font-weight: 600;
+}
+
+.per-feedback-card p {
+    margin: 6px 0;
+    color: #555;
+    font-size: 15px;
+}
+
+.per-hidden {
+    display: none;
+}
+
+/* --- Feedback Animation --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- Responsive Design --- */
 @media (max-width: 768px) {
     .per-container {
@@ -1957,7 +2012,54 @@ button[type="button"], .btn {
         font-size: 14px;
         padding: 8px;
     }
+
+    .per-feedback-card {
+        padding: 15px;
+    }
+}
+/* --- Filter Section --- */
+.review-filter-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    background-color: #ffffff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
+.review-filter-box label {
+    font-weight: 600;
+    color: #343a40;
+    font-size: 14px;
+}
 
-102205984933
+.review-filter-box select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #f5f5f5;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.review-filter-box select:focus {
+    background-color: #fff;
+    border-color: #6c757d;
+    outline: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .review-filter-box {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .review-filter-box label {
+        font-size: 13px;
+    }
+}

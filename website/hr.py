@@ -1,12 +1,13 @@
 from zoneinfo import ZoneInfo
 
 from flask import render_template,flash, redirect,Blueprint, session,url_for, current_app,send_from_directory,request
-from flask_login import login_required
+from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from website.forms.Emp_details import Employee_Details
 from .forms.search_from import SearchForm,DetailForm,NewsFeedForm,SearchEmp_Id,AssetForm,PunchManuallyForm
 from .models.Admin_models import Admin
 from . import db
+from .models.confirmation_request import HRConfirmationRequest
 from .models.emp_detail_models import Employee,Asset
 from .models.family_models import FamilyDetails
 from .models.prev_com import PreviousCompany
@@ -22,7 +23,7 @@ from wtforms.validators import DataRequired, Email, Length, Optional, Validation
 
 from werkzeug.utils import secure_filename
 import os
-from .common import asset_email,update_asset_email
+from .common import asset_email, update_asset_email, verify_oauth2_and_send_email
 from .forms.signup_form import SignUpForm
 from .forms.Emp_details import Employee_Details
 import json
@@ -966,3 +967,89 @@ def delete_signup(email):
     
     flash(f'Employee {email} deleted successfully.', 'success')
     return redirect(url_for('hr.update_signup'))
+
+
+@hr.route('/hr-confirmation-requests')
+@login_required
+def hr_confirmation_requests():
+    """
+    Display all confirmation requests for HR users.
+    The HR role is verified by matching the logged-in user's email
+    with the Signup table and checking emp_type == 'Human Resource'.
+    """
+
+    # 1️⃣ Fetch logged-in user email
+    user_email = current_user.email
+
+    # 2️⃣ Match email with Signup table to get emp_type
+    hr_user = Signup.query.filter_by(email=user_email).first()
+
+    # 3️⃣ Validate HR access
+    if not hr_user or hr_user.emp_type != 'Human Resource':
+        flash("Access denied. Only Human Resource users can view this page.", "danger")
+        return redirect(url_for('views.home'))  # change 'views.home' to your home route
+
+    # 4️⃣ Fetch all HR confirmation requests (most recent first)
+    requests = (
+        HRConfirmationRequest.query
+        .order_by(HRConfirmationRequest.created_at.desc())
+        .all()
+    )
+
+    # 5️⃣ Render HR confirmation requests page
+    return render_template(
+        'HumanResource/hr_confirmation_requests.html',
+        requests=requests
+    )
+
+
+
+
+@hr.route('/hr/confirmation-requests')
+@login_required
+def view_hr_confirmation_requests():
+    """Displays all confirmation requests visible to HR"""
+    requests = HRConfirmationRequest.query.order_by(HRConfirmationRequest.created_at.desc()).all()
+    return render_template('HumanResource/hr_confirmation_requests.html', requests=requests)
+
+
+@hr.route('/hr/confirmation-request/<int:request_id>/update', methods=['POST'])
+@login_required
+def update_hr_confirmation_request(request_id):
+    """HR approves or rejects employee confirmation"""
+    req = HRConfirmationRequest.query.get_or_404(request_id)
+    action = request.form.get('action')
+    review = request.form.get('review')
+
+    if action == 'approve':
+        req.status = 'Approved'
+    elif action == 'reject':
+        req.status = 'Rejected'
+    else:
+        flash("Invalid action", "danger")
+        return redirect(url_for('hr_bp.view_hr_confirmation_requests'))
+
+    req.manager_review = review
+    db.session.commit()
+
+    # Send email to employee notifying HR decision
+    employee = Signup.query.get(req.employee_id)
+    if employee:
+        subject = f"🎯 Confirmation Status: {req.status}"
+        body = f"""
+        <p>Dear {employee.first_name},</p>
+        <p>Your employment confirmation has been reviewed by HR And your manager/tl.</p>
+        <p><strong>Status:</strong> {req.status}</p>
+        <p><strong>HR Comments:</strong> {review or 'No comments provided'}</p>
+        <p>Thank you,<br><strong>HR Team</strong></p>
+        """
+
+        verify_oauth2_and_send_email(
+            user=current_user,
+            subject=subject,
+            body=body,
+            recipient_email=employee.email
+        )
+
+    flash(f"Request {action}d successfully!", "success")
+    return redirect(url_for('hr.view_hr_confirmation_requests'))
