@@ -49,57 +49,68 @@ def is_safe_url(target):
 
 
 
-
 def update_leave_balances():
     """Updates leave balances monthly for employees after 6 months of joining."""
     from .models.attendance import LeaveBalance
     from .models.Admin_models import Admin
     from .models.signup import Signup
+    import calendar
+    from zoneinfo import ZoneInfo
+    from datetime import datetime, date
+    from dateutil.relativedelta import relativedelta
 
     with scheduler.app.app_context():
         leave_balances = LeaveBalance.query.all()
         if not leave_balances:
+            print("No leave balances found.")
             return
 
-        today = datetime.now().date()
+        today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+        current_month = today.month
+        current_year = today.year
 
         for balance in leave_balances:
             signup = Signup.query.filter_by(id=balance.signup_id).first()
             admin = Admin.query.filter_by(email=signup.email).first() if signup else None
 
             if not signup or not signup.doj or not admin:
-                continue  # Skip if essential data missing
+                continue  # Skip invalid records
 
             doj = signup.doj
+            six_month_date = doj + relativedelta(months=6)
+            doj_completed_6_months = today >= six_month_date
 
-            # Skip if employee hasn't completed 6 months
-            if today < doj + relativedelta(months=6):
+            # Skip if not completed 6 months yet
+            if not doj_completed_6_months:
                 continue
 
-            # Initialize first eligible update date
+            # If never updated before → give first credit now
             if not balance.last_updated:
-                balance.last_updated = doj + relativedelta(months=6)
-
-                # Give first month’s leave immediately after completing 6 months
-                if today >= balance.last_updated:
-                    balance.privilege_leave_balance += 1.08
-                    balance.casual_leave_balance += 0.67
-
-            # Calculate how many full months passed since last update
-            months_passed = (today.year - balance.last_updated.year) * 12 + (today.month - balance.last_updated.month)
-
-            # Add leave only if at least one full month has passed
-            if months_passed >= 1:
-                # Add leave for one month (controlled monthly addition)
                 balance.privilege_leave_balance += 1.08
                 balance.casual_leave_balance += 0.67
-
-                # Update last_updated to today
                 balance.last_updated = today
+                print(f"[NEW ELIGIBLE] {signup.email}: Added first month’s leave.")
+                continue
+
+            # ✅ Check if already credited for this month
+            if (balance.last_updated.year == current_year and
+                balance.last_updated.month == current_month):
+                # already updated this month
+                continue
+
+            # ✅ If completed 6 months anytime this month, credit on month end
+            # OR if last update was before current month
+            if balance.last_updated < date(current_year, current_month, 1):
+                balance.privilege_leave_balance += 1.08
+                balance.casual_leave_balance += 0.67
+                balance.last_updated = today
+                print(f"[MONTHLY CREDIT] {signup.email}: Added leave for {calendar.month_name[current_month]}.")
 
         try:
             db.session.commit()
+            print("Leave balances updated successfully.")
         except Exception as e:
+            db.session.rollback()
             print(f"Database commit failed: {str(e)}")
 
 
@@ -290,6 +301,21 @@ def create_app():
     login_manager.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
+
+
+    # Inject current datetime into Jinja templates
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    import pytz
+
+    @app.context_processor
+    def inject_now():
+        """Make current datetime and pytz available in all templates"""
+        return {
+            'now': lambda: datetime.now(ZoneInfo("Asia/Kolkata")),
+            'pytz': pytz
+        }
+
 
     
     # ⬇️ Add this block immediately after

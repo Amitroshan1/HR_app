@@ -193,12 +193,6 @@ def get_authenticated_headers(admin):
 
     return {"Authorization": f"Bearer {admin.oauth_token}"}
 
-
-@login_manager.user_loader
-def load_admin(admin_id):
-    return Admin.query.get(int(admin_id))
-
-
 @auth.route('/select_role', methods=['GET', 'POST'])
 @login_required
 def select_role():
@@ -208,29 +202,42 @@ def select_role():
         login_input = form.user_name.data.strip()
         entered_password = form.password.data
 
-        # Detect if it's phone or username
-        if login_input.isdigit():
-            # Search by mobile number
-            user = Signup.query.filter_by(mobile=login_input).first()
-        else:
-            # Search by username
-            user = Signup.query.filter_by(user_name=login_input).first()
+        print(f"[DEBUG] Login attempt with identifier: {login_input}")
 
+        user = None
+
+        # 🔹 Detect type of login: mobile or email
+        if login_input.isdigit():
+            # 📱 Mobile number login
+            print("[DEBUG] Detected mobile number login")
+            user = Signup.query.filter(
+                Signup.mobile == login_input,
+                Signup.mobile != ''
+            ).first()
+
+        elif "@" in login_input and "." in login_input:
+            # 📧 Email login
+            print("[DEBUG] Detected email login")
+            user = Signup.query.filter(
+                Signup.email.ilike(login_input),
+                Signup.email != ''
+            ).first()
+
+        # 🔹 Validate user
         if user:
+            print(f"[DEBUG] Found user: {user.email}")
             if user.check_password(entered_password):
-                # Redirect everyone to the same homepage
+                flash('Login successful!', 'success')
                 return redirect(url_for('auth.E_homepage'))
             else:
                 flash('Incorrect password. Please try again.', category='error')
         else:
-            flash('No account found with that username or phone number.', category='error')
+            flash('No account found with that mobile number or email.', category='error')
 
         return redirect(url_for('auth.select_role'))
 
     current_app.logger.debug("[SELECT_ROLE] Rendering select_role.html")
     return render_template('employee/select_role.html', form=form)
-
-
 
 
 

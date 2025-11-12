@@ -58,10 +58,67 @@
 
     <a href="{{ url_for('Accounts.Acc_dashboard') }}" class="btn btn-primary search">Back to Search</a>
 
-    <a href="{{ url_for('Accounts.download_excel_acc') }}" class="btn mt-3"
-        style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
-        📥 Download Attendance Excel File
-    </a>
+    <a href="#" id="toggleMonthForm"
+   class="btn mt-3"
+   style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
+   📥 Download Attendance Excel File
+</a>
+
+<!-- Hidden month selector form -->
+<div id="monthForm" class="mt-3"
+     style="display: none; background-color: #f8f9fa; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+  <form method="get" action="{{ url_for('Accounts.download_excel_acc') }}">
+    <div class="form-group mb-3">
+      <label for="month" style="font-weight: 600;">Select Month:</label>
+      <input type="month"
+             id="month"
+             name="month"
+             class="form-control"
+             value="{{ now().astimezone(pytz.timezone('Asia/Kolkata')).strftime('%Y-%m') }}"
+             required>
+    </div>
+    <div>
+      <button type="submit"
+              class="btn"
+              style="background-color: #218838; color: white; padding: 6px 16px; border-radius: 5px;">
+        Download
+      </button>
+      <button type="button"
+              id="cancelForm"
+              class="btn btn-secondary"
+              style="margin-left: 8px;">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const toggleBtn = document.getElementById("toggleMonthForm");
+    const formBox = document.getElementById("monthForm");
+    const cancelBtn = document.getElementById("cancelForm");
+
+    toggleBtn.addEventListener("click", function(event) {
+      event.preventDefault();
+      if (formBox.style.display === "none") {
+        formBox.style.display = "block";
+        toggleBtn.innerHTML = "🔽 Hide Month Selector";
+      } else {
+        formBox.style.display = "none";
+        toggleBtn.innerHTML = "📥 Download Attendance Excel File";
+      }
+    });
+
+    cancelBtn.addEventListener("click", function() {
+      formBox.style.display = "none";
+      toggleBtn.innerHTML = "📥 Download Attendance Excel File";
+    });
+  });
+</script>
+
+
+
 
     <a href="{{ url_for('Accounts.upload_payslips') }}" class="btn mt-3"
         style="background-color: #d8ad10; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none;">
