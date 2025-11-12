@@ -544,3 +544,28 @@ def check_and_send_confirmation_emails():
     # ✅ Step 10: Clean up session
     db.session.close()
     current_app.logger.info("🏁 Finished check_and_send_confirmation_emails job.")
+
+
+
+from datetime import datetime, timedelta, time
+
+def calculate_total_work(punch_in, punch_out):
+    """Return total work duration as a time object (HH:MM:SS)."""
+    if not punch_in or not punch_out:
+        return None
+
+    # Combine with dummy date to calculate timedelta
+    in_dt = datetime.combine(datetime.min, punch_in)
+    out_dt = datetime.combine(datetime.min, punch_out)
+
+    # Handle overnight shift (punch out next day)
+    if out_dt < in_dt:
+        out_dt += timedelta(days=1)
+
+    work_duration = out_dt - in_dt  # timedelta
+
+    # Convert timedelta → time (HH:MM:SS)
+    total_seconds = int(work_duration.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return time(hour=hours % 24, minute=minutes, second=seconds)

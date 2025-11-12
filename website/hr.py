@@ -20,7 +20,7 @@ from datetime import datetime
 import calendar
 from werkzeug.security import generate_password_hash
 from wtforms.validators import DataRequired, Email, Length, Optional, ValidationError
-
+from .utility import calculate_total_work
 from werkzeug.utils import secure_filename
 import os
 from .common import asset_email, update_asset_email, verify_oauth2_and_send_email
@@ -118,6 +118,8 @@ def search_results():
 
     return render_template('HumanResource/search_result.html', admins=admins, circle=circle, emp_type=emp_type, form=detail_form)
 
+
+
 @hr.route('/download_excel_hr', methods=['GET'])
 @login_required
 def download_excel_hr():
@@ -138,10 +140,21 @@ def download_excel_hr():
     signups = Signup.query.filter(Signup.email.in_(emails)).all()
     emp_id_map = {s.email: s.emp_id for s in signups}
 
-    # 4️⃣ Get current IST month and year
-    ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
-    year, month = ist_now.year, ist_now.month
+    # 🆕 4️⃣ Resolve selected month/year from query (?month=YYYY-MM); default to current IST month
+    month_str = request.args.get('month')
+    if month_str:
+        try:
+            year, month = map(int, month_str.split('-'))
+        except ValueError:
+            flash('Invalid month format. Please use YYYY-MM.', category='error')
+            return redirect(url_for('hr.search'))
+    else:
+        ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
+        year, month = ist_now.year, ist_now.month
+
     num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)
+    end_date = date(year, month, num_days)
 
     # 5️⃣ Prepare Excel output
     output = BytesIO()
@@ -156,21 +169,22 @@ def download_excel_hr():
             'border': 1, 'bold': True, 'align': 'center',
             'valign': 'vcenter', 'bg_color': '#D9E1F2'
         })
-        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})  # Yellow for missing
+        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})
         bold_fmt = workbook.add_format({'bold': True})
+        title_fmt = workbook.add_format({'bold': True, 'font_size': 12})
 
-        # 7️⃣ Write emp_type and circle at top
+        # 7️⃣ Header info (emp_type, circle, and selected month)
         worksheet.write(0, 0, "emp_type", bold_fmt)
         worksheet.write(0, 1, emp_type)
         worksheet.write(0, 3, "CIRCLE", bold_fmt)
         worksheet.write(0, 4, circle)
+        worksheet.write(0, 6, "Month", bold_fmt)
+        worksheet.write(0, 7, f"{calendar.month_name[month]} {year}", title_fmt)
 
-        # 8️⃣ Generate weekday headers (e.g., "1 M", "2 T", etc.)
+        # 8️⃣ Day headers (e.g., "1 M", "2 T", ...)
         days = [f"{d} {calendar.day_abbr[date(year, month, d).weekday()][0]}" for d in range(1, num_days + 1)]
 
-        # 9️⃣ Fetch all punches for this month for these admins
-        start_date = date(year, month, 1)
-        end_date = date(year, month, num_days)
+        # 9️⃣ Fetch punches for the selected month for these admins
         punches = Punch.query.filter(
             Punch.admin_id.in_([a.id for a in admins]),
             Punch.punch_date >= start_date,
@@ -182,23 +196,20 @@ def download_excel_hr():
         for p in punches:
             punch_map_by_admin.setdefault(p.admin_id, {})[p.punch_date.day] = p
 
-        # 11️⃣ Start writing rows
+        # 11️⃣ Write rows per employee
         row = 2
         for admin in admins:
             emp_code = emp_id_map.get(admin.email, 'N/A')
             emp_name = admin.first_name
 
-            # 12️⃣ Employee info
+            # Employee info
             worksheet.write(row, 0, "Emp ID:", bold_fmt)
             worksheet.write(row, 1, emp_code)
             worksheet.write(row, 3, "Emp Name:", bold_fmt)
             worksheet.write(row, 4, emp_name)
             row += 1
 
-            # 13️⃣ Get this admin’s punches
             admin_punch_map = punch_map_by_admin.get(admin.id, {})
-
-            # 14️⃣ Prepare InTime, OutTime, Total lists
             in_times, out_times, totals = [], [], []
 
             for d in range(1, num_days + 1):
@@ -206,13 +217,12 @@ def download_excel_hr():
                 if punch:
                     in_time = punch.punch_in.strftime("%I:%M %p") if punch.punch_in else ""
                     out_time = punch.punch_out.strftime("%I:%M %p") if punch.punch_out else ""
-
                     in_times.append(in_time)
                     out_times.append(out_time)
 
+                    # Compute total_text
                     total_text = ""
-
-                    # Case 1️⃣: Use today_work if present
+                    # Use today_work first if present
                     if getattr(punch, "today_work", None):
                         tw = punch.today_work
                         tw_seconds = (tw.hour * 3600) + (tw.minute * 60) + getattr(tw, "second", 0)
@@ -226,14 +236,14 @@ def download_excel_hr():
                             elif tm:
                                 total_text = f"{tm:02d} min"
 
-                    # Case 2️⃣: Use punch_in and punch_out if today_work missing
+                    # Fallback to punch_in/out difference
                     if not total_text and punch.punch_in and punch.punch_out:
                         d_in = datetime.combine(date.min, punch.punch_in)
                         d_out = datetime.combine(date.min, punch.punch_out)
                         delta = d_out - d_in
                         total_seconds = int(delta.total_seconds())
                         if total_seconds < 0:
-                            total_seconds += 24 * 3600  # handle overnight case
+                            total_seconds += 24 * 3600
                         if total_seconds > 0:
                             th, rem = divmod(total_seconds, 3600)
                             tm, _ = divmod(rem, 60)
@@ -250,34 +260,33 @@ def download_excel_hr():
                     out_times.append("")
                     totals.append("")
 
-            # 15️⃣ Write header row for days
+            # Day headers
             worksheet.write(row, 0, "Days", header_fmt)
             for col, val in enumerate(days, start=1):
                 worksheet.write(row, col, val, header_fmt)
             row += 1
 
-            # 16️⃣ Write InTime, OutTime, Total rows
+            # In/Out/Total rows
             for label, data in [("InTime", in_times), ("OutTime", out_times), ("Total", totals)]:
                 worksheet.write(row, 0, label, header_fmt)
                 for col, val in enumerate(data, start=1):
                     worksheet.write(row, col, val, absent_fmt if not val else border_fmt)
                 row += 1
 
-            # 17️⃣ Blank row between employees
+            # Spacer
             row += 1
 
         # 18️⃣ Adjust column widths
         worksheet.set_column(0, num_days + 1, 16)
 
-    # 19️⃣ Return Excel file for download
+    # 19️⃣ Return Excel file
     output.seek(0)
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        download_name=f'HR_Attendance_{circle}_{emp_type}_{month}_{year}.xlsx',
+        download_name=f'HR_Attendance_{circle}_{emp_type}_{calendar.month_name[month]}_{year}.xlsx',
         as_attachment=True
     )
-
 
 
 @hr.route('/view_details', methods=['GET', 'POST'])
@@ -443,18 +452,23 @@ def display_details():
                     punch_in_time = punch_form.punch_in.data
                     punch_out_time = punch_form.punch_out.data
 
+                    # ✅ Calculate total working time
+                    total_work_time = calculate_total_work(punch_in_time, punch_out_time)
+
                     if not punch:
                         new_punch = Punch(
                             admin_id=user_id,
                             punch_date=selected_date,
                             punch_in=punch_in_time,
-                            punch_out=punch_out_time
+                            punch_out=punch_out_time,
+                            today_work=total_work_time  # ✅ store total work
                         )
                         db.session.add(new_punch)
-                        flash("Punch In and Out saved.",  "success")
+                        flash("Punch In and Out saved.", "success")
                     else:
                         punch.punch_in = punch_in_time
                         punch.punch_out = punch_out_time
+                        punch.today_work = total_work_time  # ✅ update total work
                         flash("Punch In-Out updated successfully.", "success")
 
                     db.session.commit()
@@ -462,6 +476,7 @@ def display_details():
                 flash(f"Form not valid: {punch_form.errors}", "danger")
 
         details = punch_form
+
 
     elif detail_type == 'Document':
         details = UploadDoc.query.filter_by(admin_id=user_id).all()

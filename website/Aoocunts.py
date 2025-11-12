@@ -191,9 +191,19 @@ def download_excel_acc():
     # 3️⃣ Fetch admin objects
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
-    # 4️⃣ Get current IST month and year
-    ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
-    year, month = ist_now.year, ist_now.month
+    month_str = request.args.get('month')
+    if month_str:
+        try:
+            year, month = map(int, month_str.split('-'))
+        except ValueError:
+            flash('Invalid month format. Please use YYYY-MM.', category='error')
+            return redirect(url_for('Accounts.search'))
+    else:
+        # default → current month (if form not used)
+        ist_now = datetime.now(ZoneInfo("Asia/Kolkata"))
+        year, month = ist_now.year, ist_now.month
+
+    # 4️⃣ Calculate number of days in selected month
     num_days = calendar.monthrange(year, month)[1]
 
     # 5️⃣ Prepare Excel output
@@ -420,6 +430,8 @@ def add_payslip(admin_id):
 
 
 
+
+
 @Accounts.route('/upload_payslips', methods=['GET', 'POST'])
 @login_required
 def upload_payslips():
@@ -430,30 +442,33 @@ def upload_payslips():
         year = form.year.data
         uploaded_files = form.payslip_files.data
 
-        saved_slips = []   # store (admin, file_path, filename) for later email sending
+        saved_slips = []  # store (admin, file_path, filename) for later email sending
 
         for file in uploaded_files:
             if not file or file.filename.strip() == "":
                 continue
 
             filename = secure_filename(file.filename)
-            employee_name = os.path.splitext(filename)[0]
+            base_name = os.path.splitext(filename)[0]  # without extension
+            emp_id_part = base_name[:5].upper()  # first 5 letters of filename
 
-            # 🔎 Match employee (by email OR first_name)
-            admin = Admin.query.filter(
-                (Admin.email.ilike(f"%{employee_name}%")) |
-                (Admin.first_name.ilike(f"%{employee_name}%"))
-            ).first()
-
-            if not admin:
-                flash(f"⚠ No match found for {filename}", "error")
+            # 🔍 Step 1: Find Signup by emp_id (first 5 characters)
+            signup = Signup.query.filter(Signup.emp_id.ilike(f"%{emp_id_part}%")).first()
+            if not signup:
+                flash(f"⚠ No Signup match for file '{filename}' (emp_id like '{emp_id_part}')", "error")
                 continue
 
-            # 💾 Save file
+            # 🔍 Step 2: Get Admin via Signup email
+            admin = Admin.query.filter_by(email=signup.email).first()
+            if not admin:
+                flash(f"⚠ No Admin found for email '{signup.email}' (from file {filename})", "error")
+                continue
+
+            # 💾 Step 3: Save the file
             save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             file.save(save_path)
 
-            # 📝 Add payslip record
+            # 📝 Step 4: Create payslip record
             slip = PaySlip(
                 admin_id=admin.id,
                 month=month,
@@ -466,7 +481,7 @@ def upload_payslips():
         # ✅ Commit all at once
         db.session.commit()
 
-        # 📧 Now send emails
+        # 📧 Step 5: Send email to each matched employee
         for admin, save_path, filename in saved_slips:
             try:
                 with open(save_path, "rb") as f:
@@ -503,8 +518,6 @@ def upload_payslips():
         return redirect(url_for('Accounts.upload_payslips'))
 
     return render_template('Accounts/upload_payslip.html', form=form)
-
-
 
 
 

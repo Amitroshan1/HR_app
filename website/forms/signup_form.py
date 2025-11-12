@@ -116,7 +116,7 @@ from wtforms import SelectField, PasswordField
 from wtforms.validators import DataRequired, Length
 
 class SelectRoleForm(FlaskForm):
-    user_name = StringField('Username or Phone Number', validators=[DataRequired()],render_kw={'placeholder':'Enter Username or Phone Number'})
+    user_name = StringField('Email/Phone Number', validators=[DataRequired()],render_kw={'placeholder':'Enter Email_id or Phone Number'})
 
     # emp_type = SelectField('Employee Type',
     #                        choices=[('','Select Employee Type'),
