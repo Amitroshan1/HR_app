@@ -1,3 +1,6 @@
+from io import BytesIO
+
+import pandas as pd
 from flask import current_app
 from flask_login import current_user
 
@@ -546,26 +549,356 @@ def check_and_send_confirmation_emails():
     current_app.logger.info("🏁 Finished check_and_send_confirmation_emails job.")
 
 
+from datetime import datetime, date, timedelta
+import calendar
+from .models.attendance import Punch, LeaveApplication
 
-from datetime import datetime, timedelta, time
+def calculate_month_summary(admin_id, year, month):
+    """Returns complete monthly summary:
+       - Working hours Mon–Fri
+       - Working hours Mon–Sat
+       - Leaves + Extra days
+       - Expected hours
+       - Accurate working_days_final using punch + leave logic (month based)
+    """
 
-def calculate_total_work(punch_in, punch_out):
-    """Return total work duration as a time object (HH:MM:SS)."""
-    if not punch_in or not punch_out:
-        return None
+    # -------------------------------------------------------
+    # SAFE MONTH (avoid crashes)
+    # -------------------------------------------------------
+    try:
+        num_days = calendar.monthrange(year, month)[1]
+    except:
+        today = datetime.today()
+        year, month = today.year, today.month
+        num_days = calendar.monthrange(year, month)[1]
 
-    # Combine with dummy date to calculate timedelta
-    in_dt = datetime.combine(datetime.min, punch_in)
-    out_dt = datetime.combine(datetime.min, punch_out)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, num_days)
 
-    # Handle overnight shift (punch out next day)
-    if out_dt < in_dt:
-        out_dt += timedelta(days=1)
+    # -------------------------------------------------------
+    # FETCH PUNCHES FOR THE MONTH
+    # -------------------------------------------------------
+    punches = Punch.query.filter(
+        Punch.admin_id == admin_id,
+        Punch.punch_date >= month_start,
+        Punch.punch_date <= month_end
+    ).all()
 
-    work_duration = out_dt - in_dt  # timedelta
+    actual_fri_seconds = 0
+    actual_sat_seconds = 0
 
-    # Convert timedelta → time (HH:MM:SS)
-    total_seconds = int(work_duration.total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return time(hour=hours % 24, minute=minutes, second=seconds)
+    # Helper to calculate time difference
+    def calc_work(p_in, p_out):
+        if not p_in or not p_out:
+            return 0
+        d_in = datetime.combine(date.min, p_in)
+        d_out = datetime.combine(date.min, p_out)
+        if d_out < d_in:
+            d_out += timedelta(days=1)
+        return int((d_out - d_in).total_seconds())
+
+    # -------------------------------------------------------
+    # TOTAL WORKED HOURS
+    # -------------------------------------------------------
+    for p in punches:
+        # Prefer today_work if available
+        if getattr(p, "today_work", None):
+            tw = p.today_work
+            secs = tw.hour*3600 + tw.minute*60 + getattr(tw, "second", 0)
+        else:
+            secs = calc_work(p.punch_in, p.punch_out)
+
+        weekday = p.punch_date.weekday()   # 0=Mon ... 6=Sun
+
+        if weekday not in (5, 6):   # Mon–Fri
+            actual_fri_seconds += secs
+
+        if weekday != 6:            # Mon–Sat
+            actual_sat_seconds += secs
+
+    # -------------------------------------------------------
+    # LEAVES & EXTRA DAYS
+    # -------------------------------------------------------
+    leave_days = 0
+    extra_days = 0
+
+    leaves = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == admin_id,
+        LeaveApplication.status == "Approved",
+        LeaveApplication.start_date <= month_end,
+        LeaveApplication.end_date >= month_start
+    ).all()
+
+    for lv in leaves:
+
+        # Overlap handling
+        ls = max(lv.start_date, month_start)
+        le = min(lv.end_date, month_end)
+
+        if le >= ls:
+            leave_days += (le - ls).days + 1
+
+        # Extra days
+        if getattr(lv, "extra_days", None):
+            try:
+                ed = float(lv.extra_days)
+                if ed > 0:
+                    extra_days += ed
+            except:
+                pass
+
+    # -------------------------------------------------------
+    # ADVANCED WORKING DAYS LOGIC (from your bulk function)
+    # -------------------------------------------------------
+
+    # Get admin profile to extract emp_type
+    admin_obj = Admin.query.get(admin_id)
+    signup = Signup.query.filter_by(email=admin_obj.email).first()
+    emp_type = getattr(signup, "emp_type", "")
+
+    working_days = 0.0
+
+    # Loop through each day of the selected month
+    for d in range(1, num_days + 1):
+
+        the_day = date(year, month, d)
+        weekday = the_day.weekday()
+
+        is_weekend = weekday in (5, 6)
+        is_sunday = weekday == 6
+
+        # ---- CHECK PUNCHES FOR THAT DAY ----
+        punch = next((p for p in punches if p.punch_date == the_day), None)
+
+        punch_value = 0
+        if punch:
+            in_present = bool(punch.punch_in)
+            out_present = bool(punch.punch_out)
+
+            if in_present and out_present:
+                punch_value = 1
+            elif in_present or out_present:
+                punch_value = 0.5
+
+        # ---- CHECK LEAVE FOR THE DAY ----
+        leave_for_day = False
+        for lv in leaves:
+            if lv.start_date <= the_day <= lv.end_date:
+                leave_for_day = True
+                break
+
+        # ---- APPLY SAME RULES AS BULK FUNCTION ----
+        if emp_type in ("Engineering", "Software Development"):
+            # Sat + Sun always counted as working
+            if is_weekend:
+                working_days += 1
+            elif punch_value > 0 or leave_for_day:
+                working_days += punch_value if punch_value > 0 else 1
+
+        else:  # Accounts, HR, etc.
+            if is_sunday:
+                working_days += 1
+            elif weekday == 5:  # Saturday
+                if punch_value > 0 or leave_for_day:
+                    working_days += punch_value if punch_value > 0 else 1
+            else:  # Mon–Fri
+                if punch_value > 0 or leave_for_day:
+                    working_days += punch_value if punch_value > 0 else 1
+
+    # Subtract extra days
+    working_days -= extra_days
+    if working_days < 0:
+        working_days = 0
+
+    # Round clean
+    working_days_final = round(working_days, 1)
+
+    # -------------------------------------------------------
+    # CALENDAR WORKING DAYS (for expected hours only)
+    # -------------------------------------------------------
+    total_mon_fri = sum(1 for d in range(1, num_days + 1)
+                        if date(year, month, d).weekday() not in (5, 6))
+
+    total_mon_sat = sum(1 for d in range(1, num_days + 1)
+                        if date(year, month, d).weekday() != 6)
+
+    # -------------------------------------------------------
+    # RETURN FINAL SUMMARY
+    # -------------------------------------------------------
+    return {
+        "actual_fri_hours": round(actual_fri_seconds / 3600, 1),
+        "actual_sat_hours": round(actual_sat_seconds / 3600, 1),
+        "expected_fri_hours": round(total_mon_fri * 8.5, 1),
+        "expected_sat_hours": round(total_mon_sat * 8.5, 1),
+        "leave_days": leave_days,
+        "extra_days": extra_days,
+        "working_days_final": working_days_final,
+    }
+
+
+def generate_attendance_excel(admins, emp_type, circle, year, month, file_prefix):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+
+        workbook = writer.book
+        worksheet = workbook.add_worksheet("Attendance")
+        writer.sheets["Attendance"] = worksheet
+
+        # Styles
+        border_fmt = workbook.add_format({'border': 1})
+        header_fmt = workbook.add_format({'border': 1, 'bold': True, 'align': 'center',
+                                          'valign': 'vcenter', 'bg_color': '#D9E1F2'})
+        absent_fmt = workbook.add_format({'border': 1, 'bg_color': '#FFD966'})
+        bold_fmt = workbook.add_format({'bold': True})
+        title_fmt = workbook.add_format({'bold': True, 'font_size': 12})
+
+        # Summary Colors
+        orange_fmt = workbook.add_format({'border': 1, 'bg_color': '#F4B183', 'bold': True})
+        green_fmt  = workbook.add_format({'border': 1, 'bg_color': '#C6EFCE', 'bold': True})
+        red_fmt    = workbook.add_format({'border': 1, 'bg_color': '#F8CBAD', 'bold': True})
+        blue_fmt   = workbook.add_format({'border': 1, 'bg_color': '#BDD7EE', 'bold': True})
+
+        # Dates
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)
+        end_date = date(year, month, num_days)
+
+        # Header Info
+        worksheet.write(0, 0, "emp_type", bold_fmt)
+        worksheet.write(0, 1, emp_type)
+        worksheet.write(0, 3, "Circle", bold_fmt)
+        worksheet.write(0, 4, circle)
+        worksheet.write(0, 6, "Month", bold_fmt)
+        worksheet.write(0, 7, f"{calendar.month_name[month]} {year}", title_fmt)
+
+        # Day labels
+        days = [f"{d} {calendar.day_abbr[date(year, month, d).weekday()][0]}"
+                for d in range(1, num_days + 1)]
+
+        # Fetch punches
+        punches = Punch.query.filter(
+            Punch.admin_id.in_([a.id for a in admins]),
+            Punch.punch_date >= start_date,
+            Punch.punch_date <= end_date
+        ).all()
+
+        punch_map = {}
+        for p in punches:
+            punch_map.setdefault(p.admin_id, {})[p.punch_date.day] = p
+
+        # Fetch emp IDs
+        emails = [a.email for a in admins]
+        signup = Signup.query.filter(Signup.email.in_(emails)).all()
+
+        # emp_id from signup
+        emp_ids = {s.email: s.emp_id for s in signup}
+
+        # full name comes from signup.first_name column
+        emp_names = {s.email: s.first_name for s in signup}
+
+        # Start writing
+        row = 2
+        for admin in admins:
+
+            emp_code = emp_ids.get(admin.email, "N/A")
+
+            worksheet.write(row, 0, "Emp ID:", bold_fmt)
+            worksheet.write(row, 1, emp_code)
+            worksheet.write(row, 3, "Emp Name:", bold_fmt)
+            emp_name = emp_names.get(admin.email, admin.first_name)
+            worksheet.write(row, 4, emp_name)
+            row += 1
+
+            # Punch rows
+            in_times = []
+            out_times = []
+            totals = []
+
+            admin_punches = punch_map.get(admin.id, {})
+
+            for d in range(1, num_days + 1):
+                punch = admin_punches.get(d)
+
+                if punch:
+                    in_t = punch.punch_in.strftime("%I:%M %p") if punch.punch_in else ""
+                    out_t = punch.punch_out.strftime("%I:%M %p") if punch.punch_out else ""
+
+                    in_times.append(in_t)
+                    out_times.append(out_t)
+
+                    # Work hours
+                    total_text = ""
+                    if punch.today_work:
+                        tw = punch.today_work
+                        secs = tw.hour * 3600 + tw.minute * 60 + getattr(tw, "second", 0)
+                        if secs > 0:
+                            h, rem = divmod(secs, 3600)
+                            m, _ = divmod(rem, 60)
+                            total_text = f"{h} hrs {m} min"
+
+                    if not total_text and punch.punch_in and punch.punch_out:
+                        d_in = datetime.combine(date.min, punch.punch_in)
+                        d_out = datetime.combine(date.min, punch.punch_out)
+                        secs = (d_out - d_in).total_seconds()
+                        if secs < 0:
+                            secs += 86400
+                        h, rem = divmod(int(secs), 3600)
+                        m, _ = divmod(rem, 60)
+                        total_text = f"{h} hrs {m} min"
+
+                    totals.append(total_text)
+                else:
+                    in_times.append("")
+                    out_times.append("")
+                    totals.append("")
+
+            # Write day header
+            worksheet.write(row, 0, "Days", header_fmt)
+            for col, dval in enumerate(days, start=1):
+                worksheet.write(row, col, dval, header_fmt)
+            row += 1
+
+            # Write rows
+            for label, data in [("InTime", in_times),
+                                ("OutTime", out_times),
+                                ("Total", totals)]:
+                worksheet.write(row, 0, label, header_fmt)
+                for col, val in enumerate(data, start=1):
+                    fmt = absent_fmt if not val else border_fmt
+                    worksheet.write(row, col, val, fmt)
+                row += 1
+
+            row += 1
+
+            # SUMMARY
+            stats = calculate_month_summary(admin.id, year, month)
+            mlabel = f"{calendar.month_name[month]} {year}"
+
+            worksheet.write(row, 0, f"Total Working Days ({mlabel}):", orange_fmt)
+            worksheet.write(row, 1, stats["working_days_final"], orange_fmt)
+            row += 1
+
+            worksheet.write(row, 0, "Total Approved Leaves (days):", green_fmt)
+            worksheet.write(row, 1, stats["leave_days"], green_fmt)
+            row += 1
+
+            worksheet.write(row, 0, "Extra Days (non-working):", red_fmt)
+            worksheet.write(row, 1, stats["extra_days"], red_fmt)
+            row += 1
+
+            worksheet.write(row, 0, f"Total Working Hours ({mlabel}) excluding Saturday :", blue_fmt)
+            worksheet.write(row, 1,
+                            f'{stats["actual_fri_hours"]} hrs (Expected: {stats["expected_fri_hours"]} hrs)',
+                            blue_fmt)
+            row += 1
+
+            worksheet.write(row, 0, f"Total Working Hours ({mlabel}) including Saturday :", blue_fmt)
+            worksheet.write(row, 1,
+                            f'{stats["actual_sat_hours"]} hrs (Expected: {stats["expected_sat_hours"]} hrs)',
+                            blue_fmt)
+            row += 2
+
+        worksheet.set_column(0, num_days + 1, 18)
+
+    output.seek(0)
+    return output
