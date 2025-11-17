@@ -359,7 +359,8 @@ def upload_payslips():
                 subject = f"Payslip for {month} {year}"
                 body = f"""
                 <p>Dear {admin.first_name},</p>
-                <p>Please find attached your payslip for <b>{month} {year}</b>.</p>
+                <p>Payslip for <b>{month} {year}</b>has been Uploaded .</p>
+                <p> Please find it in HRMS Portal</p>
                 <p>Regards,<br>HR Team</p>
                 """
 
@@ -367,8 +368,7 @@ def upload_payslips():
                     user=admin,
                     subject=subject,
                     body=body,
-                    recipient_email=admin.email,
-                    attachments=attachment
+                    recipient_email=admin.email
                 )
 
                 if success:

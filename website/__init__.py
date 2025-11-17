@@ -296,7 +296,7 @@ def create_app():
 
     app.config['ALLOWED_EXTENSIONS'] = {'jpg', 'png', 'jpeg', 'pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'jfif'}
     app.config['WTF_CSRF_ENABLED'] = True
-    app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
     # Initialize extensions
     db.init_app(app)
