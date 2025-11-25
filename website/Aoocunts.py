@@ -123,12 +123,6 @@ def search_results():
 
 
 
-
-
-
-
-
-
 @Accounts.route('/view_documents/<int:admin_id>', methods=['GET'])
 @login_required
 def view_documents(admin_id):

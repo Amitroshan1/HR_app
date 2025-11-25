@@ -29,9 +29,6 @@ from .common import punch_in_time_count
 
 
 
-
-
-
 auth = Blueprint('auth', __name__)
 
 import logging

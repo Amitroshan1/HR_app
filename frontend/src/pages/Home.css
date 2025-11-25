@@ -1,0 +1,92 @@
+/* HERO SECTION BACKGROUND */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e3f2fd, #e8f5e9);
+}
+
+/* CONTENT AREA */
+.hero-content {
+  max-width: 800px;
+  text-align: center;
+  z-index: 5;
+}
+
+/* MAIN TITLE */
+.hero-title {
+  font-size: 48px;
+  font-weight: 800;
+  color: #09346b;
+}
+
+/* SUBTITLE SECTION */
+.hero-subtitle {
+  margin: 25px auto;
+  font-size: 20px;
+  color: #444;
+  max-width: 700px;
+  line-height: 1.7;
+}
+
+/* SMALL DESCRIPTION */
+.hero-small-text {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 28px;
+  font-weight: 600;
+}
+
+/* MICROSOFT LOGIN BUTTON */
+.hero-btn {
+  display: inline-block;
+  background: #0078D4;
+  color: white;
+  padding: 15px 28px;
+  border-radius: 12px;
+  font-size: 18px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.28s ease;
+  box-shadow: 0 6px 15px rgba(0, 120, 212, 0.3);
+}
+
+.hero-btn:hover {
+  background: #005fa3;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(0, 120, 212, 0.4);
+}
+
+/* WAVY BACKGROUND SHAPE */
+.hero-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 180%;
+  height: 300px;
+  background: url('https://raw.githubusercontent.com/creativetimofficial/public-assets/master/waves/wave-2.svg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+  z-index: 1;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 34px;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+  }
+
+  .hero-btn {
+    font-size: 16px;
+    padding: 12px 20px;
+  }
+}
