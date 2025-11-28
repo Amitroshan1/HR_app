@@ -147,7 +147,9 @@ def callback():
     # Log the user in
     login_user(admin)
     flash("Login successful!", "success")
-    return redirect(url_for("auth.select_role"))  # Redirect to dashboard
+    #return redirect(url_for("auth.select_role"))  # Redirect to dashboard
+    return redirect(url_for("auth.auto_login_redirect", email=email))
+
 
 
 def refresh_access_token(admin):
@@ -194,52 +196,23 @@ def get_authenticated_headers(admin):
 
     return {"Authorization": f"Bearer {admin.oauth_token}"}
 
-@auth.route('/select_role', methods=['GET', 'POST'])
+
+
+@auth.route('/auto_login/<email>')
 @login_required
-def select_role():
-    form = SelectRoleForm()
+def auto_login_redirect(email):
 
-    if form.validate_on_submit():
-        login_input = form.user_name.data.strip()
-        entered_password = form.password.data
+    user = Signup.query.filter_by(email=email).first()
 
-        print(f"[DEBUG] Login attempt with identifier: {login_input}")
+    if user:
+        # Employee found – login success, no password needed
+        flash("Login successful!", "success")
+        return redirect(url_for("auth.E_homepage"))
 
-        user = None
-
-        # 🔹 Detect type of login: mobile or email
-        if login_input.isdigit():
-            # 📱 Mobile number login
-            print("[DEBUG] Detected mobile number login")
-            user = Signup.query.filter(
-                Signup.mobile == login_input,
-                Signup.mobile != ''
-            ).first()
-
-        elif "@" in login_input and "." in login_input:
-            # 📧 Email login
-            print("[DEBUG] Detected email login")
-            user = Signup.query.filter(
-                Signup.email.ilike(login_input),
-                Signup.email != ''
-            ).first()
-
-        # 🔹 Validate user
-        if user:
-            print(f"[DEBUG] Found user: {user.email}")
-            if user.check_password(entered_password):
-                flash('Login successful!', 'success')
-                return redirect(url_for('auth.E_homepage'))
-            else:
-                flash('Incorrect password. Please try again.', category='error')
-        else:
-            flash('No account found with that mobile number or email.', category='error')
-
-        return redirect(url_for('auth.select_role'))
-
-    current_app.logger.debug("[SELECT_ROLE] Rendering select_role.html")
-    return render_template('employee/select_role.html', form=form)
-
+    else:
+        # User logged in via Microsoft but not registered in Signup table
+        flash("Your email is not registered in HRMS. Please contact HR.", "danger")
+        return render_template('home.html')
 
 
 @auth.route('/E_homepage')

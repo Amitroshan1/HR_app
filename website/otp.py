@@ -8,6 +8,7 @@ from .models.otp import OTP
 from .models.signup import Signup
 from werkzeug.security import generate_password_hash
 from .common import verify_oauth2_and_send_email
+from flask_login import current_user, login_required
 
 
 
@@ -40,33 +41,37 @@ def send_otp_email(recipient_email, otp):
 #   verify_oauth2_and_send_email(user, subject, body, recipient_email, cc_emails=None)
 
 
-
-
-@forgot_password.route('/forgot_password', methods=['GET', 'POST'])
+@forgot_password.route('/forgot_password', methods=['GET'])
+@login_required
 def forgot_password_reset():
-    form = RequestOTPForm()
-    if form.validate_on_submit():
-        email = form.email.data
-        otp_code = f"{random.randint(100000, 999999)}"
 
-        try:
-            # Attempt to send email first
-            email_sent = send_otp_email(email, otp_code)
-            if email_sent:
-                # Save OTP only if email was successfully sent
-                otp = OTP(email=email, otp_code=otp_code)
-                db.session.add(otp)
-                db.session.commit()
-                flash("OTP has been sent to your email.", "success")
-                return redirect(url_for('forgot_password.verify_otp', email=email))
-            else:
-                flash("Failed to send OTP email. Please try again later.", "error")
+    # 1. Get current logged-in user’s email
+    email = current_user.email  # or: session["email"]
 
-        except Exception:
-            flash("Error sending OTP. Please check your internet connection or contact support.", "error")
+    # 2. Generate OTP
+    otp_code = f"{random.randint(100000, 999999)}"
 
-    return render_template('OTP/request.html', form=form)
+    try:
+        # 3. Send OTP
+        email_sent = send_otp_email(email, otp_code)
 
+        if email_sent:
+            # 4. Save OTP in database
+            otp = OTP(email=email, otp_code=otp_code)
+            db.session.add(otp)
+            db.session.commit()
+
+            # 5. Redirect to verification page
+            flash("OTP has been sent to your email.", "success")
+            return redirect(url_for('forgot_password.verify_otp', email=email))
+
+        else:
+            flash("Failed to send OTP. Please try again.", "danger")
+            return redirect(url_for('auth.select_role'))
+
+    except Exception:
+        flash("Error sending OTP. Please try again later.", "danger")
+        return redirect(url_for('auth.select_role'))
 
 
 

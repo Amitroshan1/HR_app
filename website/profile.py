@@ -854,7 +854,8 @@ def apply_leave():
             if leave_days > 1:
                 flash('Half Day Leave can only be applied for one day.', 'danger')
                 return redirect(url_for('profile.apply_leave'))
-
+            
+            leave_days = 0.5
             deducted_days = 0.5
             if leave_balance.casual_leave_balance >= 0.5:
                 leave_balance.casual_leave_balance -= 0.5
@@ -957,10 +958,7 @@ def apply_leave():
                     <td style="padding: 4px 8px; margin: 0;"><strong>Total Days:</strong></td>
                     <td style="padding: 4px 8px; margin: 0;">{leave_days}</td>
                 </tr>
-                <tr>
-                    <td style="padding: 4px 8px; margin: 0;"><strong>Privilege Leave Balance After Deduction:</strong></td>
-                    <td style="padding: 4px 8px; margin: 0;">{leave_balance.privilege_leave_balance}</td>
-                </tr>
+                
                 </table>
             """
 

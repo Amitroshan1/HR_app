@@ -443,7 +443,7 @@ def create_app():
             id='check_and_send_confirmation_emails',
             func=lambda: with_app_context(app, check_and_send_confirmation_emails),
             trigger='interval',
-            # hour=9,
+            hours=14,
             minutes=1,
             timezone='Asia/Kolkata'
         )

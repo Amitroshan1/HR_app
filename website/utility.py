@@ -468,7 +468,7 @@ def check_and_send_confirmation_emails():
                 continue
 
             # ✅ Step 4: HR CC email (fixed)
-            hr_cc_email = "hr@company.com"
+            hr_cc_email = "hr@saffotech.com"
 
             # ✅ Step 5: OAuth sender (L2 manager)
             manager_admin = Admin.query.filter_by(email=manager_contact.l2_email).first()
@@ -504,7 +504,7 @@ def check_and_send_confirmation_emails():
                 current_app.logger.info(f"📤 Sending email to {recipient_email} (CC: {hr_cc_email}) for {emp.email}...")
 
                 success = verify_oauth2_and_send_email(
-                    user=manager_admin,
+                    user=manager_admin.email,
                     subject=subject,
                     body=body,
                     recipient_email=recipient_email,
