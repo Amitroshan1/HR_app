@@ -104,8 +104,8 @@ def update_leave_balances():
             # ✅ If completed 6 months anytime this month, credit on month end
             # OR if last update was before current month
             if balance.last_updated < date(current_year, current_month, 1):
-                balance.privilege_leave_balance += 1.08
-                balance.casual_leave_balance += 0.67
+                balance.privilege_leave_balance += 1
+                balance.casual_leave_balance += 1
                 balance.last_updated = today
                 print(f"[MONTHLY CREDIT] {signup.email}: Added leave for {calendar.month_name[current_month]}.")
 
@@ -418,9 +418,9 @@ def create_app():
         id='update_leave_balances',
         func=update_leave_balances,
         trigger='cron',
-        day='last',
-        hour=8,
-        minute=23,
+        day=22,
+        hour=10,
+        minute=30,
     )
 
 

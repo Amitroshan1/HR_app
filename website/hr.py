@@ -33,7 +33,7 @@ from openpyxl.styles import Font
 # from .utility import hr_manual_punch
 from io import BytesIO
 from datetime import datetime, date
-from .utility import calculate_month_summary, generate_attendance_excel
+from .utility import calculate_month_summary, generate_attendance_excel_HR
 
 hr=Blueprint('hr',__name__)
 
@@ -146,7 +146,7 @@ def download_excel_hr():
         year, month = now.year, now.month
 
     # Call common Excel generator
-    output = generate_attendance_excel(
+    output = generate_attendance_excel_HR(
         admins=admins,
         emp_type=emp_type,
         circle=circle,

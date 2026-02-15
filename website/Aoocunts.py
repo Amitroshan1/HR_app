@@ -183,17 +183,18 @@ def download_document(admin_id, doc_field):
 @login_required
 def download_excel_acc():
 
-    emails = session.get('admin_emails')
-    circle = session.get('circle')
-    emp_type = session.get('emp_type')
+    # ---- DATA FROM SESSION ----
+    emails = session.get("admin_emails")
+    circle = session.get("circle")
+    emp_type = session.get("emp_type")
 
     if not emails:
         flash("Session expired. Please search again.", "error")
-        return redirect(url_for("Accounts.search"))
+        return redirect(url_for("manager.search"))
 
     admins = Admin.query.filter(Admin.email.in_(emails)).all()
 
-    # Month selector
+    # ---- MONTH HANDLING ----
     month_str = request.args.get("month")
     if month_str:
         year, month = map(int, month_str.split("-"))
@@ -201,20 +202,23 @@ def download_excel_acc():
         now = datetime.now(ZoneInfo("Asia/Kolkata"))
         year, month = now.year, now.month
 
-    # Call common helper
-    output = generate_attendance_excel(admins, emp_type, circle, year, month, "ACC")
+    # ---- EXCEL GENERATION ----
+    output = generate_attendance_excel(
+        admins=admins,
+        emp_type=emp_type,
+        circle=circle,
+        year=year,
+        month=month
+    )
+
+    filename = f"Attendance_{circle}_{emp_type}_{calendar.month_name[month]}_{year}.xlsx"
 
     return send_file(
         output,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        download_name=f"ACC_Attendance_{circle}_{emp_type}_{calendar.month_name[month]}_{year}.xlsx",
+        download_name=filename,
         as_attachment=True
     )
-
-
-
-
-
 
 
 

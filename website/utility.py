@@ -735,8 +735,488 @@ def calculate_month_summary(admin_id, year, month):
         "working_days_final": working_days_final,
     }
 
+# -------- HOLIDAYS 2026 --------
 
-def generate_attendance_excel(admins, emp_type, circle, year, month, file_prefix):
+HOLIDAYS_2026 = {
+    date(2026, 1, 1),   # New Year Day
+    date(2026, 1, 26),  # Republic Day
+    date(2026, 3, 3),   # Holi
+    date(2026, 5, 1),   # Maharashtra Day
+    date(2026, 8, 15),  # Independence Day
+    date(2026, 9, 14),  # Ganesh Chaturthi
+    date(2026, 10, 2),  # Gandhi Jayanti
+    date(2026, 11, 8),  # Diwali
+    date(2026, 11, 10), # Govardhan Puja
+    date(2025, 12, 25), # Christmas
+    date(2026, 11, 11), # Bhaubij
+}
+
+OPTIONAL_HOLIDAYS_2026 = {
+    date(2026, 3, 19),  # Gudi Padwa
+    date(2026, 3, 21),  # Eid # Christmas
+}
+
+
+
+import xlsxwriter
+from zoneinfo import ZoneInfo
+
+
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
+import calendar
+from sqlalchemy import func
+
+
+def calculate_attendance(admin_id, emp_type, year, month):
+    # -------- DATE RANGE --------
+    start_date = date(year, month, 1)
+    month_end = date(year, month, calendar.monthrange(year, month)[1])
+
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    end_date = today if (year == today.year and month == today.month) else month_end
+
+    # -------- FETCH PUNCHES --------
+    punches = Punch.query.filter(
+        Punch.admin_id == admin_id,
+        Punch.punch_date.between(start_date, end_date)
+    ).all()
+    punch_map = {p.punch_date: p for p in punches}
+
+    # -------- FETCH LEAVES (OVERLAPPING MONTH) --------
+    leaves = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == admin_id,
+        LeaveApplication.start_date <= end_date,
+        LeaveApplication.end_date >= start_date
+    ).all()
+
+    # Build date → leave_status map
+    leave_map = {}
+    for leave in leaves:
+        d = max(leave.start_date, start_date)
+        while d <= min(leave.end_date, end_date):
+            leave_map[d] = leave.status
+            d += timedelta(days=1)
+
+    # -------- COUNTERS --------
+    total_present = 0.0
+    total_absent = 0.0
+
+    # -------- DAY-WISE LOOP --------
+    current = start_date
+    while current <= end_date:
+        weekday = current.weekday()  # Mon=0 ... Sun=6
+        punch = punch_map.get(current)
+        leave_status = leave_map.get(current)
+
+        # ---------- HOLIDAY (AUTO PRESENT) ----------
+        if current in HOLIDAYS_2026:
+            total_present += 1
+            current += timedelta(days=1)
+            continue
+
+        # ---------- SUNDAY (AUTO PRESENT) ----------
+        if weekday == 6:
+            total_present += 1
+            current += timedelta(days=1)
+            continue
+
+        # ---------- SATURDAY ----------
+        # HR & Accounts → working day
+        # Others → auto-present
+        if weekday == 5 and emp_type not in ["Human Resource", "Accounts"]:
+            total_present += 1
+            current += timedelta(days=1)
+            continue
+
+        # ---------- LEAVE HANDLING (OVERRIDES EVERYTHING) ----------
+        if leave_status:
+            if leave_status == "Approved":
+                total_present += 1
+            else:  # Pending / Rejected
+                total_absent += 1
+            current += timedelta(days=1)
+            continue
+
+        # ---------- WORKING DAY (PUNCH REQUIRED) ----------
+        if punch and punch.punch_in and punch.punch_out:
+            # FULL DAY ONLY (no half-day logic)
+            total_present += 1
+
+        else:
+            # ❗ THIS FIXES YOUR ISSUE:
+            # No punch OR punch-in only → ABSENT
+            total_absent += 1
+
+        current += timedelta(days=1)
+
+    # -------- EXTRA DAYS (LEAVE OVERFLOW) --------
+    # These days are NOT working days → count as ABSENT
+    extra_days = db.session.query(
+        func.coalesce(func.sum(LeaveApplication.extra_days), 0)
+    ).filter(
+        LeaveApplication.admin_id == admin_id,
+        LeaveApplication.status == "Approved",
+        LeaveApplication.start_date <= end_date,
+        LeaveApplication.end_date >= start_date
+    ).scalar() or 0
+
+    if extra_days > 0:
+        total_present = max(0, total_present - extra_days)
+        total_absent += extra_days
+
+    return total_present, total_absent
+
+
+
+def get_leave_balance(admin):
+    signup = Signup.query.filter_by(email=admin.email).first()
+    if not signup:
+        return 0, 0
+
+    balance = LeaveBalance.query.filter_by(signup_id=signup.id).first()
+    if not balance:
+        return 0, 0
+
+    return (
+        balance.privilege_leave_balance or 0,
+        balance.casual_leave_balance or 0
+    )
+
+
+
+from io import BytesIO
+import calendar
+import xlsxwriter
+from sqlalchemy import func
+
+
+def generate_attendance_excel(admins, emp_type, circle, year, month):
+    output = BytesIO()
+    workbook = xlsxwriter.Workbook(output)
+    worksheet = workbook.add_worksheet("Attendance")
+
+    # -------- FORMATS --------
+    header_fmt = workbook.add_format({
+        'bold': True,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+        'bg_color': '#D9E1F2'
+    })
+    cell_fmt = workbook.add_format({'border': 1})
+    title_fmt = workbook.add_format({'bold': True, 'font_size': 12})
+
+    # -------- HEADER --------
+    worksheet.merge_range('A1:M1', f"Employee Domain: {emp_type}", title_fmt)
+    worksheet.merge_range('A2:M2', f"Circle: {circle}", title_fmt)
+    worksheet.merge_range('A3:M3', f"Month: {calendar.month_name[month]} {year}", title_fmt)
+
+    # -------- TABLE HEADER --------
+    row = 4
+    headers = [
+        "S.No",
+        "Month",
+        "Employee Name",
+        "Total Days in Month",
+        "Total Working Days(CL+PL)",
+        "Total Absent Days",
+        "Balance CL",
+        "Balance PL",
+        "Balance Comp Off",
+        "Applied CL",
+        "Applied PL",
+        "Total Applied Leave"
+    ]
+
+    for col, h in enumerate(headers):
+        worksheet.write(row, col, h, header_fmt)
+
+    # -------- DATE RANGE FOR MONTH --------
+    month_start = date(year, month, 1)
+    month_end = date(year, month, calendar.monthrange(year, month)[1])
+
+    # -------- DATA --------
+    row += 1
+    for idx, admin in enumerate(admins, start=1):
+
+        # Employee name
+        signup = Signup.query.filter_by(email=admin.email).first()
+        emp_name = signup.first_name if signup else admin.first_name
+
+        # Attendance (SOURCE OF TRUTH)
+        present, absent = calculate_attendance(admin.id, emp_type, year, month)
+
+        # Total days in month
+        total_days = calendar.monthrange(year, month)[1]
+
+        # Leave balances
+        balance = LeaveBalance.query.filter_by(signup_id=signup.id).first() if signup else None
+        balance_cl = balance.casual_leave_balance if balance else 0
+        balance_pl = balance.privilege_leave_balance if balance else 0
+        balance_comp = balance.compensatory_leave_balance if balance else 0
+
+        # Optional holiday balance (adjust if you store differently)
+
+        # -------- APPLIED LEAVES (MONTH-WISE) --------
+        applied_cl = db.session.query(func.coalesce(func.sum(LeaveApplication.deducted_days), 0)).filter(
+            LeaveApplication.admin_id == admin.id,
+            LeaveApplication.leave_type == "Casual Leave",
+            LeaveApplication.start_date <= month_end,
+            LeaveApplication.end_date >= month_start
+        ).scalar() or 0
+
+        applied_pl = db.session.query(func.coalesce(func.sum(LeaveApplication.deducted_days), 0)).filter(
+            LeaveApplication.admin_id == admin.id,
+            LeaveApplication.leave_type == "Privilege Leave",
+            LeaveApplication.start_date <= month_end,
+            LeaveApplication.end_date >= month_start
+        ).scalar() or 0
+
+
+        total_applied_leave = applied_cl + applied_pl
+
+        # -------- WRITE ROW --------
+        worksheet.write_row(row, 0, [
+            idx,
+            f"{calendar.month_name[month]} {year}",
+            emp_name,
+            total_days,
+            present,
+            absent,                # 🔥 FROM calculate_attendance
+            balance_cl,
+            balance_pl,
+            balance_comp,
+            applied_cl,
+            applied_pl,
+            total_applied_leave
+        ], cell_fmt)
+
+        row += 1
+
+    worksheet.set_column(0, 11, 22)
+    workbook.close()
+    output.seek(0)
+
+    return output
+
+
+from datetime import datetime, timedelta, time
+
+def calculate_total_work(punch_in, punch_out):
+    """Return total work duration as a time object (HH:MM:SS)."""
+    if not punch_in or not punch_out:
+        return None
+
+    # Combine with dummy date to calculate timedelta
+    in_dt = datetime.combine(datetime.min, punch_in)
+    out_dt = datetime.combine(datetime.min, punch_out)
+
+    # Handle overnight shift (punch out next day)
+    if out_dt < in_dt:
+        out_dt += timedelta(days=1)
+
+    work_duration = out_dt - in_dt  # timedelta
+
+    # Convert timedelta → time (HH:MM:SS)
+    total_seconds = int(work_duration.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return time(hour=hours % 24, minute=minutes, second=seconds)
+
+
+
+from datetime import datetime, date, timedelta
+import calendar
+from .models.attendance import Punch, LeaveApplication
+
+def calculate_month_summary_HR(admin_id, year, month):
+    """Returns complete monthly summary:
+       - Working hours Mon–Fri
+       - Working hours Mon–Sat
+       - Leaves + Extra days
+       - Expected hours
+       - Accurate working_days_final using punch + leave logic (month based)
+    """
+
+    # -------------------------------------------------------
+    # SAFE MONTH (avoid crashes)
+    # -------------------------------------------------------
+    try:
+        num_days = calendar.monthrange(year, month)[1]
+    except:
+        today = datetime.today()
+        year, month = today.year, today.month
+        num_days = calendar.monthrange(year, month)[1]
+
+    month_start = date(year, month, 1)
+    month_end = date(year, month, num_days)
+
+    # -------------------------------------------------------
+    # FETCH PUNCHES FOR THE MONTH
+    # -------------------------------------------------------
+    punches = Punch.query.filter(
+        Punch.admin_id == admin_id,
+        Punch.punch_date >= month_start,
+        Punch.punch_date <= month_end
+    ).all()
+
+    actual_fri_seconds = 0
+    actual_sat_seconds = 0
+
+    # Helper to calculate time difference
+    def calc_work(p_in, p_out):
+        if not p_in or not p_out:
+            return 0
+        d_in = datetime.combine(date.min, p_in)
+        d_out = datetime.combine(date.min, p_out)
+        if d_out < d_in:
+            d_out += timedelta(days=1)
+        return int((d_out - d_in).total_seconds())
+
+    # -------------------------------------------------------
+    # TOTAL WORKED HOURS
+    # -------------------------------------------------------
+    for p in punches:
+        # Prefer today_work if available
+        if getattr(p, "today_work", None):
+            tw = p.today_work
+            secs = tw.hour*3600 + tw.minute*60 + getattr(tw, "second", 0)
+        else:
+            secs = calc_work(p.punch_in, p.punch_out)
+
+        weekday = p.punch_date.weekday()   # 0=Mon ... 6=Sun
+
+        if weekday not in (5, 6):   # Mon–Fri
+            actual_fri_seconds += secs
+
+        if weekday != 6:            # Mon–Sat
+            actual_sat_seconds += secs
+
+    # -------------------------------------------------------
+    # LEAVES & EXTRA DAYS
+    # -------------------------------------------------------
+    leave_days = 0
+    extra_days = 0
+
+    leaves = LeaveApplication.query.filter(
+        LeaveApplication.admin_id == admin_id,
+        LeaveApplication.status == "Approved",
+        LeaveApplication.start_date <= month_end,
+        LeaveApplication.end_date >= month_start
+    ).all()
+
+    for lv in leaves:
+
+        # Overlap handling
+        ls = max(lv.start_date, month_start)
+        le = min(lv.end_date, month_end)
+
+        if le >= ls:
+            leave_days += (le - ls).days + 1
+
+        # Extra days
+        if getattr(lv, "extra_days", None):
+            try:
+                ed = float(lv.extra_days)
+                if ed > 0:
+                    extra_days += ed
+            except:
+                pass
+
+    # -------------------------------------------------------
+    # ADVANCED WORKING DAYS LOGIC (from your bulk function)
+    # -------------------------------------------------------
+
+    # Get admin profile to extract emp_type
+    admin_obj = Admin.query.get(admin_id)
+    signup = Signup.query.filter_by(email=admin_obj.email).first()
+    emp_type = getattr(signup, "emp_type", "")
+
+    working_days = 0.0
+
+    # Loop through each day of the selected month
+    for d in range(1, num_days + 1):
+
+        the_day = date(year, month, d)
+        weekday = the_day.weekday()
+
+        is_weekend = weekday in (5, 6)
+        is_sunday = weekday == 6
+
+        # ---- CHECK PUNCHES FOR THAT DAY ----
+        punch = next((p for p in punches if p.punch_date == the_day), None)
+
+        punch_value = 0
+        if punch:
+            in_present = bool(punch.punch_in)
+            out_present = bool(punch.punch_out)
+
+            if in_present and out_present:
+                punch_value = 1
+            elif in_present or out_present:
+                punch_value = 0.5
+
+        # ---- CHECK LEAVE FOR THE DAY ----
+        leave_for_day = False
+        for lv in leaves:
+            if lv.start_date <= the_day <= lv.end_date:
+                leave_for_day = True
+                break
+
+        # ---- APPLY SAME RULES AS BULK FUNCTION ----
+        if emp_type in ("Engineering", "Software Development"):
+            # Sat + Sun always counted as working
+            if is_weekend:
+                working_days += 1
+            elif punch_value > 0 or leave_for_day:
+                working_days += punch_value if punch_value > 0 else 1
+
+        else:  # Accounts, HR, etc.
+            if is_sunday:
+                working_days += 1
+            elif weekday == 5:  # Saturday
+                if punch_value > 0 or leave_for_day:
+                    working_days += punch_value if punch_value > 0 else 1
+            else:  # Mon–Fri
+                if punch_value > 0 or leave_for_day:
+                    working_days += punch_value if punch_value > 0 else 1
+
+    # Subtract extra days
+    working_days -= extra_days
+    if working_days < 0:
+        working_days = 0
+
+    # Round clean
+    working_days_final = round(working_days, 1)
+
+    # -------------------------------------------------------
+    # CALENDAR WORKING DAYS (for expected hours only)
+    # -------------------------------------------------------
+    total_mon_fri = sum(1 for d in range(1, num_days + 1)
+                        if date(year, month, d).weekday() not in (5, 6))
+
+    total_mon_sat = sum(1 for d in range(1, num_days + 1)
+                        if date(year, month, d).weekday() != 6)
+
+    # -------------------------------------------------------
+    # RETURN FINAL SUMMARY
+    # -------------------------------------------------------
+    return {
+        "actual_fri_hours": round(actual_fri_seconds / 3600, 1),
+        "actual_sat_hours": round(actual_sat_seconds / 3600, 1),
+        "expected_fri_hours": round(total_mon_fri * 8.5, 1),
+        "expected_sat_hours": round(total_mon_sat * 8.5, 1),
+        "leave_days": leave_days,
+        "extra_days": extra_days,
+        "working_days_final": working_days_final,
+    }
+
+
+
+
+
+def generate_attendance_excel_HR(admins, emp_type, circle, year, month, file_prefix):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
 
@@ -871,7 +1351,7 @@ def generate_attendance_excel(admins, emp_type, circle, year, month, file_prefix
             row += 1
 
             # SUMMARY
-            stats = calculate_month_summary(admin.id, year, month)
+            stats = calculate_month_summary_HR(admin.id, year, month)
             mlabel = f"{calendar.month_name[month]} {year}"
 
             worksheet.write(row, 0, f"Total Working Days ({mlabel}):", orange_fmt)
@@ -902,28 +1382,3 @@ def generate_attendance_excel(admins, emp_type, circle, year, month, file_prefix
 
     output.seek(0)
     return output
-
-
-
-from datetime import datetime, timedelta, time
-
-def calculate_total_work(punch_in, punch_out):
-    """Return total work duration as a time object (HH:MM:SS)."""
-    if not punch_in or not punch_out:
-        return None
-
-    # Combine with dummy date to calculate timedelta
-    in_dt = datetime.combine(datetime.min, punch_in)
-    out_dt = datetime.combine(datetime.min, punch_out)
-
-    # Handle overnight shift (punch out next day)
-    if out_dt < in_dt:
-        out_dt += timedelta(days=1)
-
-    work_duration = out_dt - in_dt  # timedelta
-
-    # Convert timedelta → time (HH:MM:SS)
-    total_seconds = int(work_duration.total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return time(hour=hours % 24, minute=minutes, second=seconds)

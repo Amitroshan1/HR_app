@@ -423,132 +423,182 @@ def check_wfh():
 
 
 
-
-
-
 @profile.route('/punch', methods=['GET', 'POST'])
 @login_required
 def punch():
     form = PunchForm()
     today = date.today()
 
-    # Get today's punch if exists
-    punch = Punch.query.filter_by(admin_id=current_user.id, punch_date=today).first()
+    # Get today's punch
+    punch = Punch.query.filter_by(
+        admin_id=current_user.id,
+        punch_date=today
+    ).first()
 
-    # Selected month/year for calendar
+    # Calendar selection
     selected_month = request.args.get('month', today.month, type=int)
     selected_year = request.args.get('year', today.year, type=int)
 
     calendar.setfirstweekday(calendar.MONDAY)
     first_day = date(selected_year, selected_month, 1)
-    last_day = first_day.replace(day=calendar.monthrange(selected_year, selected_month)[1])
+    last_day = first_day.replace(
+        day=calendar.monthrange(selected_year, selected_month)[1]
+    )
 
-    # Get all punches for the selected month
+    # Monthly punches
     punches = Punch.query.filter(
         Punch.admin_id == current_user.id,
         Punch.punch_date.between(first_day, last_day)
     ).all()
 
-    # Prepare daily color data
+    # Calendar color prep
     punch_data = {}
     for p in punches:
-        color = 'bg-white'  # default
+        color = 'bg-white'
+
         if p.punch_in and p.punch_out and p.today_work:
-            # Convert today_work string "HH:MM:SS" to timedelta
             try:
                 h, m, s = map(int, str(p.today_work).split(':'))
                 total_td = timedelta(hours=h, minutes=m, seconds=s)
             except:
-                total_td = timedelta(seconds=0)
+                total_td = timedelta()
 
             if total_td >= timedelta(hours=8, minutes=30):
-                color = 'present'   # Green Full Day
+                color = 'present'
             elif total_td >= timedelta(hours=4):
-                color = 'halfday'   # Yellow Half Day
+                color = 'halfday'
             else:
-                color = 'pending'   # Red Pending
+                color = 'pending'
+
         elif p.punch_in and not p.punch_out:
-            color = 'pending'       # Red if punched in but not out
+            color = 'pending'
+
         punch_data[p.punch_date] = {'punch': p, 'color': color}
 
-    # Punch In / Out logic
+    # -------------------- PUNCH LOGIC --------------------
     if form.validate_on_submit():
+
         lat = request.form.get('lat', type=float)
         lon = request.form.get('lon', type=float)
         is_wfh = request.form.get('wfh') == 'on'
 
+        # -------- GEOFENCE CHECK (NO DB SAVE) --------
         locations = Location.query.all()
-        is_near_location = False
-        if lat is not None and lon is not None:
-            is_near_location = is_near_saved_location(lat, lon, locations)
+        is_outside_geofence = False
 
-        if not is_near_location and not is_wfh:
-            flash("You are not near any authorized location and 'Work From Home' is not selected.", "danger")
+        if lat and lon:
+            if not is_near_saved_location(lat, lon, locations):
+                is_outside_geofence = True
+
+        # -------------------- PUNCH IN --------------------
+        if form.punch_in.data:
+
+            if check_leave():
+                flash(
+                    "You are not allowed to punch on this day because you are on leave.",
+                    "danger"
+                )
+                return redirect(request.url)
+
+            if is_wfh and not check_wfh():
+                flash(
+                    "WFH access is restricted until your request is approved.",
+                    "danger"
+                )
+                return redirect(request.url)
+
+            if punch and punch.punch_in:
+                flash("Already punched in today!", "danger")
+                return redirect(request.url)
+
+            if not punch:
+                punch = Punch(
+                    admin_id=current_user.id,
+                    punch_date=today
+                )
+
+            punch.punch_in = datetime.now().time()
+            punch.is_wfh = is_wfh
+            punch.lat = lat
+            punch.lon = lon
+
+            db.session.add(punch)
+            db.session.commit()
+
+            # ⚠️ WARNING ONLY (NO BLOCK)
+            if is_outside_geofence and not is_wfh:
+                flash(
+                    "Punch recorded, but location is outside office. Please ensure compliance.",
+                    "warning"
+                )
+            else:
+                flash("Punched in successfully!", "success")
+
             return redirect(url_for('profile.punch'))
 
-        # Punch In
-        if form.punch_in.data:
-            if check_leave():
-                flash("You are not allowed to punch on this day because you are on leave", "danger")
-                return redirect(request.url)
-            elif is_wfh and not check_wfh():
-                flash("WFM Mode access is restricted until your request is approved.", "danger")
-                return redirect(request.url)
-            elif punch and punch.punch_in:
-                flash('Already punched in today!', 'danger')
-            else:
-                if not punch:
-                    punch = Punch(
-                        admin_id=current_user.id,
-                        punch_date=today,
-                        is_wfh=is_wfh,
-                        lat=lat,
-                        lon=lon
-                    )
-                punch.punch_in = datetime.now().time()
-                punch.is_wfh = is_wfh
-                punch.lat = lat
-                punch.lon = lon
-
-                db.session.add(punch)
-                db.session.commit()
-                flash('Punched in successfully!', 'warning')
-                return redirect(url_for('profile.punch'))
-
-
-        # Punch Out
+        # -------------------- PUNCH OUT --------------------
         elif form.punch_out.data:
+
             if check_leave():
-                flash("You are not allowed to punch on this day because you are on leave", "danger")
+                flash(
+                    "You are not allowed to punch on this day because you are on leave.",
+                    "danger"
+                )
                 return redirect(request.url)
-            elif is_wfh and not check_wfh():
-                flash("WFM Mode access is restricted until your request is approved.", "danger")
+
+            if is_wfh and not check_wfh():
+                flash(
+                    "WFH access is restricted until your request is approved.",
+                    "danger"
+                )
                 return redirect(request.url)
+
             if not punch or not punch.punch_in:
-                flash('You need to punch in first!', 'danger')
-            else:
-                punch.punch_out = datetime.now().time()
-                punch_time(current_user.id)  # update today_work
-                db.session.commit()
+                flash("You need to punch in first!", "danger")
+                return redirect(request.url)
 
-                if datetime.today().weekday() == 6:  # Sunday comp off
-                    user = Signup.query.filter_by(email=current_user.email).first()
+            punch.punch_out = datetime.now().time()
+            punch_time(current_user.id)  # updates today_work
+            db.session.commit()
+
+            # Sunday Comp-Off
+            if datetime.today().weekday() == 6:
+                user = Signup.query.filter_by(
+                    email=current_user.email
+                ).first()
+                if user:
                     add_comp_off(user.id)
-                    print("Comp Off added for Sunday work!")
 
-                flash(f'Punch out successful! Work duration recorded: {punch.today_work}', 'success')
-                return redirect(url_for('profile.punch'))
+            # ⚠️ WARNING ONLY (NO BLOCK)
+            if is_outside_geofence and not is_wfh:
+                flash(
+                    "Punch out recorded, but location is outside office. Please ensure compliance.",
+                    "warning"
+                )
+            else:
+                flash(
+                    f"Punch out successful! Work duration: {punch.today_work}",
+                    "success"
+                )
 
-    # Get leave records for selected month
-    last_day_num = calendar.monthrange(selected_year, selected_month)[1]
+            return redirect(url_for('profile.punch'))
+
+    # -------------------- LEAVE DATA --------------------
+    last_day_num = calendar.monthrange(
+        selected_year, selected_month
+    )[1]
+
     leave_records = LeaveApplication.query.filter(
         LeaveApplication.admin_id == current_user.id,
-        LeaveApplication.start_date <= date(selected_year, selected_month, last_day_num),
-        LeaveApplication.end_date >= date(selected_year, selected_month, 1),
+        LeaveApplication.start_date <= date(
+            selected_year, selected_month, last_day_num
+        ),
+        LeaveApplication.end_date >= date(
+            selected_year, selected_month, 1
+        ),
         LeaveApplication.status == 'Approved'
     ).all()
 
-    # Collect leave days
     leave_days = set()
     for leave in leave_records:
         current_day = leave.start_date
@@ -567,6 +617,9 @@ def punch():
         calendar=calendar,
         leave_days=leave_days
     )
+
+
+
 
 
 
